@@ -1,0 +1,12 @@
+# Default template for a .editorconfig file (see: https://editorconfig.org/ )
+# Place this in the root of a project
+
+# Define this file as the root file
+root = true
+
+# Unix-style newlines with a newline ending every file
+[*]
+end_of_line = lf
+indent_style = tab
+indent_size = 3
+insert_final_newline = true

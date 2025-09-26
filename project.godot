@@ -11,8 +11,13 @@ config_version=5
 [application]
 
 config/name="validation-framework"
+run/main_scene="uid://r0xf35tatbjb"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+Validation="*res://addons/validator/globals/validation.gd"
 
 [editor_plugins]
 

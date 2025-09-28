@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="ValidatorSettings" load_steps=2 format=3 uid="uid://dk02mg62vw2m1"]
+
+[ext_resource type="Script" uid="uid://dtaq5a6mhbihi" path="res://addons/validator/settings/validator_settings.gd" id="1_p5gr4"]
+
+[resource]
+script = ExtResource("1_p5gr4")
+metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

@@ -7,14 +7,14 @@ const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 
-var _dock: GodotDoctorDock
-
 ## Lazy-loaded settings
 var settings: GodotDoctorSettings:
 	get:
 		if not settings:
 			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
+
+var _dock: GodotDoctorDock
 
 
 ## Called when we enable the plugin
@@ -36,6 +36,7 @@ func _enter_tree():
 	add_control_to_dock(
 		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
 	)
+	_push_toast("Godot Doctor loaded.", 0)
 
 
 ## Cleans up the plugin by disconnecting signals and removing the dock.
@@ -43,6 +44,7 @@ func _exit_tree():
 	_print_debug("Exiting tree...")
 	_disconnect_signals()
 	_remove_dock()
+	_push_toast("Godot Doctor unloaded.", 0)
 
 
 ## Connects all necessary signals for the plugin to function.
@@ -127,6 +129,14 @@ func _validate_node(node: Node) -> void:
 		# ValidationResult processes the conditions upon instantiation.
 		var validation_result = ValidationResult.new(generated_conditions)
 		# Process the resulting errors
+		if validation_result.errors.size() > 0:
+			_push_toast(
+				(
+					"Found %s configuration warnings in %s."
+					% [validation_result.errors.size(), node.name]
+				),
+				1
+			)
 		for error in validation_result.errors:
 			_print_debug("Found error in node %s: %s" % [node.name, error])
 			_print_debug("Adding error to dock...")
@@ -182,6 +192,11 @@ func _copy_properties(from_node: Node, to_node: Node) -> void:
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
+
+
+func _push_toast(message: String, severity: int = 0) -> void:
+	if settings.show_toasts:
+		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 
 
 func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:

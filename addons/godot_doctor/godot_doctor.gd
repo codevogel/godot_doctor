@@ -33,7 +33,9 @@ func _enter_tree():
 	_print_debug("Entering tree...")
 	_connect_signals()
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	add_control_to_dock(DOCK_SLOT_LEFT_UL, _dock)
+	add_control_to_dock(
+		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
+	)
 
 
 ## Cleans up the plugin by disconnecting signals and removing the dock.
@@ -180,3 +182,25 @@ func _copy_properties(from_node: Node, to_node: Node) -> void:
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
+
+
+func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:
+	match dock_slot:
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UL:
+			return DockSlot.DOCK_SLOT_LEFT_UL
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BL:
+			return DockSlot.DOCK_SLOT_LEFT_BL
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UR:
+			return DockSlot.DOCK_SLOT_LEFT_UR
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BR:
+			return DockSlot.DOCK_SLOT_LEFT_BR
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UL:
+			return DockSlot.DOCK_SLOT_RIGHT_UL
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BL:
+			return DockSlot.DOCK_SLOT_RIGHT_BL
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UR:
+			return DockSlot.DOCK_SLOT_RIGHT_UR
+		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BR:
+			return DockSlot.DOCK_SLOT_RIGHT_BR
+		_:
+			return DockSlot.DOCK_SLOT_RIGHT_BL  # Default fallback

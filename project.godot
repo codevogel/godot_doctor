@@ -15,10 +15,6 @@ run/main_scene="uid://r0xf35tatbjb"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
-[autoload]
-
-Validation="*res://addons/validator/globals/validation.gd"
-
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/validator/plugin.cfg")

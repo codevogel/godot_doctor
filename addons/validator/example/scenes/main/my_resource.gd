@@ -3,7 +3,7 @@ extends Resource
 class_name MyResource
 
 @export var my_string: String
-@export var my_int: int
+@export var my_int: int = -1
 @export var my_max_int: int = 10
 @export var my_min_int: int = 0
 

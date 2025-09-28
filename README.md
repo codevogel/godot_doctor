@@ -16,7 +16,13 @@ See the difference for yourself:
 
 ![Before and After Godot Doctor](./github-assets/png/before-after.png)
 
-Our gameplay code statys much more clean and focused!
+Our gameplay code stays much more clean and focused!
+
+### 🔄 Automatic Scene Validation
+Validations run automatically when you save scenes, providing immediate feedback during development.
+Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
+
+![Godot Doctor Example Gif](./github-assets/gif/doctor-example.gif)
 
 ### ⚙️Validate Nodes AND Resources 
 
@@ -30,12 +36,6 @@ Godot Doctor encourages you to write validation logic that resembles unit tests 
 - Better maintainability 
 - Human-readable validation conditions
 - Separation of concerns between validation logic and error messages
-
-### 🔄 Automatic Scene Validation
-Validations run automatically when you save scenes, providing immediate feedback during development.
-Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
-
-![Godot Doctor Example Gif](./github-assets/gif/doctor-example.gif)
 
 ### 🎯 Declarative Syntax
 

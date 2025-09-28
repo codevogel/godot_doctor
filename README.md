@@ -2,6 +2,25 @@
 
 A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
 
+## Table of Contents
+- [What is Godot Doctor?](#what-is-godot-doctor)
+- [Why Use Godot Doctor?](#why-use-godot-doctor)
+  - [🏷️ No `@tool` Required](#-no-tool-required)
+  - [🔄 Automatic Scene Validation](#-automatic-scene-validation)
+  - [⚙️ Validate Nodes AND Resources](#️-validate-nodes-and-resources)
+  - [🧪 Test-Driven Validation](#-test-driven-validation)
+  - [🎯 Declarative Syntax](#-declarative-syntax)
+- [Syntax](#syntax)
+  - [ValidationCondition](#validationcondition)
+  - [Simple Helper Method](#simple-helper-method)
+  - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
+  - [Abstract Away Complex Logic](#abstract-away-complex-logic)
+  - [Nested Validation Conditions](#nested-validation-conditions)
+- [How It Works](#how-it-works)
+- [Examples](#examples)
+- [Installation](#installation)
+- [License](#license)
+
 ## What is Godot Doctor?
 
 Godot Doctor is a Godot plugin that validates your scenes and nodes using a declarative, test-driven approach. Instead of writing procedural warning code, you define validation conditions using callables that focus on validation logic first, with error messages as metadata.

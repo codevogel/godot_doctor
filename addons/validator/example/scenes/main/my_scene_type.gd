@@ -6,6 +6,9 @@ class_name MySceneType
 
 
 func _get_validation_conditions() -> Array[ValidationCondition]:
+	push_warning(
+		"The 'Node not found' error below is intentional and caused for demonstration purposes. See addons/validator/example/README.md for more information."
+	)
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.simple(
 			is_instance_valid($MyNodePathNode), "MyNodePathNode was not found."

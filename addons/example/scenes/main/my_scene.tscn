@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bte3a03b4bl36"]
+
+[ext_resource type="Script" uid="uid://c6a3pvikcdil" path="res://addons/example/scenes/main/my_scene_type.gd" id="1_80vmk"]
+
+[node name="MySceneType" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_80vmk")
+metadata/_custom_type_script = "uid://c6a3pvikcdil"
+
+[node name="MyNodePathNode" type="Node" parent="."]
+
+[node name="MyDeeperNodePathNode" type="Node" parent="MyNodePathNode"]

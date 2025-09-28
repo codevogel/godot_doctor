@@ -9,10 +9,10 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 ## Why Use Godot Doctor?
 
 ### 🏷️ **No `@tool` Required**
-Unlike `_get_configuration_warnings()`, Godot Doctor works without requiring the `@tool` annotation on your scripts.
-This means that you no longer have to muddy up your gameplay code with editor-specific logic, just to provide validation warnings.
+Unlike [`_get_configuration_warnings()`](https://docs.godotengine.org/en/4.5/classes/class_node.html#class-node-private-method-get-configuration-warnings), Godot Doctor works without requiring the [`@tool`](https://docs.godotengine.org/en/4.5/tutorials/plugins/running_code_in_the_editor.html#what-is-tool) annotation on your scripts.
+This means that you no longer have to worry about your gameplay code being muddied by editor-specific logic.
 
-e.g. this:
+So this:
 
 ```gdscript
 @tool
@@ -75,22 +75,34 @@ func _on_button_pressed():
    # do something
 ```
 
-### 🧪 **Test-Driven Validation**
-Write validation logic that resembles unit tests rather than procedural warning generators. This encourages:
-- More organized code
+Allowing you to keep your gameplay code clean and focused!
+
+### ⚙️Validate Nodes AND Resources 
+
+Godot Doctor can not only validate nodes in your scene, but `Resource` scripts can define their own validation conditions as well. 
+Very useful for validating whether your resources have conflicting data (i.e. a value that is higher than the maximum value), or missing references (i.e. an empty string, or a missing texture).
+
+### 🧪 Test-Driven Validation
+Godot Doctor encourages you to write validation logic that resembles unit tests rather than write code that returns strings containing warnings. This encourages:
+- Testable validation logic
+- Organized code
 - Better maintainability 
 - Human-readable validation conditions
-- Separation of concerns between logic and messaging
+- Separation of concerns between validation logic and error messages
 
-### 🔄 **Automatic Scene Validation**
+### 🔄 Automatic Scene Validation
 Validations run automatically when you save scenes, providing immediate feedback during development.
+Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
 
-### 🎯 **Declarative Syntax**
-Define what should be true rather than writing code to generate warnings.
+![Godot Doctor Example Gif](./github-assets/gif/doctor-example.gif)
+
+### 🎯 Declarative Syntax
+
+Where `_get_configuration_warnings()` makes you write code that generates strings, Godot Doctor lets you design your validation logic separately from the error messages, making it easier to read and maintain.
 
 ## Validation Syntax
 
-### Basic ValidationCondition
+### ValidationCondition
 
 The core of Godot Doctor is the `ValidationCondition` class, which takes a callable and an error message:
 
@@ -102,9 +114,9 @@ var condition = ValidationCondition.new(
 )
 ```
 
-### Simple Static Method
+### Simple Helper Method
 
-For basic boolean checks, use the convenience `simple()` method:
+For basic boolean validations, use the convenience `simple()` method, allowing you to skip the `func()` wrapper: 
 
 ```gdscript
 # Equivalent to the above, but more concise
@@ -114,83 +126,46 @@ var condition = ValidationCondition.simple(
 )
 ```
 
-### Implementing Validation in Your Nodes
+### Reuse validation logic with Callables 
 
-Add a `_get_validation_conditions()` method to any node you want to validate:
+Using `Callables` allows you to reuse common validation methods:
 
 ```gdscript
-extends CharacterBody2D
+func _is_more_than_zero(value: int) -> bool:
+	 return value > 0
 
-@export var max_health: int = 100
-@export var speed: float = 200.0
-@export var weapon: PackedScene
-
-func _get_validation_conditions() -> Array[ValidationCondition]:
-    return [
-        ValidationCondition.simple(
-            max_health > 0,
-            "Max health must be greater than 0"
-        ),
-        ValidationCondition.simple(
-            speed > 0,
-            "Speed must be positive"
-        ),
-        ValidationCondition.simple(
-            weapon != null,
-            "Weapon scene must be assigned"
-        )
-    ]
+var condition = ValidationCondition.simple(
+	 _is_more_than_zero(health),
+	 "Health must be greater than 0"
+)
 ```
 
-### Advanced Validation with Callables
+### Abstract Away Complex Logic
 
-For more complex validation logic, use callables:
+Or abstract away complex logic into separate methods:
 
 ```gdscript
-func _get_validation_conditions() -> Array[ValidationCondition]:
-    return [
-        ValidationCondition.new(
-            func(): return _validate_component_setup(),
-            "Component setup is invalid"
-        ),
-        ValidationCondition.new(
-            func(): return _check_dependencies(),
-            "Missing required dependencies"
-        )
-    ]
+var condition = ValidationCondition.new(
+	 complex_validation_logic,
+	 "Complex validation failed"
+)
 
-func _validate_component_setup() -> bool:
-    # Complex validation logic here
-    return has_node("CollisionShape2D") and has_node("Sprite2D")
-
-func _check_dependencies() -> bool:
-    # Check for required autoloads, resources, etc.
-    return GameManager != null and PlayerData != null
+func complex_validation_logic() -> bool:
+	# Complex logic here
 ```
 
 ### Nested Validation Conditions
 
-Validation conditions can return arrays of other validation conditions for hierarchical validation:
+Making use of variatic typing, Validation conditions can return arrays of other validation conditions, allowing you to nest validation logic where needed:
 
 ```gdscript
-func _get_validation_conditions() -> Array[ValidationCondition]:
-    return [
-        ValidationCondition.new(
-            func(): return _get_inventory_validations(),
-            "Inventory validation failed"
-        )
-    ]
-
-func _get_inventory_validations() -> Array[ValidationCondition]:
-    var conditions: Array[ValidationCondition] = []
-    
-    for item in inventory_items:
-        conditions.append(ValidationCondition.simple(
-            item.quantity > 0,
-            "Item '%s' has invalid quantity" % item.name
-        ))
-    
-    return conditions
+ValidationCondition.new(
+			func() -> Variant:
+				if not is_instance_valid(my_resource):
+					return false
+				return my_resource.get_validation_conditions(),
+			"my_resource must be assigned."
+		)
 ```
 
 ## How It Works
@@ -203,13 +178,14 @@ func _get_inventory_validations() -> Array[ValidationCondition]:
 
 ## Examples
 
-For detailed examples and common validation patterns, see [./addons/godot_doctor/examples/README.md](./addons/godot_doctor/examples/README.md).
+For detailed examples and common validation patterns, see [the examples README](./addons/godot_doctor/examples/README.md).
 
 ## Installation
 
 1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
 2. Enable the plugin in Project Settings > Plugins
 3. The Godot Doctor dock will appear in the editor's left panel
+4. Start adding `_get_validation_conditions()` methods to your scripts, then save your scenes to see validation results!
 
 ## License
 

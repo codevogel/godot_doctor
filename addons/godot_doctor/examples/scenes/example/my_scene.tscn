@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://bte3a03b4bl36"]
 
-[ext_resource type="Script" uid="uid://c6a3pvikcdil" path="res://addons/godot_doctor/example/scenes/main/my_scene_type.gd" id="1_80vmk"]
+[ext_resource type="Script" uid="uid://c6a3pvikcdil" path="res://addons/godot_doctor/examples/scenes/example/my_scene.gd" id="1_80vmk"]
 
-[node name="MySceneType" type="Node"]
+[node name="MyScene" type="Node"]
 physics_interpolation_mode = 2
 script = ExtResource("1_80vmk")
 metadata/_custom_type_script = "uid://c6a3pvikcdil"

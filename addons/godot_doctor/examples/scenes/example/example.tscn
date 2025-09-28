@@ -1,0 +1,23 @@
+[gd_scene load_steps=6 format=3 uid="uid://r0xf35tatbjb"]
+
+[ext_resource type="Script" uid="uid://blb05jjtf8b08" path="res://addons/godot_doctor/examples/scenes/example/my_script.gd" id="1_lqrid"]
+[ext_resource type="Script" uid="uid://54xxfckri1l0" path="res://addons/godot_doctor/examples/scenes/example/my_resource.gd" id="2_11ogo"]
+[ext_resource type="Script" uid="uid://nw6w8ag3p77e" path="res://addons/godot_doctor/examples/scenes/example/my_tool.gd" id="3_jvuh5"]
+[ext_resource type="PackedScene" uid="uid://bte3a03b4bl36" path="res://addons/godot_doctor/examples/scenes/example/my_scene.tscn" id="4_mum22"]
+
+[sub_resource type="Resource" id="Resource_pmgo0"]
+script = ExtResource("2_11ogo")
+metadata/_custom_type_script = "uid://54xxfckri1l0"
+
+[node name="Main" type="Node"]
+
+[node name="MyNode" type="Node" parent="."]
+script = ExtResource("1_lqrid")
+my_resource = SubResource("Resource_pmgo0")
+
+[node name="MyToolNode" type="Node" parent="."]
+script = ExtResource("3_jvuh5")
+my_int = 12
+metadata/_custom_type_script = "uid://nw6w8ag3p77e"
+
+[node name="MyScene" parent="." instance=ExtResource("4_mum22")]

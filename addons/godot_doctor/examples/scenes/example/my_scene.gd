@@ -1,5 +1,5 @@
 extends Node
-class_name MySceneType
+class_name MyScene
 
 @onready var my_node_path_node: Node = $MyNodePathNode
 @onready var my_deeper_node_path_node: Node = $MyNodePathNode/MyDeeperNodePathNode
@@ -7,7 +7,7 @@ class_name MySceneType
 
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	push_warning(
-		"The 'Node not found' error below is intentional and caused for demonstration purposes. See addons/validator/example/README.md for more information."
+		"The 'Node not found' error below is intentional and caused for demonstration purposes. See addons/validator/example/README.md for more information. You can fix this error by renaming the WronglyNamedNode to MyDeeperNodePathNode."
 	)
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.simple(

@@ -14,33 +14,33 @@ var settings: ValidatorSettings:
 
 
 func _enable_plugin() -> void:
-	print_debug("[VALIDATOR] Enabling plugin...")
+	_print_debug("Enabling plugin...")
 
 
 func _disable_plugin() -> void:
-	print_debug("[VALIDATOR] Disabling plugin...")
+	_print_debug("Disabling plugin...")
 
 
 func _enter_tree():
-	print_debug("[VALIDATOR] Entering tree...")
+	_print_debug("Entering tree...")
 	_connect_signals()
 	dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as ValidatorDock
 	add_control_to_dock(DOCK_SLOT_LEFT_UL, dock)
 
 
 func _exit_tree():
-	print_debug("[VALIDATOR] Exiting tree...")
+	_print_debug("Exiting tree...")
 	_disconnect_signals()
 	_remove_dock()
 
 
 func _connect_signals():
-	print_debug("[VALIDATOR] Connecting signals...")
+	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
 
 
 func _disconnect_signals():
-	print_debug("[VALIDATOR] Disconnecting signals...")
+	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
 
@@ -51,19 +51,19 @@ func _remove_dock():
 
 
 func _on_scene_saved(file_path: String) -> void:
-	print_debug("[VALIDATOR] Scene saved: %s" % file_path)
+	_print_debug("Scene saved: %s" % file_path)
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
 	if not is_instance_valid(current_edited_scene_root):
-		print_debug("[VALIDATOR] No current edited scene root. Skipping validation.")
+		_print_debug("No current edited scene root. Skipping validation.")
 		return
 
 	dock.clear_errors()
 
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(current_edited_scene_root)
-	print_debug("[Validator] Found %d nodes to validate." % nodes_to_validate.size())
+	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
 	for node: Node in nodes_to_validate:
-		print_debug("[Validator] Calling %s on node: %s" % [VALIDATING_METHOD_NAME, node.name])
+		_print_debug("Calling %s on node: %s" % [VALIDATING_METHOD_NAME, node.name])
 
 		var validation_target: Object = node
 		var script: Script = node.get_script()
@@ -91,10 +91,10 @@ func _on_scene_saved(file_path: String) -> void:
 		if validation_target.has_method(VALIDATING_METHOD_NAME):
 			# The script is loaded, and method call should now work.
 			var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-			print_debug("[Validator] Generated validation conditions: %s" % [generated_conditions])
+			_print_debug("Generated validation conditions: %s" % [generated_conditions])
 			var validation_result = ValidationResult.new(generated_conditions)
 			for error in validation_result.errors:
-				print_debug("[Validator] Validation error in node %s: %s" % [node.name, error])
+				_print_debug("Validation error in node %s: %s" % [node.name, error])
 				dock.add_to_dock(
 					node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error]
 				)

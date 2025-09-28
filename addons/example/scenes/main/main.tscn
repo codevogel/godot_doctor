@@ -1,8 +1,13 @@
-[gd_scene load_steps=2 format=3 uid="uid://r0xf35tatbjb"]
+[gd_scene load_steps=3 format=3 uid="uid://r0xf35tatbjb"]
 
 [ext_resource type="Script" uid="uid://blb05jjtf8b08" path="res://addons/example/scenes/main/my_script.gd" id="1_fyvgu"]
+[ext_resource type="Script" uid="uid://nw6w8ag3p77e" path="res://addons/example/scenes/main/my_tool.gd" id="2_2qtfh"]
 
 [node name="Main" type="Node"]
 
 [node name="MyNode" type="Node" parent="."]
 script = ExtResource("1_fyvgu")
+
+[node name="MyToolNode" type="Node" parent="."]
+script = ExtResource("2_2qtfh")
+metadata/_custom_type_script = "uid://nw6w8ag3p77e"

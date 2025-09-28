@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://c0itjwae6omh2"]
 
-[ext_resource type="Script" uid="uid://b02hiabygkl3e" path="res://addons/validator/dock/warning/validation_warning.gd" id="1_8ys46"]
-[ext_resource type="Texture2D" uid="uid://pcgftp54pvrf" path="res://addons/validator/assets/icon/triangle-alert.svg" id="1_j8gmh"]
+[ext_resource type="Script" uid="uid://b02hiabygkl3e" path="res://addons/godot_doctor/dock/warning/validation_warning.gd" id="1_8ys46"]
+[ext_resource type="Texture2D" uid="uid://pcgftp54pvrf" path="res://addons/godot_doctor/assets/icon/triangle-alert.svg" id="1_j8gmh"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rylcf"]
 content_margin_left = 4.0

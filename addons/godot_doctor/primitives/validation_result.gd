@@ -15,4 +15,4 @@ var errors: PackedStringArray = []
 ## Provide an array of ValidationCondition, and it will evaluate them,
 ## populating the Results' errors array with any resulting error messages.
 func _init(conditions: Array[ValidationCondition]) -> void:
-	errors = Validation.evaluate_conditions(conditions)
+	errors = GodotDoctor.evaluate_conditions(conditions)

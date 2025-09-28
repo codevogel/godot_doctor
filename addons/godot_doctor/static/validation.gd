@@ -1,4 +1,4 @@
-class_name Validation
+class_name GodotDoctor
 
 
 ## Evaluates a list of ValidationConditions and returns a PackedStringArray of error messages for those that fail.

@@ -10,11 +10,11 @@ config_version=5
 
 [application]
 
-config/name="validation-framework"
+config/name="godot-doctor"
 run/main_scene="uid://r0xf35tatbjb"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/validator/plugin.cfg")
+enabled=PackedStringArray("res://addons/godot_doctor/plugin.cfg")

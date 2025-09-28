@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://d2i0wno12y3v3"]
 
-[ext_resource type="Script" uid="uid://3dc6vbnqyd7f" path="res://addons/validator/dock/validator_dock.gd" id="1_m2pes"]
+[ext_resource type="Script" uid="uid://3dc6vbnqyd7f" path="res://addons/godot_doctor/dock/godot_doctor_dock.gd" id="1_0jykx"]
 
-[node name="ValidatorDock" type="VBoxContainer"]
+[node name="Godot Doctor" type="VBoxContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -10,7 +10,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-script = ExtResource("1_m2pes")
+script = ExtResource("1_0jykx")
 
 [node name="ErrorHolder" type="VBoxContainer" parent="."]
 layout_mode = 2

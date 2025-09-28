@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://pcgftp54pvrf"
-path="res://.godot/imported/triangle-alert.svg-20cf78383ff6a8c0c5dc9f45f633b3f5.ctex"
+path="res://.godot/imported/triangle-alert.svg-7e40c79ccf8618800d50b3743d789b1d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/validator/assets/icon/triangle-alert.svg"
-dest_files=["res://.godot/imported/triangle-alert.svg-20cf78383ff6a8c0c5dc9f45f633b3f5.ctex"]
+source_file="res://addons/godot_doctor/assets/icon/triangle-alert.svg"
+dest_files=["res://.godot/imported/triangle-alert.svg-7e40c79ccf8618800d50b3743d789b1d.ctex"]
 
 [params]
 

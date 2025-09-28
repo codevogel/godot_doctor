@@ -1,10 +1,10 @@
 @tool
 extends Control
-class_name ValidatorDock
+class_name GodotDoctorDock
 
 @onready var error_holder: VBoxContainer = $ErrorHolder
 
-const warning_scene_path: StringName = "res://addons/validator/dock/warning/validation_warning.tscn"
+const warning_scene_path: StringName = "res://addons/godot_doctor/dock/warning/validation_warning.tscn"
 
 
 func add_to_dock(origin_node: Node, error_message: String) -> void:

@@ -1,67 +1,91 @@
 @tool
 extends EditorPlugin
 
-const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
-const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/validator/dock/validator_dock.tscn"
-const VALIDATOR_SETTINGS_PATH: String = "res://addons/validator/settings/validator_settings.tres"
-var dock: ValidatorDock
+signal validation_requested(scene_root: Node)
 
-var settings: ValidatorSettings:
+const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
+const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
+const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
+
+var _dock: GodotDoctorDock
+
+## Lazy-loaded settings
+var settings: GodotDoctorSettings:
 	get:
 		if not settings:
-			settings = load(VALIDATOR_SETTINGS_PATH) as ValidatorSettings
+			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
 
+## Called when we enable the plugin
 func _enable_plugin() -> void:
 	_print_debug("Enabling plugin...")
+	# We don't really have any globals to load yet, but this is where we would do it.
 
 
+## Called when we disable the plugin
 func _disable_plugin() -> void:
 	_print_debug("Disabling plugin...")
 
 
+## Initializes the plugin by connecting signals and adding the dock to the editor.
 func _enter_tree():
 	_print_debug("Entering tree...")
 	_connect_signals()
-	dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as ValidatorDock
-	add_control_to_dock(DOCK_SLOT_LEFT_UL, dock)
+	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
+	add_control_to_dock(DOCK_SLOT_LEFT_UL, _dock)
 
 
+## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
 	_print_debug("Exiting tree...")
 	_disconnect_signals()
 	_remove_dock()
 
 
+## Connects all necessary signals for the plugin to function.
 func _connect_signals():
 	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
+	validation_requested.connect(_on_validation_requested)
 
 
+## Disconnects all connected signals to avoid dangling connections.
 func _disconnect_signals():
 	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
+	if validation_requested.is_connected(_on_validation_requested):
+		validation_requested.disconnect(_on_validation_requested)
 
 
+## Removes the dock from the editor and frees it.
 func _remove_dock():
-	remove_control_from_docks(dock)
-	dock.free()
+	remove_control_from_docks(_dock)
+	_dock.free()
 
 
+## Called when a scene is saved.
+## Emits the validation_requested signal with the current edited scene root.
 func _on_scene_saved(file_path: String) -> void:
 	_print_debug("Scene saved: %s" % file_path)
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
 	if not is_instance_valid(current_edited_scene_root):
 		_print_debug("No current edited scene root. Skipping validation.")
 		return
+	validation_requested.emit(current_edited_scene_root)
 
-	dock.clear_errors()
 
-	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(current_edited_scene_root)
+## Handles the validation request by finding all nodes to validate and validating them.
+func _on_validation_requested(scene_root: Node) -> void:
+	# Clear previous errors
+	_dock.clear_errors()
+
+	# Find all nodes to validate
+	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
 	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
+	# Validate each node
 	for node: Node in nodes_to_validate:
 		_validate_node(node)
 
@@ -71,17 +95,25 @@ func _on_scene_saved(file_path: String) -> void:
 func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 	var nodes_to_validate: Array = []
 
+	# Only add nodes that implement the validation method
 	if node.has_method(VALIDATING_METHOD_NAME):
 		nodes_to_validate.append(node)
 
-	for child in node.get_children():
+	# Add their children too, if any
+	var children: Array[Node] = node.get_children()
+	for child in children:
 		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
 	return nodes_to_validate
 
 
+## Validates a single node by calling its validation method and processing the results.
+## Expects only nodes that are already confirmed to implement the VALIDATING_METHOD_NAME method.
 func _validate_node(node: Node) -> void:
 	_print_debug("Validating node: %s" % node.name)
 	var validation_target: Object = node
+
+	# Depending on whether the validation target is marked as @tool or not,
+	# we may need to create a new instance of the script to call the method on.
 	validation_target = _make_instance_from_placeholder(node)
 
 	# Now call the method on the appropriate target (the original node if @tool,
@@ -90,34 +122,40 @@ func _validate_node(node: Node) -> void:
 		_print_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
 		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
 		_print_debug("Generated validation conditions: %s" % [generated_conditions])
+		# ValidationResult processes the conditions upon instantiation.
 		var validation_result = ValidationResult.new(generated_conditions)
+		# Process the resulting errors
 		for error in validation_result.errors:
-			_print_debug("Validation error in node %s: %s" % [node.name, error])
-			dock.add_to_dock(node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error])
-
+			_print_debug("Found error in node %s: %s" % [node.name, error])
+			_print_debug("Adding error to dock...")
+			# Push the warning to the dock, passing the original node so the user can locate it.
+			_dock.add_to_dock(node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error])
 	else:
+		# This should never happen, since we filtered for nodes with the method earlier,
+		# but just in case we misused the function, log an error.
 		push_error(
 			(
-				"Validation target %s does not have method %s."
+				"_validate_node called on %s, but it didn't have the validation method (%s)."
 				% [validation_target.name, VALIDATING_METHOD_NAME]
 			)
 		)
 
 	# If we created a temporary instance, we should free it.
 	if validation_target != node and is_instance_valid(validation_target):
-		# If the new instance is a Node, you'd usually want to use queue_free().
-		# However, since this is in the editor and not part of the scene tree,
-		# simply using free() is faster and appropriate.
 		validation_target.free()
 
 
+## If the original node is a placeholder for a non-@tool script, create a new instance of the script
+## and copy over the properties and children from the original node.
+## If the original node is a @tool script or has no script, return the original node
 func _make_instance_from_placeholder(original_node: Node) -> Object:
 	var script: Script = original_node.get_script()
 	var is_tool_script: bool = script and script.is_tool()
 
 	if not (script and not is_tool_script):
 		# If there's no script, or if it's a @tool script, return the original node.
-		# (The non-placeholder instance doesn't matter or already exists)
+		# (The non-placeholder instance doesn't matter, sine we won't be validating it anyway,
+		# or already exists, because it is a @tool script.)
 		return original_node
 
 	# Create a new instance of the script
@@ -131,12 +169,14 @@ func _make_instance_from_placeholder(original_node: Node) -> Object:
 	return new_instance
 
 
+## Copies all editable properties from one node to another.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
 	for prop in from_node.get_property_list():
-		if prop.usage & PROPERTY_USAGE_EDITOR:  # Only copy editable properties
+		if prop.usage & PROPERTY_USAGE_EDITOR:
 			to_node.set(prop.name, from_node.get(prop.name))
 
 
+## Prints a debug message if debug prints are enabled in settings.
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
-		print("[VALIDATOR] %s" % message)
+		print("[GODOT DOCTOR] %s" % message)

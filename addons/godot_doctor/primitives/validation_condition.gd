@@ -17,7 +17,7 @@ func _init(callable: Callable, error_message: String) -> void:
 
 ## Evaluates the callable with the provided arguments.
 ## Returns either a `bool` or an `Array` of nested `ValidationConditions`.
-## If the callable does not return a `bool` or an `Array` of `Validation
+## If the callable does not return a `bool` or an `Array` of `GodotDoctor
 ## Conditions`, an error will be pushed and `null` will be returned.
 func evaluate(args: Array = []) -> Variant:
 	var result: Variant = callable.callv(args)

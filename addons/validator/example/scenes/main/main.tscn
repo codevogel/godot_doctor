@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://r0xf35tatbjb"]
+
+[ext_resource type="Script" uid="uid://blb05jjtf8b08" path="res://addons/validator/example/scenes/main/my_script.gd" id="1_fyvgu"]
+[ext_resource type="Script" uid="uid://nw6w8ag3p77e" path="res://addons/validator/example/scenes/main/my_tool.gd" id="2_2qtfh"]
+[ext_resource type="PackedScene" uid="uid://bte3a03b4bl36" path="res://addons/validator/example/scenes/main/my_scene.tscn" id="3_vx26w"]
+
+[node name="Main" type="Node"]
+
+[node name="MyNode" type="Node" parent="."]
+script = ExtResource("1_fyvgu")
+
+[node name="MyToolNode" type="Node" parent="."]
+script = ExtResource("2_2qtfh")
+my_int = 12
+metadata/_custom_type_script = "uid://nw6w8ag3p77e"
+
+[node name="MySceneType" parent="." instance=ExtResource("3_vx26w")]

@@ -1,4 +1,4 @@
-extends Control
+extends Node
 class_name MySceneType
 
 @onready var my_node_path_node: Node = $MyNodePathNode

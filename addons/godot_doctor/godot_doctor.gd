@@ -22,6 +22,9 @@ func _enable_plugin() -> void:
 	_print_debug("Enabling plugin...")
 	# We don't really have any globals to load yet, but this is where we would do it.
 
+	if settings.show_welcome_dialog:
+		_show_welcome_dialog()
+
 
 ## Called when we disable the plugin
 func _disable_plugin() -> void:
@@ -45,6 +48,26 @@ func _exit_tree():
 	_disconnect_signals()
 	_remove_dock()
 	_push_toast("Godot Doctor unloaded.", 0)
+
+
+## Shows a welcome dialog to the user.
+func _show_welcome_dialog():
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "Godot Doctor"
+	dialog.dialog_text = ""
+	var vbox: VBoxContainer = VBoxContainer.new()
+	dialog.add_child(vbox)
+	var label: Label = Label.new()
+	label.text = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
+	vbox.add_child(label)
+	var link_button: LinkButton = LinkButton.new()
+	link_button.text = "GitHub Repository"
+	link_button.uri = "https://github.com/codevogel/godot-doctor"
+	vbox.add_child(link_button)
+
+	get_editor_interface().get_base_control().add_child(dialog)
+	dialog.exclusive = false
+	dialog.popup_centered()
 
 
 ## Connects all necessary signals for the plugin to function.

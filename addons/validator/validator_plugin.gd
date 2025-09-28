@@ -63,56 +63,7 @@ func _on_scene_saved(file_path: String) -> void:
 	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
 	for node: Node in nodes_to_validate:
-		_print_debug("Calling %s on node: %s" % [VALIDATING_METHOD_NAME, node.name])
-
-		var validation_target: Object = node
-		var script: Script = node.get_script()
-		var is_tool_script: bool = script and script.is_tool()
-
-		# Check if the script is NOT in tool mode (i.e., it's a placeholder).
-		if script and not is_tool_script:
-			# If the script is NOT a tool script, the node is a placeholder.
-			# We must create a new instance of the script to call its method.
-			# This new instance will run in tool mode because it's being created
-			# within an `@tool` context
-			var new_instance: Node = script.new()
-
-			# Copy properties (like the exported 'my_other_node') from the
-			# scene placeholder node to the new validation instance.
-			for prop in node.get_property_list():
-				if prop.usage & PROPERTY_USAGE_EDITOR:  # Only copy editable properties
-					new_instance.set(prop.name, node.get(prop.name))
-
-			# Set the validation target to the new, fully-initialized instance
-			validation_target = new_instance
-
-		# Now call the method on the appropriate target (the original node if @tool,
-		# or the new instance if non-@tool).
-		if validation_target.has_method(VALIDATING_METHOD_NAME):
-			# The script is loaded, and method call should now work.
-			var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-			_print_debug("Generated validation conditions: %s" % [generated_conditions])
-			var validation_result = ValidationResult.new(generated_conditions)
-			for error in validation_result.errors:
-				_print_debug("Validation error in node %s: %s" % [node.name, error])
-				dock.add_to_dock(
-					node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error]
-				)
-
-		else:
-			push_error(
-				(
-					"Validation target %s does not have method %s."
-					% [validation_target.name, VALIDATING_METHOD_NAME]
-				)
-			)
-
-		# If we created a temporary instance, we should free it.
-		if validation_target != node and is_instance_valid(validation_target):
-			# If the new instance is a Node, you'd usually want to use queue_free().
-			# However, since this is in the editor and not part of the scene tree,
-			# simply using free() is faster and appropriate.
-			validation_target.free()
+		_validate_node(node)
 
 
 ## Finds all nodes in the tree that implement the VALIDATING_METHOD_NAME method recursively.
@@ -126,6 +77,64 @@ func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 	for child in node.get_children():
 		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
 	return nodes_to_validate
+
+
+func _validate_node(node: Node) -> void:
+	_print_debug("Validating node: %s" % node.name)
+	var validation_target: Object = node
+	validation_target = _make_instance_from_placeholder(node)
+
+	# Now call the method on the appropriate target (the original node if @tool,
+	# or the new instance if non-@tool).
+	if validation_target.has_method(VALIDATING_METHOD_NAME):
+		_print_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
+		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
+		_print_debug("Generated validation conditions: %s" % [generated_conditions])
+		var validation_result = ValidationResult.new(generated_conditions)
+		for error in validation_result.errors:
+			_print_debug("Validation error in node %s: %s" % [node.name, error])
+			dock.add_to_dock(node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error])
+
+	else:
+		push_error(
+			(
+				"Validation target %s does not have method %s."
+				% [validation_target.name, VALIDATING_METHOD_NAME]
+			)
+		)
+
+	# If we created a temporary instance, we should free it.
+	if validation_target != node and is_instance_valid(validation_target):
+		# If the new instance is a Node, you'd usually want to use queue_free().
+		# However, since this is in the editor and not part of the scene tree,
+		# simply using free() is faster and appropriate.
+		validation_target.free()
+
+
+func _make_instance_from_placeholder(original_node: Node) -> Object:
+	var script: Script = original_node.get_script()
+	var is_tool_script: bool = script and script.is_tool()
+
+	if not (script and not is_tool_script):
+		# If there's no script, or if it's a @tool script, return the original node.
+		# (The non-placeholder instance doesn't matter or already exists)
+		return original_node
+
+	# Create a new instance of the script
+	var new_instance: Node = script.new()
+
+	# Duplicate the children from the original node to the new instance
+	for child in original_node.get_children():
+		new_instance.add_child(child.duplicate())
+
+	_copy_properties(original_node, new_instance)
+	return new_instance
+
+
+func _copy_properties(from_node: Node, to_node: Node) -> void:
+	for prop in from_node.get_property_list():
+		if prop.usage & PROPERTY_USAGE_EDITOR:  # Only copy editable properties
+			to_node.set(prop.name, from_node.get(prop.name))
 
 
 func _print_debug(message: String) -> void:

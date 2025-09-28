@@ -2,6 +2,11 @@
 
 A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
 
+## Quickstart 🚀 
+
+1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
+2. Enable the plugin in Project Settings > Plugins
+
 ## Table of Contents
 - [What is Godot Doctor?](#what-is-godot-doctor)
 - [Why Use Godot Doctor?](#why-use-godot-doctor)

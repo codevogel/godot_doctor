@@ -10,4 +10,6 @@ script = ExtResource("1_fyvgu")
 
 [node name="MyToolNode" type="Node" parent="."]
 script = ExtResource("2_2qtfh")
+my_int = 12
+my_max_int = null
 metadata/_custom_type_script = "uid://nw6w8ag3p77e"

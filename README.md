@@ -25,6 +25,8 @@ A powerful scene validation plugin for Godot that provides a cleaner, more maint
 - [Examples](#examples)
 - [Installation](#installation)
 - [License](#license)
+	- [Attribution](#attribution)
+- [Contributing, Bug Reports & Feature Requests](#contributing-bug-reports--feature-requests)
 
 ## What is Godot Doctor?
 
@@ -155,3 +157,12 @@ For detailed examples and common validation patterns, see [the examples README](
 ## License
 
 Godot Doctor is released under the MIT License. See the LICENSE file for details.
+
+### Attribution
+
+If you end up using Godot Doctor in your project, a line in your credits would be very much appreciated! 🐦
+
+## Contributing, Bug Reports & Feature Requests
+
+Godot Doctor is open-source and welcomes any contributions!
+Feel free to open issues or submit pull requests on [GitHub](https://github.com/codevogel/godot-doctor/).

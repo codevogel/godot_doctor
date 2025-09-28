@@ -10,6 +10,13 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 
 ### 🏷️ **No `@tool` Required**
 Unlike `_get_configuration_warnings()`, Godot Doctor works without requiring the `@tool` annotation on your scripts.
+This means that you no longer have to muddy up your gameplay code with editor-specific logic, such as:
+
+| Traditional `_get_configuration_warnings()` | Godot Doctor Approach |
+|---|---|
+| ```gdscript<br>@tool<br>extends Node<br>class_name MyNode<br><br>@export var my_button: Button<br><br>func _ready():<br>   my_button.pressed.connect(_on_button_pressed)<br><br>func _get_configuration_warnings():<br>   var errors: PackedStringArray = []<br>   if not my_button:<br>      errors.append("my_button is not assigned!")<br>   return errors<br><br>func _on_button_pressed():<br>   # do something<br><br>func _notification(what: int) -> void:<br>   match what:<br>      NOTIFICATION_EDITOR_POST_SAVE:<br>            update_configuration_warnings()<br>``` | ```gdscript<br>extends Node<br>class_name MyNode<br><br>@export var my_button: Button<br><br>func _ready():<br>   my_button.pressed.connect(_on_button_pressed)<br><br>func _get_validation_conditions() -> Array[ValidationCondition]:<br>   return [<br>      ValidationCondition.simple(<br>         my_button != null,<br>         "my_button is not assigned!"<br>      )<br>   ]<br><br>func _on_button_pressed():<br>   # do something<br>``` |
+
+
 
 ### 🧪 **Test-Driven Validation**
 Write validation logic that resembles unit tests rather than procedural warning generators. This encourages:

@@ -1,4 +1,4 @@
-# Godot Doctor 🩺
+# Godot Doctor 👨🏻‍⚕️🩺 
 
 A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
 
@@ -12,70 +12,11 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 Unlike [`_get_configuration_warnings()`](https://docs.godotengine.org/en/4.5/classes/class_node.html#class-node-private-method-get-configuration-warnings), Godot Doctor works without requiring the [`@tool`](https://docs.godotengine.org/en/4.5/tutorials/plugins/running_code_in_the_editor.html#what-is-tool) annotation on your scripts.
 This means that you no longer have to worry about your gameplay code being muddied by editor-specific logic.
 
-So this:
+See the difference for yourself:
 
-```gdscript
-@tool
-extends Node
-class_name MyNode
+![Before and After Godot Doctor](./github-assets/png/before-after.png)
 
-@export var my_button: Button
-
-func _ready():
-   my_button.pressed.connect(_on_button_pressed)
-
-
-func _get_configuration_warnings() -> PackedStringArray:
-   var errors: PackedStringArray = []
-   if not my_button:
-      errors.append("my_button is not assigned!")
-   return errors
-
-
-func _on_button_pressed():
-   # do something
-
-
-func _process(delta: float) -> void:
-	if Engine.is_editor_hint():
-		return
-	# game logic here
-
-
-func _notification(what: int) -> void:
-   match what:
-      NOTIFICATION_EDITOR_POST_SAVE:
-            update_configuration_warnings()
-```
-
-Now just becomes this:
-
-```gdscript
-extends Node
-class_name MyNode
-
-@export var my_button: Button
-
-
-func _ready():
-   my_button.pressed.connect(_on_button_pressed)
-
-
-func _get_validation_conditions() -> Array[ValidationCondition]:
-	return [
-		ValidationCondition.simple(is_instance_valid(my_button), "my_button is not assigned!")
-	]
-
-
-func _process(delta: float) -> void:
-	# game logic here
-
-
-func _on_button_pressed():
-   # do something
-```
-
-Allowing you to keep your gameplay code clean and focused!
+Our gameplay code statys much more clean and focused!
 
 ### ⚙️Validate Nodes AND Resources 
 
@@ -100,7 +41,7 @@ Errors are displayed in a dedicated dock, and you can click on them to navigate 
 
 Where `_get_configuration_warnings()` makes you write code that generates strings, Godot Doctor lets you design your validation logic separately from the error messages, making it easier to read and maintain.
 
-## Validation Syntax
+## Syntax
 
 ### ValidationCondition
 

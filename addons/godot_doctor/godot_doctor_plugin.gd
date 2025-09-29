@@ -39,7 +39,7 @@ func _enter_tree():
 	add_control_to_dock(
 		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
 	)
-	_push_toast("Godot Doctor loaded.", 0)
+	_push_toast("Plugin loaded.", 0)
 
 
 ## Cleans up the plugin by disconnecting signals and removing the dock.
@@ -47,7 +47,7 @@ func _exit_tree():
 	_print_debug("Exiting tree...")
 	_disconnect_signals()
 	_remove_dock()
-	_push_toast("Godot Doctor unloaded.", 0)
+	_push_toast("Plugin unloaded.", 0)
 
 
 ## Shows a welcome dialog to the user.

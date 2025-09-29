@@ -32,7 +32,7 @@ func evaluate(args: Array = []) -> Variant:
 					"ValidationCondition Callable returned an array, but not all items are ValidationCondition instances."
 				)
 				return false
-		return result
+		return result as Array[ValidationCondition]
 	push_error(
 		"ValidationCondition Callable did not return a boolean or an array of ValidationConditions."
 	)
@@ -46,3 +46,78 @@ func evaluate(args: Array = []) -> Variant:
 ## useful for skipping the callable syntax.
 static func simple(result: bool, error_message: String) -> ValidationCondition:
 	return ValidationCondition.new(func(): return result, error_message)
+
+
+static func scene_is_of_type(
+	packed_scene: PackedScene, expected_type: Variant, variable_name: String = "Packed Scene"
+) -> ValidationCondition:
+	return ValidationCondition.new(
+		func() -> Variant:
+			if packed_scene == null:
+				return [ValidationCondition.simple(false, "%s is null." % variable_name)]
+
+			var class_result := _get_class_name_from_packed_scene(packed_scene)
+			var expected_name: StringName = expected_type.get_global_name()
+
+			if not class_result.has_script:
+				return [
+					ValidationCondition.simple(
+						false,
+						(
+							"%s has no script attached. (Expecting: %s)"
+							% [variable_name, expected_name]
+						)
+					)
+				]
+
+			if not class_result.has_class_name:
+				return [
+					(
+						ValidationCondition
+						. simple(
+							false,
+							(
+								"%s has a script attached, but it bears no 'class_name'. (Expecting: %s)"
+								% [variable_name, expected_name]
+							)
+						)
+					)
+				]
+
+			var found_name := class_result.found_class_name
+			if found_name != expected_name and not _inherits_from(found_name, expected_name):
+				return [
+					ValidationCondition.simple(
+						false,
+						(
+							"%s script type (%s) is a mismatch. (Expecting: %s)"
+							% [variable_name, found_name, expected_name]
+						)
+					)
+				]
+			return true,
+		""
+	)
+
+
+static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> ClassNameQueryResult:
+	var state := packed_scene.get_state()
+	for i in state.get_node_property_count(0):
+		if state.get_node_property_name(0, i) == &"script":
+			var script: Script = state.get_node_property_value(0, i)
+			return ClassNameQueryResult.new(true, script.get_global_name())
+	return ClassNameQueryResult.new(false)
+
+
+static func _inherits_from(child_class_name: StringName, parent_class_name: StringName) -> bool:
+	if ClassDB.class_exists(child_class_name):
+		return child_class_name in ClassDB.get_inheriters_from_class(parent_class_name)
+
+	for class_info in ProjectSettings.get_global_class_list():
+		if class_info.class == child_class_name:
+			return (
+				class_info.base == parent_class_name
+				or _inherits_from(class_info.base, parent_class_name)
+			)
+
+	return false

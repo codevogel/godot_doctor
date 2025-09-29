@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://byl5nhml5u02o"]
+
+[ext_resource type="Script" uid="uid://gtoc68xmk12s" path="res://addons/godot_doctor/examples/scenes/type_of_packed_scene_example/my_scene_instantiator.gd.gd" id="1_k6bxc"]
+[ext_resource type="PackedScene" uid="uid://cp6xqj7wfrkhu" path="res://addons/godot_doctor/examples/scenes/type_of_packed_scene_example/scene_no_script.tscn" id="2_7xovq"]
+
+[node name="VerifyTypeOfPackedSceneExample" type="Node"]
+
+[node name="MySceneInstantiator" type="Node" parent="."]
+script = ExtResource("1_k6bxc")
+scene_of_foo_type = ExtResource("2_7xovq")

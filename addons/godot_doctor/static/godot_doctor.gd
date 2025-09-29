@@ -16,7 +16,15 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Packe
 			TYPE_ARRAY:
 				# The result of the evaluation is an array of nested ValidationConditions,
 				# which need to be evaluated recursively.
-				var nested_conditions: Array[ValidationCondition] = result
+				# Since it is returned as a Variant, we first need to ensure that it is indeed an Array[ValidationCondition]
+				var nested_conditions: Array[ValidationCondition] = []
+				for expected_condition in result:
+					if expected_condition is not ValidationCondition:
+						push_error(
+							"Nested ValidationCondition array contained a different type than ValidationCondition"
+						)
+					nested_conditions.append(expected_condition as ValidationCondition)
+
 				var nested_errors: PackedStringArray = evaluate_conditions(nested_conditions)
 				errors.append_array(nested_errors)
 			_:

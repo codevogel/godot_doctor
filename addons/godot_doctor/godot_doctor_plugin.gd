@@ -108,6 +108,31 @@ func _on_validation_requested(scene_root: Node) -> void:
 	# Clear previous errors
 	_dock.clear_errors()
 
+	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
+	if edited_object is Resource:
+		var edited_resource: Resource = edited_object as Resource
+		if edited_resource.has_method(VALIDATING_METHOD_NAME):
+			var generated_conditions: Array[ValidationCondition] = edited_resource.call(
+				VALIDATING_METHOD_NAME
+			)
+			var validation_result: ValidationResult = ValidationResult.new(generated_conditions)
+			if validation_result.errors.size() > 0:
+				_push_toast(
+					(
+						"Found %s configuration warning(s) in %s."
+						% [validation_result.errors.size(), edited_resource.resource_path]
+					),
+					1
+				)
+			for error in validation_result.errors:
+				var name: String = edited_resource.resource_path.split("/")[-1]
+				_print_debug("Found error in resource %s: %s" % [name, error])
+				_print_debug("Adding error to dock...")
+				# Push the warning to the dock, passing the original node so the user can locate it.
+				_dock.add_resource_warning_to_dock(
+					edited_resource, "[b]Configuration warning in %s:[/b]\n%s" % [name, error]
+				)
+
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
 	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())

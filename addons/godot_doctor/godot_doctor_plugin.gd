@@ -50,6 +50,22 @@ func _exit_tree():
 	_push_toast("Plugin unloaded.", 0)
 
 
+## Connects all necessary signals for the plugin to function.
+func _connect_signals():
+	_print_debug("Connecting signals...")
+	scene_saved.connect(_on_scene_saved)
+	validation_requested.connect(_on_validation_requested)
+
+
+## Disconnects all connected signals to avoid dangling connections.
+func _disconnect_signals():
+	_print_debug("Disconnecting signals...")
+	if scene_saved.is_connected(_on_scene_saved):
+		scene_saved.disconnect(_on_scene_saved)
+	if validation_requested.is_connected(_on_validation_requested):
+		validation_requested.disconnect(_on_validation_requested)
+
+
 ## Shows a welcome dialog to the user.
 func _show_welcome_dialog():
 	var dialog: AcceptDialog = AcceptDialog.new()
@@ -68,22 +84,6 @@ func _show_welcome_dialog():
 	get_editor_interface().get_base_control().add_child(dialog)
 	dialog.exclusive = false
 	dialog.popup_centered()
-
-
-## Connects all necessary signals for the plugin to function.
-func _connect_signals():
-	_print_debug("Connecting signals...")
-	scene_saved.connect(_on_scene_saved)
-	validation_requested.connect(_on_validation_requested)
-
-
-## Disconnects all connected signals to avoid dangling connections.
-func _disconnect_signals():
-	_print_debug("Disconnecting signals...")
-	if scene_saved.is_connected(_on_scene_saved):
-		scene_saved.disconnect(_on_scene_saved)
-	if validation_requested.is_connected(_on_validation_requested):
-		validation_requested.disconnect(_on_validation_requested)
 
 
 ## Removes the dock from the editor and frees it.

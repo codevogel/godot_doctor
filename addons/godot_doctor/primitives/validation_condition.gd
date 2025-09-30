@@ -48,6 +48,10 @@ static func simple(result: bool, error_message: String) -> ValidationCondition:
 	return ValidationCondition.new(func(): return result, error_message)
 
 
+## Returns a validation condition that checks whether the `packed_scene` is of `expected_type`.
+## `packed_scene` should be the scene we want to validate.
+## `expected_type` should be the type of the script attached to the root node of the `packed_scene`.
+## `variable_name` is the name of the variable name used for the `packed_scene`, and is "Packed Scene" by default.
 static func scene_is_of_type(
 	packed_scene: PackedScene, expected_type: Variant, variable_name: String = "Packed Scene"
 ) -> ValidationCondition:

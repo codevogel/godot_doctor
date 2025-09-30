@@ -164,7 +164,9 @@ func _validate_node(node: Node) -> void:
 			_print_debug("Found error in node %s: %s" % [node.name, error])
 			_print_debug("Adding error to dock...")
 			# Push the warning to the dock, passing the original node so the user can locate it.
-			_dock.add_to_dock(node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error])
+			_dock.add_node_warning_to_dock(
+				node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error]
+			)
 	else:
 		# This should never happen, since we filtered for nodes with the method earlier,
 		# but just in case we misused the function, log an error.

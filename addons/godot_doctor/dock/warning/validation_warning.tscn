@@ -1,7 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://c0itjwae6omh2"]
+[gd_scene load_steps=4 format=3 uid="uid://c0itjwae6omh2"]
 
-[ext_resource type="Script" uid="uid://b02hiabygkl3e" path="res://addons/godot_doctor/dock/warning/validation_warning.gd" id="1_8ys46"]
-[ext_resource type="Texture2D" uid="uid://pcgftp54pvrf" path="res://addons/godot_doctor/assets/icon/triangle-alert.svg" id="1_j8gmh"]
+[ext_resource type="Texture2D" uid="uid://pcgftp54pvrf" path="res://addons/godot_doctor/assets/icon/triangle-alert.svg" id="1_ew3ci"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rylcf"]
 content_margin_left = 4.0
@@ -17,7 +16,7 @@ corner_detail = 5
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8ys46"]
 
-[node name="ValidationWarning" type="MarginContainer" node_paths=PackedStringArray("icon", "label", "button")]
+[node name="ValidationWarning" type="MarginContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -26,11 +25,6 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 focus_mode = 2
-script = ExtResource("1_8ys46")
-icon = NodePath("MarginContainer/HBoxContainer/TextureRect")
-label = NodePath("MarginContainer/HBoxContainer/RichTextLabel")
-button = NodePath("Button")
-metadata/_custom_type_script = "uid://b02hiabygkl3e"
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 2
@@ -54,7 +48,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 4
 mouse_filter = 2
-texture = ExtResource("1_j8gmh")
+texture = ExtResource("1_ew3ci")
 expand_mode = 1
 
 [node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/HBoxContainer"]

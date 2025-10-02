@@ -1,6 +1,6 @@
 # Godot Doctor 👨🏻‍⚕️🩺 
 
-A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
+A powerful validation plugin for Godot that catches errors before they reach runtime. Validate scenes, nodes, and resources using a declarative, test-driven approach. No `@tool` required!
 
 <img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github_assets/png/godot_doctor_logo.png" width="256"/>
 

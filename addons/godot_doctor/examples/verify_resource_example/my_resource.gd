@@ -1,10 +1,16 @@
+## A simple Resource with exported variables and validation conditions.
+## Used by GodotDoctor to demonstrate resource validation.
 @tool
 extends Resource
 class_name MyResource
 
+## A string that must not be empty.
 @export var my_string: String
+## An integer that must be between `my_min_int` and `my_max_int`.
 @export var my_int: int = -1
+## The maximum allowed value for `my_int`.
 @export var my_max_int: int = 10
+## The minimum allowed value for `my_int`.
 @export var my_min_int: int = 0
 
 

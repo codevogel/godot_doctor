@@ -1,6 +1,9 @@
+## A node that instantiates a PackedScene and verifies its type.
+## Used by GodotDoctor to demonstrate type verification of PackedScenes.
 extends Node
 class_name SceneInstantiator
 
+## This is a PackedScene that should have a root node of type `Foo`.
 @export var scene_of_foo_type: PackedScene
 
 

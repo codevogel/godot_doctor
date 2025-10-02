@@ -1,3 +1,6 @@
+## A utility class for evaluating validation conditions and collecting error messages.
+## This class provides a static method to evaluate a list of ValidationCondition instances
+## Used by Godot Doctor to check for various conditions in a Godot project.
 class_name GodotDoctor
 
 

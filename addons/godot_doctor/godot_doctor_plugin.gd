@@ -6,19 +6,26 @@
 @tool
 extends EditorPlugin
 
+## Emitted when a validation is requested, passing the root node of the current edited scene.
 signal validation_requested(scene_root: Node)
 
+## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
+## The path of the dock scene used to display validation warnings.
 const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
+## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 
-## Lazy-loaded settings
+## A Resource that holds the settings for the Godot Doctor plugin.
 var settings: GodotDoctorSettings:
 	get:
+		# This may be used before @onready
+		# so we lazy load it here if needed.
 		if not settings:
 			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
+## The dock for displaying validation results.
 var _dock: GodotDoctorDock
 
 
@@ -248,12 +255,12 @@ func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
 
-
+## Pushes a toast message to the editor toaster if enabled in settings.
 func _push_toast(message: String, severity: int = 0) -> void:
 	if settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 
-
+## Maps the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:
 	match dock_slot:
 		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UL:

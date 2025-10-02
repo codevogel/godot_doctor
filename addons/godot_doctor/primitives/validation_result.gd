@@ -1,3 +1,7 @@
+## A class that holds the result of a validation operation.
+## Evaluates a set of ValidationCondition upon initialization,
+## and stores any resulting error messages.
+## Used by GodotDoctor to report validation results.
 extends RefCounted
 class_name ValidationResult
 

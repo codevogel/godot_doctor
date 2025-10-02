@@ -1,8 +1,13 @@
+## A script that demonstrates how to validate exported variables.
+## Used by GodotDoctor to show how to validate exported variables.
 extends Node
 class_name ScriptWithExportsExample
 
+## A string that must not be empty.
 @export var my_string: String = ""
+## An integer that must be greater than zero.
 @export var my_int: int = -42
+## A Node that must be valid and named "ExpectedNodeName".
 @export var my_node: Node
 
 

@@ -1,3 +1,8 @@
+## Godot Doctor - A plugin to validate node and resource configurations in the Godot Editor.
+## Author: CodeVogel (https://codevogel.com/)
+## Repository: https://github.com/codevogel/godot-doctor
+## Report issues or feature requests at https://github.com/codevogel/godot-doctor/issues
+## License: MIT
 @tool
 extends EditorPlugin
 

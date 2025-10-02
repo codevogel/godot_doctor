@@ -2,7 +2,7 @@
 
 A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
 
-<img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github-assets/png/godot_doctor_logo.png" width="256"/>
+<img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github_assets/png/godot_doctor_logo.png" width="256"/>
 
 ## Quickstart 🚀 
 
@@ -42,7 +42,7 @@ This means that you no longer have to worry about your gameplay code being muddi
 
 See the difference for yourself:
 
-![Before and After Godot Doctor](./github-assets/png/before-after.png)
+![Before and After Godot Doctor](./github_assets/png/before_after.png)
 
 Our gameplay code stays much more clean and focused!
 
@@ -50,7 +50,7 @@ Our gameplay code stays much more clean and focused!
 Validations run automatically when you save scenes, providing immediate feedback during development.
 Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
 
-![Godot Doctor Example Gif](./github-assets/gif/doctor-example.gif)
+![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
 
 ### ⚙️Validate Nodes AND Resources 
 

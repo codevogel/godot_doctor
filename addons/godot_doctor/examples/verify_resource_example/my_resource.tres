@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="MyResource" load_steps=2 format=3 uid="uid://faycnvedrqc8"]
+
+[ext_resource type="Script" uid="uid://54xxfckri1l0" path="res://addons/godot_doctor/examples/verify_resource_example/my_resource.gd" id="1_2d55j"]
+
+[resource]
+script = ExtResource("1_2d55j")
+metadata/_custom_type_script = "uid://54xxfckri1l0"

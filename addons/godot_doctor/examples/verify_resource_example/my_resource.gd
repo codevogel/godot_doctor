@@ -8,6 +8,9 @@ class_name MyResource
 @export var my_min_int: int = 0
 
 
+## Get `ValidationCondition`s for exported variables.
+## The signature is _get_validation_conditions(),
+## so the validator can report incorrect values when inspecting this resource in the inspector.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.simple(
@@ -25,5 +28,8 @@ func _get_validation_conditions() -> Array[ValidationCondition]:
 	return conditions
 
 
+## We can expose it publicly as well,
+## so we can call it from other Nodes during scene validation,
+## and return a nested array of `ValidationCondition`s
 func get_validation_conditions() -> Array[ValidationCondition]:
 	return _get_validation_conditions()

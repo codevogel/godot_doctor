@@ -1,11 +1,12 @@
 @tool
 extends Node
-class_name MyTool
+class_name ToolScript
 
 @export var my_int: int = 0
 @export var my_max_int: int = 100
 
 
+## Get `ValidationCondition`s for exported variables.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.simple(

@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://bhja3oqklf3um"]
-
-[ext_resource type="Script" uid="uid://cluovdgwe51m2" path="res://addons/godot_doctor/examples/scenes/type_of_packed_scene_example/no_class_name.gd" id="1_2cbiv"]
-
-[node name="SceneOfNoClassName" type="Node"]
-script = ExtResource("1_2cbiv")

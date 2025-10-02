@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="godot-doctor"
+config/name="godot_doctor"
 run/main_scene="uid://r0xf35tatbjb"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"

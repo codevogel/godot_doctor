@@ -2,7 +2,7 @@
 
 A powerful scene validation plugin for Godot that provides a cleaner, more maintainable alternative to `_get_configuration_warnings()`, that doesn't require gameplay scripts to be `@tool`.
 
-<img src="https://raw.githubusercontent.com/codevogel/godot-doctor/refs/heads/main/github-assets/png/godot-doctor-logo.png" width="256"/>
+<img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github-assets/png/godot_doctor_logo.png" width="256"/>
 
 ## Quickstart 🚀 
 
@@ -167,4 +167,4 @@ If you end up using Godot Doctor in your project, a line in your credits would b
 ## Contributing, Bug Reports & Feature Requests
 
 Godot Doctor is open-source and welcomes any contributions!
-Feel free to open issues or submit pull requests on [GitHub](https://github.com/codevogel/godot-doctor/).
+Feel free to open issues or submit pull requests on [GitHub](https://github.com/codevogel/godot_doctor/).

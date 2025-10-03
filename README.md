@@ -13,6 +13,7 @@ A powerful validation plugin for Godot that catches errors before they reach run
 - [What is Godot Doctor?](#what-is-godot-doctor)
 - [Why Use Godot Doctor?](#why-use-godot-doctor)
   - [🏷️ No `@tool` Required](#-no-tool-required)
+  - [🎬 Verify type of PackedScene](#-verify-type-of-packedscene)
   - [🔄 Automatic Scene Validation](#-automatic-scene-validation)
   - [⚙️ Validate Nodes AND Resources](#️-validate-nodes-and-resources)
   - [🧪 Test-Driven Validation](#-test-driven-validation)
@@ -45,6 +46,15 @@ See the difference for yourself:
 ![Before and After Godot Doctor](./github_assets/png/before_after.png)
 
 Our gameplay code stays much more clean and focused!
+
+### Verify type of PackedScene
+Godot has a problem with `PackedScene` type safety. [We can not strongly type PackedScenes](https://github.com/godotengine/godot-proposals/issues/782). This means that you may want to instantiate a scene that represents a `Friend`, but accidentally assign an `Enemy` scene instead. Oops!
+Godot Doctor can validate the type of a `PackedScene`, ensuring that the root of the scene that you are instancing is of the expected type (e.g. has a script attached of that type), before you even run the game.
+
+```gdscript
+## Example: A validation condition that checks whether the `PackedScene` variable `scene_of_foo_type` is of type `Foo`.
+ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo)
+```
 
 ### 🔄 Automatic Scene Validation
 Validations run automatically when you save scenes, providing immediate feedback during development.

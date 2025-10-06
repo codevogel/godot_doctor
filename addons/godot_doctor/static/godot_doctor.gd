@@ -35,3 +35,8 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Packe
 					"An unexpected type was returned during evaluation of a ValidationCondition."
 				)
 	return errors
+
+
+## Compares two floating-point numbers for approximate equality within a specified epsilon tolerance.
+static func is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
+	return abs(a - b) <= epsilon

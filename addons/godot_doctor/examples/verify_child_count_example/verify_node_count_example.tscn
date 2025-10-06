@@ -1,0 +1,54 @@
+[gd_scene load_steps=5 format=3 uid="uid://bullc4qncovb5"]
+
+[ext_resource type="Script" uid="uid://wqq1lqg3ukp7" path="res://addons/godot_doctor/examples/verify_child_count_example/script_with_child_count.gd" id="1_xc43y"]
+[ext_resource type="Script" uid="uid://cjyrupv3bm5ea" path="res://addons/godot_doctor/examples/verify_child_count_example/script_with_maximum_child_count.gd" id="2_vuqfe"]
+[ext_resource type="Script" uid="uid://bdvsu0fu5pn1q" path="res://addons/godot_doctor/examples/verify_child_count_example/script_with_minimum_child_count.gd" id="3_grfox"]
+[ext_resource type="Script" uid="uid://bcsciuwrtuh2g" path="res://addons/godot_doctor/examples/verify_child_count_example/script_with_no_children_allowed.gd" id="4_rei8j"]
+
+[node name="VerifyNodeCountExample" type="Node"]
+
+[node name="NodeWithChildCount" type="Node" parent="."]
+script = ExtResource("1_xc43y")
+
+[node name="Node1" type="Node" parent="NodeWithChildCount"]
+
+[node name="Node2" type="Node" parent="NodeWithChildCount"]
+
+[node name="Node3" type="Node" parent="NodeWithChildCount"]
+
+[node name="Node4" type="Node" parent="NodeWithChildCount"]
+
+[node name="Node5" type="Node" parent="NodeWithChildCount"]
+
+[node name="NodeWithMaxChildCount" type="Node" parent="."]
+script = ExtResource("2_vuqfe")
+
+[node name="Node1" type="Node" parent="NodeWithMaxChildCount"]
+
+[node name="Node2" type="Node" parent="NodeWithMaxChildCount"]
+
+[node name="Node3" type="Node" parent="NodeWithMaxChildCount"]
+
+[node name="Node4" type="Node" parent="NodeWithMaxChildCount"]
+
+[node name="Node5" type="Node" parent="NodeWithMaxChildCount"]
+
+[node name="NodeWithMinChildCount" type="Node" parent="."]
+script = ExtResource("3_grfox")
+
+[node name="Node1" type="Node" parent="NodeWithMinChildCount"]
+
+[node name="Node2" type="Node" parent="NodeWithMinChildCount"]
+
+[node name="NodeWithNoChildrenAllowed" type="Node" parent="."]
+script = ExtResource("4_rei8j")
+
+[node name="Node1" type="Node" parent="NodeWithNoChildrenAllowed"]
+
+[node name="Node2" type="Node" parent="NodeWithNoChildrenAllowed"]
+
+[node name="Node3" type="Node" parent="NodeWithNoChildrenAllowed"]
+
+[node name="Node4" type="Node" parent="NodeWithNoChildrenAllowed"]
+
+[node name="Node5" type="Node" parent="NodeWithNoChildrenAllowed"]

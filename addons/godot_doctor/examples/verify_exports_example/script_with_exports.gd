@@ -14,6 +14,8 @@ class_name ScriptWithExportsExample
 ## Get `ValidationCondition`s for exported variables.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
+		# A helper method for the condition below is ValidationCondition.string_not_empty,
+		# which does the exact same thing, but standardizes the error message.
 		ValidationCondition.simple(
 			not my_string.strip_edges().is_empty(), "my_string must not be empty"
 		),
@@ -23,4 +25,6 @@ func _get_validation_conditions() -> Array[ValidationCondition]:
 				return is_instance_valid(my_node) and my_node.name == "ExpectedNodeName",
 			"my_node must be valid and named 'ExpectedNodeName'"
 		)
+		# Note that we could also use the helper method ValidationCondition.is_instance_valid
+		# to check if my_node is valid, which would standardize the error message.
 	]

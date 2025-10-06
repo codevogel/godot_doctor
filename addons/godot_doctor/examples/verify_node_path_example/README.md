@@ -1,61 +1,66 @@
-# Example: Validating Node Paths at Design Time
+# Example: Validating Node Paths
 
-This example demonstrates Godot Doctor's ability to verify the existence of **Nodes referenced by path** (using the `$` syntax) within a scene.
+This example demonstrates **Godot Doctor’s** ability to verify the existence of **nodes referenced through `@onready` variables** (using the `$` syntax) at design time.
 
 ## The Issue
 
-In Godot, using the `$` operator (or `@onready var node: Node = get_node("Path")`) is a frequently used way to reference child nodes. This is fast and convenient, but highly vulnerable to scene refactoring:
+In Godot, it’s common to use `@onready var node = $ChildNode` or `@onready var node = get_node("Path/To/Node")` to reference nodes in your scene. This approach is fast and convenient, but it introduces a risk during scene refactoring:
 
-1.  **Renaming or Deleting a Node:** If you rename a node, or delete it entirely, any script referencing it via the old name or path will fail silently on load (the variable will be `null`), potentially leading to a crash much later when you try to use that node.
-2.  **Complex Paths:** When using deep or relative paths (e.g., `$"../AnotherNode/Target"`), it can be difficult to visually confirm that the path is correct and the target node actually exists.
+1. **Renaming or Deleting a Node:**
+   If a node’s name changes or it’s deleted, any script referencing it via the old path will load with a `null` reference. You might not notice until much later, when trying to access that node at runtime—leading to confusing crashes or errors.
+2. **Nested or Complex Paths:**
+   When you use deep paths like `$"MyParent/MyChild/MyTarget"`, it’s easy to lose track of whether the path is still valid after rearranging the scene.
 
-We do get reported errors at runtime, but it'd be nice to get these at design time, before we even run the scene.
+Godot will report runtime errors when a node reference is missing, but ideally we’d catch these problems **before** running the scene.
 
 ## The Solution
 
-Godot Doctor allows us to define checks using `ValidationCondition.simple()` that evaluate the validity of a node path at design time.
+Godot Doctor lets us define **design-time validation rules** using `ValidationCondition.simple()` or helper methods like `ValidationCondition.has_node_path()`.
 
-By placing the path checks within the `_get_validation_conditions()` method, we can instantly verify that the nodes our script depends on are present in the scene tree:
+These conditions, declared in `_get_validation_conditions()`, automatically check whether node paths referenced by your script actually exist in the scene:
 
 ```gdscript
-ValidationCondition.simple(
-    is_instance_valid($Path/To/Node), 
-    "Error message if the node is missing."
+ValidationCondition.has_node_path(
+    self,
+    "Path/To/Node",
+    "variable_name"
 )
-````
+```
 
-This way, you catch structural errors immediately after changing the scene layout.
+If the node can’t be found, Godot Doctor will report a validation error directly in the editor—helping you catch missing or renamed nodes immediately.
 
-(A general recommendation of mine would be to avoid the `$` operator for anything but the most trivial cases. `@export` does the same thing, and is less susceptible to name changes.
+*(As a general best practice, prefer using `@export` or explicit NodePath variables for anything that might move or be renamed frequently. They’re more robust than hardcoded `$` paths.)*
 
 ## This Example
 
-The `verify_node_path_example.tscn` scene contains a `Node` called `NodeWithNodePath` with the script `script_with_node_path.gd` attached. This script attempts to find two child nodes using the `$` operator:
+The scene `verify_node_path_example.tscn` contains a `Node` named `NodeWithNodePath`, with the script `script_with_node_path.gd` attached. This script references two child nodes:
 
-1.  `$MyNodePathNode` (a direct child).
-2.  `$MyNodePathNode/MyDeeperNodePathNode` (a nested child).
+1. `$MyNodePathNode` — a direct child node.
+2. `$MyNodePathNode/MyDeeperNodePathNode` — a nested child node.
 
-Let's look at the validation logic in the script:
+Here’s the validation logic from the script:
 
 ```gdscript
 func _get_validation_conditions() -> Array[ValidationCondition]:
-    # ... intentional warning logic removed for clarity ...
-    var conditions: Array[ValidationCondition] = [
-        ValidationCondition.simple(
-            is_instance_valid($MyNodePathNode), "MyNodePathNode was not found."
-        ),
-        ValidationCondition.simple(
-            is_instance_valid($MyNodePathNode/MyDeeperNodePathNode),
-            "MyDeeperNodePathNode was not found."
-        )
-    ]
-    return conditions
+	var conditions: Array[ValidationCondition] = [
+		ValidationCondition.simple(
+			has_node("MyNodePathNode"), "MyNodePathNode was not found."
+		),
+		# The below helper method does the same thing as above, but
+		# standardizes the error message.
+		ValidationCondition.has_node_path(
+			self, "MyNodePathNode/MyDeeperNodePathNode", "my_deeper_node_path_node"
+		)
+	]
+	return conditions
 ```
 
-Verifying this scene results in one error:
+When running the validation on this scene, the results are as follows:
 
-  - The check for **`$MyNodePathNode`** **passes** because the node is correctly named and located in the scene tree.
-  - The check for **`$MyNodePathNode/MyDeeperNodePathNode`** **fails**.
-      - Looking at the scene tree, the node at that location is actually named `MyWronglyNamedNode`. The script is looking for a node named `MyDeeperNodePathNode` but cannot find it, causing the check to fail.
-      - **Resolution:** Rename the `MyWronglyNamedNode` to **`MyDeeperNodePathNode`** in the Scene Dock.
-      - *Note:* The script intentionally includes a `push_warning` to explain the error setup in the editor itself, as Godot will report an error when it can't find the node during the validation process, which will happen when a reference is broken. (You could say this is already enough, but to make the experience consistent with the other validations, we include it as a ValidationWarning as well.)
+* The check for **`MyNodePathNode`** **passes**, since the node exists in the scene tree.
+* The check for **`MyNodePathNode/MyDeeperNodePathNode`** **fails**.
+
+  * Looking at the scene, the nested node is actually named `MyWronglyNamedNode`.
+    The script expects `MyDeeperNodePathNode`, so the validation correctly reports it as missing.
+  * **Resolution:** Rename `MyWronglyNamedNode` to **`MyDeeperNodePathNode`** in the Scene Dock.
+  * *Note:* Godot will already produce a warning when `$MyNodePathNode/MyDeeperNodePathNode` fails to resolve, but defining this as a `ValidationCondition` ensures the problem appears in Godot Doctor’s structured validation output—making it consistent with other checks in your project.

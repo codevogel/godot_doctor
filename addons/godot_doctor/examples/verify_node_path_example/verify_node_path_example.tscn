@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://wcfwycmxc4vu"]
 
-[ext_resource type="Script" uid="uid://n8er8khuodhg" path="res://addons/godot_doctor/examples/verify_node_path_example/script_with_node_path.gd" id="1_wnvri"]
+[ext_resource type="Script" uid="uid://biov0v1q3jwqj" path="res://addons/godot_doctor/examples/verify_node_path_example/script_with_node_path.gd" id="1_wnvri"]
 
 [node name="VerifyNodePathExample" type="Node"]
 

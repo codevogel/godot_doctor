@@ -30,17 +30,19 @@ Let's look at the validation conditions defined in `script_with_exports.gd`:
 ```gdscript
 ## Get `ValidationCondition`s for exported variables.
 func _get_validation_conditions() -> Array[ValidationCondition]:
-    return [
-        ValidationCondition.simple(
-            not my_string.strip_edges().is_empty(), "my_string must not be empty"
-        ),
-        ValidationCondition.simple(my_int > 0, "my_int must be greater than zero"),
-        ValidationCondition.new(
-            func() -> bool:
-                return is_instance_valid(my_node) and my_node.name == "ExpectedNodeName",
-            "my_node must be valid and named 'ExpectedNodeName'"
-        )
-    ]
+	return [
+		# A helper method for the condition below is ValidationCondition.string_not_empty,
+		# which does the exact same thing, but standardizes the error message.
+		ValidationCondition.simple(
+			not my_string.strip_edges().is_empty(), "my_string must not be empty"
+		),
+		ValidationCondition.simple(my_int > 0, "my_int must be greater than zero"),
+		ValidationCondition.new(
+			func() -> bool:
+				return is_instance_valid(my_node) and my_node.name == "ExpectedNodeName",
+			"my_node must be valid and named 'ExpectedNodeName'"
+		)
+	]
 ````
 
 Verifying this scene results in **three errors** because none of the default exported values meet the conditions:

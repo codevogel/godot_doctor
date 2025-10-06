@@ -19,6 +19,8 @@ class_name MyResource
 ## so the validator can report incorrect values when inspecting this resource in the inspector.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
+		# A helper method for the condition below is ValidationCondition.is_in_range_int,
+		# which does the exact same thing, but standardizes the error message.
 		ValidationCondition.simple(
 			my_int >= my_min_int and my_int <= my_max_int,
 			"my_int must be between %d and %d, but is %s." % [my_min_int, my_max_int, my_int]

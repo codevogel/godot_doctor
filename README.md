@@ -1,15 +1,16 @@
-# Godot Doctor 👨🏻‍⚕️🩺 
+# Godot Doctor 👨🏻‍⚕️🩺
 
 A powerful validation plugin for Godot that catches errors before they reach runtime. Validate scenes, nodes, and resources using a declarative, test-driven approach. No `@tool` required!
 
 <img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github_assets/png/godot_doctor_logo.png" width="256"/>
 
-## Quickstart 🚀 
+## Quickstart 🚀
 
 1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
 2. Enable the plugin in Project Settings > Plugins
 
 ## Table of Contents
+
 - [What is Godot Doctor?](#what-is-godot-doctor)
 - [Why Use Godot Doctor?](#why-use-godot-doctor)
   - [🏷️ No `@tool` Required](#no-tool-required)
@@ -28,7 +29,7 @@ A powerful validation plugin for Godot that catches errors before they reach run
 - [Examples](#examples)
 - [Installation](#installation)
 - [License](#license)
-	- [Attribution](#attribution)
+  - [Attribution](#attribution)
 - [Contributing, Bug Reports & Feature Requests](#contributing-bug-reports--feature-requests)
 
 ## What is Godot Doctor?
@@ -38,6 +39,7 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 ## Why Use Godot Doctor?
 
 ### 🏷️ **No `@tool` Required**
+
 Unlike [`_get_configuration_warnings()`](https://docs.godotengine.org/en/4.5/classes/class_node.html#class-node-private-method-get-configuration-warnings), Godot Doctor works without requiring the [`@tool`](https://docs.godotengine.org/en/4.5/tutorials/plugins/running_code_in_the_editor.html#what-is-tool) annotation on your scripts.
 This means that you no longer have to worry about your gameplay code being muddied by editor-specific logic.
 
@@ -48,6 +50,7 @@ See the difference for yourself:
 Our gameplay code stays much more clean and focused!
 
 ### Verify type of PackedScene
+
 Godot has a problem with `PackedScene` type safety. [We can not strongly type PackedScenes](https://github.com/godotengine/godot-proposals/issues/782). This means that you may want to instantiate a scene that represents a `Friend`, but accidentally assign an `Enemy` scene instead. Oops!
 Godot Doctor can validate the type of a `PackedScene`, ensuring that the root of the scene that you are instancing is of the expected type (e.g. has a script attached of that type), before you even run the game.
 
@@ -57,21 +60,31 @@ ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo)
 ```
 
 ### 🔄 Automatic Scene Validation
+
 Validations run automatically when you save scenes, providing immediate feedback during development.
 Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
 
 ![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
 
-### ⚙️Validate Nodes AND Resources 
+#### Default validation conditions
 
-Godot Doctor can not only validate nodes in your scene, but `Resource` scripts can define their own validation conditions as well. 
+Realistically, when you add any `@export` variables, you don't want them to stay unassigned. Nor do you want to `@export` a string only for it to stay empty. But we often forget to assign a value to these.
+So, new in Godot Doctor v1.1 are **default validation conditions**:
+
+Godot Doctor will validate any nodes that have scripts attached to them (and any opened resource), scan it's `@export` properties, and automatically reports on unassigned objects and empty strings, **without even needing to write a single line of validation code**!
+
+### ⚙️Validate Nodes AND Resources
+
+Godot Doctor can not only validate nodes in your scene, but `Resource` scripts can define their own validation conditions as well.
 Very useful for validating whether your resources have conflicting data (i.e. a value that is higher than the maximum value), or missing references (i.e. an empty string, or a missing texture).
 
 ### 🧪 Test-Driven Validation
+
 Godot Doctor encourages you to write validation logic that resembles unit tests rather than write code that returns strings containing warnings. This encourages:
+
 - Testable validation logic
 - Organized code
-- Better maintainability 
+- Better maintainability
 - Human-readable validation conditions
 - Separation of concerns between validation logic and error messages
 
@@ -95,7 +108,7 @@ var condition = ValidationCondition.new(
 
 ### Simple Helper Method
 
-For basic boolean validations, use the convenience `simple()` method, allowing you to skip the `func()` wrapper: 
+For basic boolean validations, use the convenience `simple()` method, allowing you to skip the `func()` wrapper:
 
 ```gdscript
 # Equivalent to the above, but more concise
@@ -105,17 +118,17 @@ var condition = ValidationCondition.simple(
 )
 ```
 
-### Reuse validation logic with Callables 
+### Reuse validation logic with Callables
 
 Using `Callables` allows you to reuse common validation methods:
 
 ```gdscript
 func _is_more_than_zero(value: int) -> bool:
-	 return value > 0
+  return value > 0
 
 var condition = ValidationCondition.simple(
-	 _is_more_than_zero(health),
-	 "Health must be greater than 0"
+  _is_more_than_zero(health),
+  "Health must be greater than 0"
 )
 ```
 
@@ -125,12 +138,12 @@ Or abstract away complex logic into separate methods:
 
 ```gdscript
 var condition = ValidationCondition.new(
-	 complex_validation_logic,
-	 "Complex validation failed"
+  complex_validation_logic,
+  "Complex validation failed"
 )
 
 func complex_validation_logic() -> bool:
-	# Complex logic here
+ # Complex logic here
 ```
 
 ### Nested Validation Conditions
@@ -139,17 +152,17 @@ Making use of variatic typing, Validation conditions can return arrays of other 
 
 ```gdscript
 ValidationCondition.new(
-			func() -> Variant:
-				if not is_instance_valid(my_resource):
-					return false
-				return my_resource.get_validation_conditions(),
-			"my_resource must be assigned."
-		)
+   func() -> Variant:
+    if not is_instance_valid(my_resource):
+     return false
+    return my_resource.get_validation_conditions(),
+   "my_resource must be assigned."
+  )
 ```
 
 ## How It Works
 
-1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes for the `_get_validation_conditions()` method
+1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes for `@export` properties and a `_get_validation_conditions()` method
 2. **Instance Creation**: For non-`@tool` scripts, temporary instances are created to run validation logic
 3. **Condition Evaluation**: Each validation condition's callable is executed
 4. **Error Reporting**: Failed conditions display their error messages in the Godot Doctor dock
@@ -164,7 +177,8 @@ For detailed examples and common validation patterns, see [the examples README](
 1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
 2. Enable the plugin in Project Settings > Plugins
 3. The Godot Doctor dock will appear in the editor's left panel
-4. Start adding `_get_validation_conditions()` methods to your scripts, then save your scenes to see validation results!
+4. `use_default_validations` is on by default in the settings resource (`addons/godot_doctor/settings/godot_doctor_settings.tres`), so it will start reporting any of the [default validations](#default-validation-conditions) as soon as you save a scene.
+5. Start adding custom validations by adding a `_get_validation_conditions()` method to your scripts, then save your scenes to see validation results!
 
 ## License
 

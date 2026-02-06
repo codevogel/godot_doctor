@@ -13,6 +13,7 @@ A powerful validation plugin for Godot that catches errors before they reach run
 
 - [What is Godot Doctor?](#what-is-godot-doctor)
 - [Why Use Godot Doctor?](#why-use-godot-doctor)
+  - [ No-code validations]
   - [🏷️ No `@tool` Required](#no-tool-required)
   - [🎬 Verify type of PackedScene](#verify-type-of-packedscene)
   - [🔄 Automatic Scene Validation](#automatic-scene-validation)
@@ -38,6 +39,13 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 
 ## Why Use Godot Doctor?
 
+### **No-code default validations**
+
+Realistically, when you add any `@export` variables, you don't want them to stay unassigned. Nor do you want to `@export` a string only for it to stay empty. But we often forget to assign a value to these.
+So, new in Godot Doctor v1.1 are **default validation conditions**:
+
+Godot Doctor will validate any nodes that have scripts attached to them (and any opened resource), scan it's `@export` properties, and automatically reports on unassigned objects and empty strings, **without even needing to write a single line of validation code**!
+
 ### 🏷️ **No `@tool` Required**
 
 Unlike [`_get_configuration_warnings()`](https://docs.godotengine.org/en/4.5/classes/class_node.html#class-node-private-method-get-configuration-warnings), Godot Doctor works without requiring the [`@tool`](https://docs.godotengine.org/en/4.5/tutorials/plugins/running_code_in_the_editor.html#what-is-tool) annotation on your scripts.
@@ -46,6 +54,10 @@ This means that you no longer have to worry about your gameplay code being muddi
 See the difference for yourself:
 
 ![Before and After Godot Doctor](./github_assets/png/before_after.png)
+
+Or how about this:
+
+![Before and After Godot Doctor](./github_assets/png/before_after_2.png)
 
 Our gameplay code stays much more clean and focused!
 
@@ -66,12 +78,7 @@ Errors are displayed in a dedicated dock, and you can click on them to navigate 
 
 ![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
 
-#### Default validation conditions
 
-Realistically, when you add any `@export` variables, you don't want them to stay unassigned. Nor do you want to `@export` a string only for it to stay empty. But we often forget to assign a value to these.
-So, new in Godot Doctor v1.1 are **default validation conditions**:
-
-Godot Doctor will validate any nodes that have scripts attached to them (and any opened resource), scan it's `@export` properties, and automatically reports on unassigned objects and empty strings, **without even needing to write a single line of validation code**!
 
 ### ⚙️Validate Nodes AND Resources
 

@@ -13,7 +13,7 @@ A powerful validation plugin for Godot that catches errors before they reach run
 
 - [What is Godot Doctor?](#what-is-godot-doctor)
 - [Why Use Godot Doctor?](#why-use-godot-doctor)
-  - [ No-code validations]
+  - [✅ No-code validations](#-no-code-default-validations)
   - [🏷️ No `@tool` Required](#no-tool-required)
   - [🎬 Verify type of PackedScene](#verify-type-of-packedscene)
   - [🔄 Automatic Scene Validation](#automatic-scene-validation)
@@ -39,7 +39,7 @@ Godot Doctor is a Godot plugin that validates your scenes and nodes using a decl
 
 ## Why Use Godot Doctor?
 
-### **No-code default validations**
+### ✅ **No-code default validations**
 
 Realistically, when you add any `@export` variables, you don't want them to stay unassigned. Nor do you want to `@export` a string only for it to stay empty. But we often forget to assign a value to these.
 So, new in Godot Doctor v1.1 are **default validation conditions**:
@@ -61,7 +61,7 @@ Or how about this:
 
 Our gameplay code stays much more clean and focused!
 
-### Verify type of PackedScene
+### 🎬 Verify type of PackedScene
 
 Godot has a problem with `PackedScene` type safety. [We can not strongly type PackedScenes](https://github.com/godotengine/godot-proposals/issues/782). This means that you may want to instantiate a scene that represents a `Friend`, but accidentally assign an `Enemy` scene instead. Oops!
 Godot Doctor can validate the type of a `PackedScene`, ensuring that the root of the scene that you are instancing is of the expected type (e.g. has a script attached of that type), before you even run the game.
@@ -184,7 +184,7 @@ For detailed examples and common validation patterns, see [the examples README](
 1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
 2. Enable the plugin in Project Settings > Plugins
 3. The Godot Doctor dock will appear in the editor's left panel
-4. `use_default_validations` is on by default in the settings resource (`addons/godot_doctor/settings/godot_doctor_settings.tres`), so it will start reporting any of the [default validations](#default-validation-conditions) as soon as you save a scene.
+4. `use_default_validations` is on by default in the settings resource (`addons/godot_doctor/settings/godot_doctor_settings.tres`), so it will start reporting any of the [default validations](#-no-code-default-validations) as soon as you save a scene.
 5. Start adding custom validations by adding a `_get_validation_conditions()` method to your scripts, then save your scenes to see validation results!
 
 ## License

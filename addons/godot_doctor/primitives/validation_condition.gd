@@ -75,7 +75,7 @@ static func string_not_empty(
 	value: String, variable_name: String = "String"
 ) -> ValidationCondition:
 	return ValidationCondition.new(
-		func() -> bool: return value.is_empty(), "%s is empty." % variable_name
+		func() -> bool: return not value.is_empty(), "%s is empty." % variable_name
 	)
 
 

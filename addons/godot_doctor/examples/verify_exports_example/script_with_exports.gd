@@ -14,11 +14,15 @@ extends Node
 ## Get `ValidationCondition`s for exported variables.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
-		# A helper method for the condition below is ValidationCondition.string_not_empty,
+		# The string not empty check is handled by the default validation conditions
+		# and thus does not need a validation condition here.
+		# An example is shown here in case you turned default validation off in Godot Doctor's settings.
+		#
+		# A helper method for the condition below is ValidationCondition.stripped_string_not_empty,
 		# which does the exact same thing, but standardizes the error message.
-		ValidationCondition.simple(
-			not my_string.strip_edges().is_empty(), "my_string must not be empty"
-		),
+		# ValidationCondition.simple(
+		# 	not my_string.strip_edges().is_empty(), "my_string must not be empty"
+		# ),
 		ValidationCondition.simple(my_int > 0, "my_int must be greater than zero"),
 		ValidationCondition.new(
 			func() -> bool:
@@ -26,5 +30,6 @@ func _get_validation_conditions() -> Array[ValidationCondition]:
 			"my_node must be valid and named 'ExpectedNodeName'"
 		)
 		# Note that we could also use the helper method ValidationCondition.is_instance_valid
-		# to check if my_node is valid, which would standardize the error message.
+		# to check if my_node is valid, which would standardize the error message, but that
+		# would not check if the name matches ExpectedNodeName.
 	]

@@ -29,13 +29,36 @@ This script exports a `my_resource` property of type `MyResource`, which is defi
 Let's take a look at the `ValidationCondition` in `script_with_exported_resource.gd`:
 
 ```gdscript
-ValidationCondition.new(
-    func() -> Variant:
-        if not is_instance_valid(my_resource):
-            return false
-        return my_resource.get_validation_conditions(),
-    "my_resource is not assigned"
-)
+## Get `ValidationCondition`s for exported variables.
+func _get_validation_conditions() -> Array[ValidationCondition]:
+	return [
+		# We rely on the default validaiton conditions here to see
+		# if the resource is valid.
+		# But, notice how we return an empty array in case the instance
+		# is not null, or we might call get_validation_conditions on
+		# a null instance.
+		ValidationCondition.new(
+			func() -> Variant:
+				return (
+					my_resource.get_validation_conditions()
+					if is_instance_valid(my_resource)
+					else []
+				),
+			"This string will never be used"
+		),
+		# If we would turn off the default validation checks, we might
+		# manually want to report that the resource is null
+		# Here's an example of that:
+		#
+		# ValidationCondition.new(
+		# 	func() -> Variant:
+		# 		if not is_instance_valid(my_resource):
+		# 			return false
+		# 		return my_resource.get_validation_conditions(),
+		# 	"my_resource has not been assigned!"
+		# ),
+	]
+
 ````
 
 Verifying this scene results in an error:

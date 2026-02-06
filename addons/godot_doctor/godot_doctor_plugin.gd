@@ -122,28 +122,7 @@ func _on_validation_requested(scene_root: Node) -> void:
 
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
 	if edited_object is Resource:
-		var edited_resource: Resource = edited_object as Resource
-		if edited_resource.has_method(VALIDATING_METHOD_NAME):
-			var generated_conditions: Array[ValidationCondition] = edited_resource.call(
-				VALIDATING_METHOD_NAME
-			)
-			var validation_result: ValidationResult = ValidationResult.new(generated_conditions)
-			if validation_result.errors.size() > 0:
-				_push_toast(
-					(
-						"Found %s configuration warning(s) in %s."
-						% [validation_result.errors.size(), edited_resource.resource_path]
-					),
-					1
-				)
-			for error in validation_result.errors:
-				var name: String = edited_resource.resource_path.split("/")[-1]
-				_print_debug("Found error in resource %s: %s" % [name, error])
-				_print_debug("Adding error to dock...")
-				# Push the warning to the dock, passing the original node so the user can locate it.
-				_dock.add_resource_warning_to_dock(
-					edited_resource, "[b]Configuration warning in %s:[/b]\n%s" % [name, error]
-				)
+		_validate_resource(edited_object as Resource)
 
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
@@ -154,14 +133,49 @@ func _on_validation_requested(scene_root: Node) -> void:
 		_validate_node(node)
 
 
+func _validate_resource(resource: Resource):
+	var validation_conditions: Array[ValidationCondition] = []
+	if settings.use_default_validations:
+		validation_conditions.append_array(_get_default_validation_conditions(resource))
+	if resource.has_method(VALIDATING_METHOD_NAME):
+		var generated_conditions: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
+		validation_conditions.append_array(generated_conditions)
+	_validate_resource_validation_conditions(resource, validation_conditions)
+
+
+func _validate_resource_validation_conditions(
+	resource: Resource, validation_conditions: Array[ValidationCondition]
+) -> void:
+	var validation_result: ValidationResult = ValidationResult.new(validation_conditions)
+	if validation_result.errors.size() > 0:
+		_push_toast(
+			(
+				"Found %s configuration warning(s) in %s."
+				% [validation_result.errors.size(), resource.resource_path]
+			),
+			1
+		)
+	for error in validation_result.errors:
+		var name: String = resource.resource_path.split("/")[-1]
+		_print_debug("Found error in resource %s: %s" % [name, error])
+		_print_debug("Adding error to dock...")
+		# Push the warning to the dock, passing the original node so the user can locate it.
+		_dock.add_resource_warning_to_dock(
+			resource, "[b]Configuration warning in %s:[/b]\n%s" % [name, error]
+		)
+
+
 ## Finds all nodes in the tree that implement the VALIDATING_METHOD_NAME method recursively.
 ## Returns an array of nodes that implement the VALIDATING_METHOD_NAME method.
 func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 	var nodes_to_validate: Array = []
 
-	# Only add nodes that implement the validation method
-	if node.has_method(VALIDATING_METHOD_NAME):
-		nodes_to_validate.append(node)
+	# Only add nodes that have a script attached
+	if node.get_script() != null:
+		# Add all nodes if use_default_validations is true,
+		# or add only the nodes that have the method if it is false
+		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
+			nodes_to_validate.append(node)
 
 	# Add their children too, if any
 	var children: Array[Node] = node.get_children()
@@ -180,33 +194,21 @@ func _validate_node(node: Node) -> void:
 	# we may need to create a new instance of the script to call the method on.
 	validation_target = _make_instance_from_placeholder(node)
 
+	var validation_conditions: Array[ValidationCondition] = []
+
+	if settings.use_default_validations:
+		validation_conditions.append_array(_get_default_validation_conditions(validation_target))
+
 	# Now call the method on the appropriate target (the original node if @tool,
 	# or the new instance if non-@tool).
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
 		_print_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
 		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
 		_print_debug("Generated validation conditions: %s" % [generated_conditions])
-		# ValidationResult processes the conditions upon instantiation.
-		var validation_result = ValidationResult.new(generated_conditions)
-		# Process the resulting errors
-		if validation_result.errors.size() > 0:
-			_push_toast(
-				(
-					"Found %s configuration warnings in %s."
-					% [validation_result.errors.size(), node.name]
-				),
-				1
-			)
-		for error in validation_result.errors:
-			_print_debug("Found error in node %s: %s" % [node.name, error])
-			_print_debug("Adding error to dock...")
-			# Push the warning to the dock, passing the original node so the user can locate it.
-			_dock.add_node_warning_to_dock(
-				node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error]
-			)
-	else:
-		# This should never happen, since we filtered for nodes with the method earlier,
-		# but just in case we misused the function, log an error.
+		validation_conditions.append_array(generated_conditions)
+	elif not settings.use_default_validations:
+		# This should never happen, since we filtered for nodes that have no validation method
+		# when use_default_validations is false, but do this just in case
 		push_error(
 			(
 				"_validate_node called on %s, but it didn't have the validation method (%s)."
@@ -214,9 +216,84 @@ func _validate_node(node: Node) -> void:
 			)
 		)
 
+	_validate_node_validation_conditions(node, validation_conditions)
+
 	# If we created a temporary instance, we should free it.
 	if validation_target != node and is_instance_valid(validation_target):
 		validation_target.free()
+
+
+## Handle validation for an array of validation conditions for Nodes
+func _validate_node_validation_conditions(
+	node: Node, validation_conditions: Array[ValidationCondition]
+) -> void:
+	var errors: PackedStringArray = []
+	# ValidationResult processes the conditions upon instantiation.
+	var validation_result = ValidationResult.new(validation_conditions)
+	errors.append_array(validation_result.errors)
+	# Process the resulting errors
+	if errors.size() > 0:
+		_push_toast(
+			"Found %s configuration warnings in %s." % [validation_result.errors.size(), node.name],
+			1
+		)
+	for error in errors:
+		_print_debug("Found error in node %s: %s" % [node.name, error])
+		_print_debug("Adding error to dock...")
+		# Push the warning to the dock, passing the original node so the user can locate it.
+		_dock.add_node_warning_to_dock(
+			node, "[b]Configuration warning in %s:[/b]\n%s" % [node.name, error]
+		)
+
+
+## Get the default validation conditions for an Object
+## (Scan it's export properties and check if Objects are valid instances and whether
+##  strings are non-empty)
+func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
+	var export_props: Array[Dictionary] = _get_export_props(validation_target)
+	var validation_conditions: Array[ValidationCondition] = []
+
+	for export_prop in export_props:
+		var prop_name: String = export_prop["name"]
+		var prop_value: Variant = validation_target.get(prop_name)
+		var prop_type: Variant.Type = export_prop["type"]
+		match prop_type:
+			TYPE_OBJECT:
+				validation_conditions.append(
+					ValidationCondition.is_instance_valid(prop_value, prop_name)
+				)
+			TYPE_STRING:
+				validation_conditions.append(
+					ValidationCondition.stripped_string_not_empty(prop_value, prop_name)
+				)
+			_:
+				continue
+	return validation_conditions
+
+
+## Get all props that are annotated with `@export` from an object
+func _get_export_props(object: Object) -> Array[Dictionary]:
+	if object == null:
+		return []
+
+	var script: Script = object.get_script()
+	if script == null and not object is Resource:
+		return []
+
+	var export_props: Array[Dictionary] = []
+
+	for prop in script.get_script_property_list():
+		# Only include actual script variables
+		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+
+		# Only include exported variables
+		if not (prop.usage & PROPERTY_USAGE_EDITOR):
+			continue
+
+		export_props.append(prop)
+
+	return export_props
 
 
 ## If the original node is a placeholder for a non-@tool script, create a new instance of the script
@@ -255,10 +332,12 @@ func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
 
+
 ## Pushes a toast message to the editor toaster if enabled in settings.
 func _push_toast(message: String, severity: int = 0) -> void:
 	if settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
+
 
 ## Maps the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:

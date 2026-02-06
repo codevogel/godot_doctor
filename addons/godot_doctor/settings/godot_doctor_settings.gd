@@ -12,6 +12,9 @@ class_name GodotDoctorSettings
 ## The default position of the GodotDoctor dock in the editor.
 @export var default_dock_position: DockSlot = DockSlot.DOCK_SLOT_LEFT_BR
 
+## Use default validations on `@export` variables (is instance valid, and non-empty strings)
+@export var use_default_validations: bool = true
+
 ## Enum for dock positions in the Godot editor.
 ## These correspond to the dock slots available in the Godot editor.
 ## Reference: https://docs.godotengine.org/en/4.5/classes/class_editorplugin.html#enum-editorplugin-dockslot

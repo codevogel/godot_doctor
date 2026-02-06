@@ -2,8 +2,8 @@
 ## Evaluates a set of ValidationCondition upon initialization,
 ## and stores any resulting error messages.
 ## Used by GodotDoctor to report validation results.
-extends RefCounted
 class_name ValidationResult
+extends RefCounted
 
 ## Indicates whether the validation passed or failed.
 ## True if there are no errors, false otherwise.

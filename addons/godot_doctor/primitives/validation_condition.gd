@@ -4,8 +4,8 @@
 ## The callable should return either a `bool`, or
 ## an `Array` of nested `ValidationConditions`.
 ## Used by GodotDoctor to define validation rules.
-extends RefCounted
 class_name ValidationCondition
+extends RefCounted
 
 var callable: Callable
 var error_message: String
@@ -32,11 +32,12 @@ func evaluate(args: Array = []) -> Variant:
 	if typeof(result) == TYPE_ARRAY:
 		# Esnure all items in the array are ValidationConditions
 		for item in result:
-			ValidationCondition.new
 			if typeof(item) != typeof(ValidationCondition):
+				#gdlint: disable = max-line-length
 				push_error(
 					"ValidationCondition Callable returned an array, but not all items are ValidationCondition instances."
 				)
+				#gd-lint: enable = max-line-length
 				return false
 		return result as Array[ValidationCondition]
 	push_error(

@@ -3,11 +3,12 @@
 ## in the FileSystem dock.
 ## Used by GodotDoctor to show warnings related to resources.
 @tool
-extends ValidationWarning
 class_name ResourceValidationWarning
+extends ValidationWarning
 
 ## The resource that caused the warning.
 var origin_resource: Resource
+
 
 ## Select the origin of the warning by opening the resource in the inspector
 ## and navigating to it in the FileSystem dock.

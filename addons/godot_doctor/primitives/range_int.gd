@@ -1,7 +1,8 @@
-## A class representing a range of integers with customizable inclusivity for the start and end points.
+## A class representing a range of integers
+## with customizable inclusivity for the start and end points.
 ## Used in GodotDoctor for validating integer values against specified ranges.
-extends RefCounted
 class_name RangeInt
+extends RefCounted
 
 ## The start of the range.
 var start: int = NAN

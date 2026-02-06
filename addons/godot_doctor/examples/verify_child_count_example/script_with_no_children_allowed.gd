@@ -1,5 +1,5 @@
-extends Node
 class_name ScriptWithNoChildrenAllowed
+extends Node
 
 
 func _get_validation_conditions() -> Array[ValidationCondition]:

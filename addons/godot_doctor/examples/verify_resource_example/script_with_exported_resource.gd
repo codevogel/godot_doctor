@@ -1,7 +1,7 @@
 ## A script that demonstrates how to validate an exported resource variable.
 ## Used by GodotDoctor to show how to validate exported resources.
-extends Node
 class_name ScriptWithExportedResource
+extends Node
 
 ## A resource type with its own validation conditions.
 @export var my_resource: MyResource

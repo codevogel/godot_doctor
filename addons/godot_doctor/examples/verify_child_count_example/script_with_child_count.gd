@@ -1,5 +1,5 @@
-extends Node
 class_name ScriptWithChildCount
+extends Node
 
 
 ## Get `ValidationCondition`s for exported variables.

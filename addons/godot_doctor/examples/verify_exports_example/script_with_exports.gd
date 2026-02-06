@@ -1,7 +1,7 @@
 ## A script that demonstrates how to validate exported variables.
 ## Used by GodotDoctor to show how to validate exported variables.
-extends Node
 class_name ScriptWithExportsExample
+extends Node
 
 ## A string that must not be empty.
 @export var my_string: String = ""

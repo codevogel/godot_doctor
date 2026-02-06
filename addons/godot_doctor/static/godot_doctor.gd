@@ -4,7 +4,8 @@
 class_name GodotDoctor
 
 
-## Evaluates a list of ValidationConditions and returns a PackedStringArray of error messages for those that fail.
+## Evaluates a list of ValidationConditions
+## and returns a PackedStringArray of error messages for those that fail.
 static func evaluate_conditions(conditions: Array[ValidationCondition]) -> PackedStringArray:
 	var errors: PackedStringArray = []
 	for condition in conditions:
@@ -19,7 +20,8 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Packe
 			TYPE_ARRAY:
 				# The result of the evaluation is an array of nested ValidationConditions,
 				# which need to be evaluated recursively.
-				# Since it is returned as a Variant, we first need to ensure that it is indeed an Array[ValidationCondition]
+				# Since it is returned as a Variant,
+				# we first need to ensure that it is indeed an Array[ValidationCondition]
 				var nested_conditions: Array[ValidationCondition] = []
 				for expected_condition in result:
 					if expected_condition is not ValidationCondition:
@@ -37,6 +39,7 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Packe
 	return errors
 
 
-## Compares two floating-point numbers for approximate equality within a specified epsilon tolerance.
+## Compares two floating-point numbers for
+## approximate equality within a specified epsilon tolerance.
 static func is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
 	return abs(a - b) <= epsilon

@@ -1,5 +1,5 @@
-extends Node
 class_name ScriptWithMinimumChildCount
+extends Node
 
 
 ## Get `ValidationCondition`s for exported variables.

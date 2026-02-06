@@ -9,12 +9,16 @@ extends EditorPlugin
 ## Emitted when a validation is requested, passing the root node of the current edited scene.
 signal validation_requested(scene_root: Node)
 
+#gdlint: disable=max-line-length
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 ## The path of the dock scene used to display validation warnings.
 const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
 ## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
+const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
+const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor"
+#gdlint: enable=max-line-length
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
 var settings: GodotDoctorSettings:
@@ -86,11 +90,11 @@ func _show_welcome_dialog():
 	var vbox: VBoxContainer = VBoxContainer.new()
 	dialog.add_child(vbox)
 	var label: Label = Label.new()
-	label.text = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
+	label.text = PLUGIN_WELCOME_MESSAGE
 	vbox.add_child(label)
 	var link_button: LinkButton = LinkButton.new()
 	link_button.text = "GitHub Repository"
-	link_button.uri = "https://github.com/codevogel/godot_doctor"
+	link_button.uri = PLUGIN_REPOSITORY_URL
 	vbox.add_child(link_button)
 
 	get_editor_interface().get_base_control().add_child(dialog)
@@ -339,6 +343,7 @@ func _push_toast(message: String, severity: int = 0) -> void:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 
 
+#gdlint:disable = max-returns
 ## Maps the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:
 	match dock_slot:
@@ -360,3 +365,4 @@ func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockS
 			return DockSlot.DOCK_SLOT_RIGHT_BR
 		_:
 			return DockSlot.DOCK_SLOT_RIGHT_BL  # Default fallback
+#gdlint:enable = max-returns

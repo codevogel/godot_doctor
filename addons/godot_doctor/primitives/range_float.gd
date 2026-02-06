@@ -1,6 +1,7 @@
-## A class representing a range of floating-point numbers with customizable inclusivity for the start and end points.
-extends RefCounted
+## A class representing a range of floating-point numbers with
+## customizable inclusivity for the start and end points.
 class_name RangeFloat
+extends RefCounted
 
 const EPSILON_DEFAULT: float = 0.00001
 

@@ -1,8 +1,8 @@
 ## A simple Resource with exported variables and validation conditions.
 ## Used by GodotDoctor to demonstrate resource validation.
 @tool
-extends Resource
 class_name MyResource
+extends Resource
 
 ## A string that must not be empty.
 @export var my_string: String

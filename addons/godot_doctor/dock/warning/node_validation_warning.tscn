@@ -1,9 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://bqpu2d4wxhrsq"]
+[gd_scene format=3 uid="uid://bqpu2d4wxhrsq"]
 
 [ext_resource type="PackedScene" uid="uid://c0itjwae6omh2" path="res://addons/godot_doctor/dock/warning/validation_warning.tscn" id="1_gqhmc"]
 [ext_resource type="Script" uid="uid://iljauouqvhvb" path="res://addons/godot_doctor/dock/warning/node_validation_warning.gd" id="1_lfqfu"]
 
-[node name="ValidationWarning" node_paths=PackedStringArray("icon", "label", "button") instance=ExtResource("1_gqhmc")]
+[node name="ValidationWarning" unique_id=1080521252 node_paths=PackedStringArray("icon", "label", "button") instance=ExtResource("1_gqhmc")]
 script = ExtResource("1_lfqfu")
 icon = NodePath("MarginContainer/HBoxContainer/TextureRect")
 label = NodePath("MarginContainer/HBoxContainer/RichTextLabel")

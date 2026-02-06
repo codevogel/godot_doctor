@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3 uid="uid://c0itjwae6omh2"]
+[gd_scene format=3 uid="uid://c0itjwae6omh2"]
 
 [ext_resource type="Texture2D" uid="uid://pcgftp54pvrf" path="res://addons/godot_doctor/assets/icon/triangle-alert.svg" id="1_ew3ci"]
 
@@ -16,7 +16,7 @@ corner_detail = 5
 
 [sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_8ys46"]
 
-[node name="ValidationWarning" type="MarginContainer"]
+[node name="ValidationWarning" type="MarginContainer" unique_id=1912661706]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -26,11 +26,11 @@ size_flags_horizontal = 3
 size_flags_vertical = 0
 focus_mode = 2
 
-[node name="Button" type="Button" parent="."]
+[node name="Button" type="Button" parent="." unique_id=1291173914]
 layout_mode = 2
 theme_override_styles/normal = SubResource("StyleBoxFlat_rylcf")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=618361493]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/margin_left = 10
@@ -38,11 +38,11 @@ theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 10
 theme_override_constants/margin_bottom = 10
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer" unique_id=268605449]
 layout_mode = 2
 mouse_filter = 2
 
-[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer"]
+[node name="TextureRect" type="TextureRect" parent="MarginContainer/HBoxContainer" unique_id=1564731392]
 custom_minimum_size = Vector2(32, 32)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -51,7 +51,7 @@ mouse_filter = 2
 texture = ExtResource("1_ew3ci")
 expand_mode = 1
 
-[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/HBoxContainer"]
+[node name="RichTextLabel" type="RichTextLabel" parent="MarginContainer/HBoxContainer" unique_id=1465073665]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 4

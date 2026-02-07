@@ -4,10 +4,20 @@ A powerful validation plugin for Godot that catches errors before they reach run
 
 <img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github_assets/png/godot_doctor_logo.png" width="256"/>
 
+See Godot Doctor in action:
+
+![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
+
 ## Quickstart 🚀
 
-1. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
-2. Enable the plugin in Project Settings > Plugins
+You can download Godot Doctor [directly from the Editor through the Asset Library](https://godotengine.org/asset-library/asset/4374).
+
+Or, by manual installation:
+
+1. Download the source code .zip from the [latest release](https://github.com/codevogel/godot_doctor/releases/latest).
+2. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
+3. Enable the plugin in Project Settings > Plugins
+4. (Optional:) Adjust the settings asset in `addons/godot_doctor/settings`.
 
 ## Table of Contents
 
@@ -45,6 +55,7 @@ Realistically, when you add any `@export` variables, you don't want them to stay
 So, new in Godot Doctor v1.1 are **default validation conditions**:
 
 Godot Doctor will validate any nodes that have scripts attached to them (and any opened resource), scan it's `@export` properties, and automatically reports on unassigned objects and empty strings, **without even needing to write a single line of validation code**!
+(If you want, you can turn this behaviour off through the settings asset, so Godot Doctor will only validate exactly what you want).
 
 ### 🏷️ **No `@tool` Required**
 
@@ -77,8 +88,6 @@ Validations run automatically when you save scenes, providing immediate feedback
 Errors are displayed in a dedicated dock, and you can click on them to navigate directly to the problematic nodes.
 
 ![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
-
-
 
 ### ⚙️Validate Nodes AND Resources
 

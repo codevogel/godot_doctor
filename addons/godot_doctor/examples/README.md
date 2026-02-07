@@ -6,6 +6,10 @@ Each sub-folder contains a specific example scene (`.tscn`) and a dedicated **`R
 
 ## Example Summaries
 
+### [verify_default_validations_example](./verify_default_validations_example/README.md)
+**Core Concept:** **No-Code Default Validations**
+Demonstrates Godot Doctor's automatic validation of exported properties without writing any validation code. Shows how default validations catch null object references and empty strings with zero custom code.
+
 ### [verify_resource_example](./verify_resource_example/README.md)
 **Core Concept:** **Chained Validation & Resource Limits**
 Shows how a **Node** validates the existence of an exported **Resource**, then chains the validation to check the **internal properties** of that Resource for dynamic range limits and required values.

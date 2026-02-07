@@ -32,8 +32,13 @@ var settings: GodotDoctorSettings:
 ## The dock for displaying validation results.
 var _dock: GodotDoctorDock
 
+# ============================================================================
+# LIFECYCLE METHODS - Plugin initialization and cleanup
+# ============================================================================
 
-## Called when we enable the plugin
+
+## Called when the plugin is enabled by the user through Project Settings > Plugins.
+## Displays a welcome dialog if configured in settings.
 func _enable_plugin() -> void:
 	_print_debug("Enabling plugin...")
 	# We don't really have any globals to load yet, but this is where we would do it.
@@ -42,11 +47,12 @@ func _enable_plugin() -> void:
 		_show_welcome_dialog()
 
 
-## Called when we disable the plugin
+## Called when the plugin is disabled by the user through Project Settings > Plugins.
 func _disable_plugin() -> void:
 	_print_debug("Disabling plugin...")
 
 
+## Called when the plugin enters the scene tree.
 ## Initializes the plugin by connecting signals and adding the dock to the editor.
 func _enter_tree():
 	_print_debug("Entering tree...")
@@ -58,6 +64,7 @@ func _enter_tree():
 	_push_toast("Plugin loaded.", 0)
 
 
+## Called when the plugin exits the scene tree.
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
 	_print_debug("Exiting tree...")
@@ -66,7 +73,13 @@ func _exit_tree():
 	_push_toast("Plugin unloaded.", 0)
 
 
+# ============================================================================
+# SIGNAL MANAGEMENT - Connection and disconnection of signals
+# ============================================================================
+
+
 ## Connects all necessary signals for the plugin to function.
+## Connects to scene_saved and validation_requested signals.
 func _connect_signals():
 	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
@@ -74,6 +87,7 @@ func _connect_signals():
 
 
 ## Disconnects all connected signals to avoid dangling connections.
+## Safely disconnects even if signals are not currently connected.
 func _disconnect_signals():
 	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
@@ -82,7 +96,13 @@ func _disconnect_signals():
 		validation_requested.disconnect(_on_validation_requested)
 
 
-## Shows a welcome dialog to the user.
+# ============================================================================
+# UI AND DIALOG MANAGEMENT - Welcome dialog and dock management
+# ============================================================================
+
+
+## Shows a welcome dialog to the user on first plugin enable.
+## Displays the welcome message and a link to the GitHub repository.
 func _show_welcome_dialog():
 	var dialog: AcceptDialog = AcceptDialog.new()
 	dialog.title = "Godot Doctor"
@@ -102,14 +122,19 @@ func _show_welcome_dialog():
 	dialog.popup_centered()
 
 
-## Removes the dock from the editor and frees it.
+## Removes the validation warnings dock from the editor and frees it.
 func _remove_dock():
 	remove_control_from_docks(_dock)
 	_dock.free()
 
 
-## Called when a scene is saved.
-## Emits the validation_requested signal with the current edited scene root.
+# ============================================================================
+# EVENT HANDLERS - Signal callbacks for scene saves and validation requests
+# ============================================================================
+
+
+## Called when a scene is saved by the user.
+## Retrieves the edited scene root and emits the validation_requested signal.
 func _on_scene_saved(file_path: String) -> void:
 	_print_debug("Scene saved: %s" % file_path)
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
@@ -119,7 +144,9 @@ func _on_scene_saved(file_path: String) -> void:
 	validation_requested.emit(current_edited_scene_root)
 
 
-## Handles the validation request by finding all nodes to validate and validating them.
+## Called when validation is requested for the current scene.
+## Clears previous errors, validates the edited resource if applicable,
+## finds all nodes to validate in the scene tree, and validates each one.
 func _on_validation_requested(scene_root: Node) -> void:
 	# Clear previous errors
 	_dock.clear_errors()
@@ -137,6 +164,14 @@ func _on_validation_requested(scene_root: Node) -> void:
 		_validate_node(node)
 
 
+# ============================================================================
+# CORE VALIDATION - Main validation entry points for nodes and resources
+# ============================================================================
+
+
+## Validates a resource by collecting default validation conditions (if enabled)
+## and any custom validation conditions defined in the resource.
+## Processes the validation conditions and reports any errors to the dock.
 func _validate_resource(resource: Resource):
 	var validation_conditions: Array[ValidationCondition] = []
 	if settings.use_default_validations:
@@ -147,49 +182,10 @@ func _validate_resource(resource: Resource):
 	_validate_resource_validation_conditions(resource, validation_conditions)
 
 
-func _validate_resource_validation_conditions(
-	resource: Resource, validation_conditions: Array[ValidationCondition]
-) -> void:
-	var validation_result: ValidationResult = ValidationResult.new(validation_conditions)
-	if validation_result.errors.size() > 0:
-		_push_toast(
-			(
-				"Found %s configuration warning(s) in %s."
-				% [validation_result.errors.size(), resource.resource_path]
-			),
-			1
-		)
-	for error in validation_result.errors:
-		var name: String = resource.resource_path.split("/")[-1]
-		_print_debug("Found error in resource %s: %s" % [name, error])
-		_print_debug("Adding error to dock...")
-		# Push the warning to the dock, passing the original node so the user can locate it.
-		_dock.add_resource_warning_to_dock(
-			resource, "[b]Configuration warning in %s:[/b]\n%s" % [name, error]
-		)
-
-
-## Finds all nodes in the tree that implement the VALIDATING_METHOD_NAME method recursively.
-## Returns an array of nodes that implement the VALIDATING_METHOD_NAME method.
-func _find_nodes_to_validate_in_tree(node: Node) -> Array:
-	var nodes_to_validate: Array = []
-
-	# Only add nodes that have a script attached
-	if node.get_script() != null:
-		# Add all nodes if use_default_validations is true,
-		# or add only the nodes that have the method if it is false
-		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
-			nodes_to_validate.append(node)
-
-	# Add their children too, if any
-	var children: Array[Node] = node.get_children()
-	for child in children:
-		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
-	return nodes_to_validate
-
-
-## Validates a single node by calling its validation method and processing the results.
-## Expects only nodes that are already confirmed to implement the VALIDATING_METHOD_NAME method.
+## Validates a single node by collecting default validation conditions (if enabled),
+## custom validation conditions defined in the node (handling both @tool and non-@tool scripts),
+## and processing the results.
+## For non-@tool scripts, creates a temporary instance to call validation methods on.
 func _validate_node(node: Node) -> void:
 	_print_debug("Validating node: %s" % node.name)
 	var validation_target: Object = node
@@ -227,7 +223,37 @@ func _validate_node(node: Node) -> void:
 		validation_target.free()
 
 
-## Handle validation for an array of validation conditions for Nodes
+# ============================================================================
+# VALIDATION CONDITION PROCESSING - Processing and reporting validation results
+# ============================================================================
+
+
+## Processes validation conditions for a resource.
+## Evaluates all conditions, formats errors, displays toasts, and adds warnings to the dock.
+func _validate_resource_validation_conditions(
+	resource: Resource, validation_conditions: Array[ValidationCondition]
+) -> void:
+	var validation_result: ValidationResult = ValidationResult.new(validation_conditions)
+	if validation_result.errors.size() > 0:
+		_push_toast(
+			(
+				"Found %s configuration warning(s) in %s."
+				% [validation_result.errors.size(), resource.resource_path]
+			),
+			1
+		)
+	for error in validation_result.errors:
+		var name: String = resource.resource_path.split("/")[-1]
+		_print_debug("Found error in resource %s: %s" % [name, error])
+		_print_debug("Adding error to dock...")
+		# Push the warning to the dock, passing the original resource so the user can locate it.
+		_dock.add_resource_warning_to_dock(
+			resource, "[b]Configuration warning in %s:[/b]\n%s" % [name, error]
+		)
+
+
+## Processes validation conditions for a node.
+## Evaluates all conditions, formats errors, displays toasts, and adds warnings to the dock.
 func _validate_node_validation_conditions(
 	node: Node, validation_conditions: Array[ValidationCondition]
 ) -> void:
@@ -250,9 +276,37 @@ func _validate_node_validation_conditions(
 		)
 
 
-## Get the default validation conditions for an Object
-## (Scan it's export properties and check if Objects are valid instances and whether
-##  strings are non-empty)
+# ============================================================================
+# HELPER METHODS - Node finding and property inspection
+# ============================================================================
+
+
+## Recursively finds all nodes in the scene tree that should be validated.
+## Returns nodes that have a script attached.
+## Returns all nodes that have script when default validations are enabled
+## or returns nodes that implement the VALIDATING_METHOD_NAME method.
+func _find_nodes_to_validate_in_tree(node: Node) -> Array:
+	var nodes_to_validate: Array = []
+
+	# Only add nodes that have a script attached
+	if node.get_script() != null:
+		# Add all nodes if use_default_validations is true,
+		# or add only the nodes that have the method if it is false
+		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
+			nodes_to_validate.append(node)
+
+	# Add their children too, if any
+	var children: Array[Node] = node.get_children()
+	for child in children:
+		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
+	return nodes_to_validate
+
+
+## Generates default validation conditions for an object by inspecting its exported properties.
+## Creates validation conditions for:
+## - Object properties: checks if they are valid instances
+## - String properties: checks if they are non-empty after stripping whitespace
+## Returns an array of generated ValidationCondition objects.
 func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
 	var export_props: Array[Dictionary] = _get_export_props(validation_target)
 	var validation_conditions: Array[ValidationCondition] = []
@@ -275,7 +329,10 @@ func _get_default_validation_conditions(validation_target: Object) -> Array[Vali
 	return validation_conditions
 
 
-## Get all props that are annotated with `@export` from an object
+## Retrieves all exported properties from an object's script.
+## Returns an array of property dictionaries containing metadata for each exported variable.
+## Only includes properties that are both script variables and marked for editor visibility.
+## Returns an empty array if the object is null, or has no script and isn't a resource.
 func _get_export_props(object: Object) -> Array[Dictionary]:
 	if object == null:
 		return []
@@ -300,16 +357,22 @@ func _get_export_props(object: Object) -> Array[Dictionary]:
 	return export_props
 
 
-## If the original node is a placeholder for a non-@tool script, create a new instance of the script
-## and copy over the properties and children from the original node.
-## If the original node is a @tool script or has no script, return the original node
+# ============================================================================
+# INSTANCE MANAGEMENT - Creating and copying node properties
+# ============================================================================
+
+
+## Creates a temporary instance of a non-@tool script for validation purposes.
+## For non-@tool scripts, creates a new instance and copies properties and children.
+## For @tool scripts or scripts with no script, returns the original node.
+## This allows validation of non-@tool scripts without executing gameplay code in the editor.
 func _make_instance_from_placeholder(original_node: Node) -> Object:
 	var script: Script = original_node.get_script()
 	var is_tool_script: bool = script and script.is_tool()
 
 	if not (script and not is_tool_script):
 		# If there's no script, or if it's a @tool script, return the original node.
-		# (The non-placeholder instance doesn't matter, sine we won't be validating it anyway,
+		# (The non-placeholder instance doesn't matter, since we won't be validating it anyway,
 		# or already exists, because it is a @tool script.)
 		return original_node
 
@@ -324,27 +387,35 @@ func _make_instance_from_placeholder(original_node: Node) -> Object:
 	return new_instance
 
 
-## Copies all editable properties from one node to another.
+## Copies all editor-visible properties from one node to another.
+## This is used to transfer state from the editor node to a temporary validation instance.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
 	for prop in from_node.get_property_list():
 		if prop.usage & PROPERTY_USAGE_EDITOR:
 			to_node.set(prop.name, from_node.get(prop.name))
 
 
-## Prints a debug message if debug prints are enabled in settings.
+# ============================================================================
+# UTILITY METHODS - Debug printing, toasts, and configuration mapping
+# ============================================================================
+
+
+## Prints a debug message to the console if debug printing is enabled in settings.
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
 
 
-## Pushes a toast message to the editor toaster if enabled in settings.
+## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
+## [param severity] - 0 for info (default), 1 for warning, 2 for error.
 func _push_toast(message: String, severity: int = 0) -> void:
 	if settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 
 
+## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
+## Maps all eight dock slot positions from the settings enum to the engine enum values.
 #gdlint:disable = max-returns
-## Maps the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:
 	match dock_slot:
 		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UL:

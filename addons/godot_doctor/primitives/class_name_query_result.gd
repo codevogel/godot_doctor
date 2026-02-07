@@ -1,7 +1,7 @@
 ## Holds the results for a class name query.
 ## Used by GodotDoctor to determine if a script has a class name and what it is
 class_name ClassNameQueryResult
-extends Node
+extends RefCounted
 
 var has_script: bool
 var found_class_name: StringName

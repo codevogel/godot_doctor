@@ -255,6 +255,11 @@ static func scene_is_of_type(
 ## Helper method that extracts the class name from a PackedScene.
 static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> ClassNameQueryResult:
 	var state: SceneState = packed_scene.get_state()
+
+	# Walk up the tree in case this PackedScene inherits from another PackedScene
+	while state.get_base_scene_state() != null:
+		state = state.get_base_scene_state()
+
 	# Look for the script property in the root node (always index 0)
 	for i in state.get_node_property_count(0):
 		if state.get_node_property_name(0, i) == &"script":

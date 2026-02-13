@@ -153,7 +153,9 @@ func _on_validation_requested(scene_root: Node) -> void:
 
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
 	if edited_object is Resource:
-		_validate_resource(edited_object as Resource)
+		var script: Script = edited_object.get_script()
+		if script not in settings.default_validation_ignore_list:
+			_validate_resource(edited_object as Resource)
 
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
@@ -289,7 +291,8 @@ func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 	var nodes_to_validate: Array = []
 
 	# Only add nodes that have a script attached
-	if node.get_script() != null:
+	var script: Script = node.get_script()
+	if script != null and not (script in settings.default_validation_ignore_list):
 		# Add all nodes if use_default_validations is true,
 		# or add only the nodes that have the method if it is false
 		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):

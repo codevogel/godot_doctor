@@ -29,3 +29,6 @@ enum DockSlot {
 
 ## Use default validations on `@export` variables (is instance valid, and non-empty strings)
 @export var use_default_validations: bool = true
+
+## A list of scripts that should be ignored by Godot Doctor's default validations.
+@export var default_validation_ignore_list: Array[Script] = []

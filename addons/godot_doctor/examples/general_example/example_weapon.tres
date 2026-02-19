@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ExampleWeapon" format=3 uid="uid://b246wm4tfhc5i"]
+
+[ext_resource type="Script" uid="uid://bfuyahq8w8hne" path="res://addons/godot_doctor/examples/general_example/example_weapon.gd" id="1_lkwkh"]
+[ext_resource type="Texture2D" uid="uid://b86rmktu1ruck" path="res://icon.svg" id="2_o8gnq"]
+
+[resource]
+script = ExtResource("1_lkwkh")
+sprite = ExtResource("2_o8gnq")
+metadata/_custom_type_script = "uid://bfuyahq8w8hne"

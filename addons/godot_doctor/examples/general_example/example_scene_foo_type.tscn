@@ -1,0 +1,7 @@
+[gd_scene format=3 uid="uid://cx0kpt21d1x5w"]
+
+[ext_resource type="Script" uid="uid://b40h14faokh0y" path="res://addons/godot_doctor/examples/verify_type_of_packed_scene_example/foo.gd" id="1_x318f"]
+
+[node name="SceneOfTypeFoo" type="Node" unique_id=1688272628]
+script = ExtResource("1_x318f")
+metadata/_custom_type_script = "uid://b40h14faokh0y"

@@ -9,6 +9,11 @@ used, and how to reproduce/resolve the errors.
 
 ## Example Summaries
 
+### [General example]
+
+**Core Concept:** **General Validation Use Cases** A collection of various
+validation scenarios in a 'real-world' context.
+
 ### [verify_default_validations_example](./verify_default_validations_example/README.md)
 
 **Core Concept:** **No-Code Default Validations** Demonstrates Godot Doctor's

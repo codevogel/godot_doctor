@@ -27,7 +27,8 @@ func _get_validation_conditions() -> Array[ValidationCondition]:
 		ValidationCondition.new(
 			func() -> bool:
 				return is_instance_valid(my_node) and my_node.name == "ExpectedNodeName",
-			"my_node must be valid and named 'ExpectedNodeName'"
+			"my_node must be valid and named 'ExpectedNodeName'",
+			ValidationCondition.Severity.ERROR
 		)
 		# Note that we could also use the helper method ValidationCondition.is_instance_valid
 		# to check if my_node is valid, which would standardize the error message, but that

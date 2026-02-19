@@ -36,7 +36,8 @@ Or, by manual installation:
   - [🎯 Declarative Syntax](#declarative-syntax)
 - [Syntax](#syntax)
   - [ValidationCondition](#validationcondition)
-  - [Simple Helper Method](#simple-helper-method)
+  - [Simple](#simple-validations)
+  - [Predefined Common Validation Conditions](#predefined-common-validation-conditions)
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
@@ -102,7 +103,8 @@ you are instancing is of the expected type (e.g. has a script attached of that
 type), before you even run the game.
 
 ```gdscript
-## Example: A validation condition that checks whether the `PackedScene` variable `scene_of_foo_type` is of type `Foo`.
+## Example: A validation condition that checks whether the `PackedScene`
+##          variable `scene_of_foo_type` is of type `Foo`.
 ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo)
 ```
 
@@ -155,7 +157,20 @@ var condition = ValidationCondition.new(
 )
 ```
 
-### Simple Helper Method
+Optionally, you can also pass one of three severity levels (`INFO`, `WARNING`,
+`ERROR`) as a third argument, which will adjust at what level of severity the
+error is reported in the Godot Doctor dock:
+
+```gdscript
+# Validation condition with severity level
+var condition = ValidationCondition.new(
+    func(): return health > 0,
+    "Health must be greater than 0",
+    ValidationCondition.Severity.ERROR
+)
+```
+
+### Simple validations
 
 For basic boolean validations, use the convenience `simple()` method, allowing
 you to skip the `func()` wrapper:
@@ -167,6 +182,16 @@ var condition = ValidationCondition.simple(
     "Health must be greater than 0"
 )
 ```
+
+### Predefined Common Validation Conditions
+
+There's also a bunch of often-used validation conditions available as static
+methods on the `ValidationCondition` class, such as `scene_is_of_type`,
+`is_instance_valid`, `string_not_empty`, and more, which saves you time writing
+common validation logic.
+
+You can find them all in
+[the `ValidationCondition` class](./addons/godot_doctor/primitives/validation_condition.gd)
 
 ### Reuse validation logic with Callables
 

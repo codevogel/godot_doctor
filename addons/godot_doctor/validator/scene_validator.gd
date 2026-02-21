@@ -1,5 +1,9 @@
 class_name SceneValidator extends RefCounted
 
+# ============================================================================
+# PRIVATE PROPERTIES
+# ============================================================================
+
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 
@@ -17,18 +21,22 @@ var settings: GodotDoctorSettings:
 
 var _output : ValidatorOutputInterface
 
+# ============================================================================
+# INITIALIZATION - Constructor
+# ============================================================================
+
 func _init(output_interface : ValidatorOutputInterface) -> void : 
 	_output = output_interface
 
 # ============================================================================
-# CORE VALIDATION - Main validation entry points for nodes and resources
+# CORE VALIDATION INTERFACE - Main validation entry points for nodes and resources
 # ============================================================================
 
 
 ## Validates a resource by collecting default validation conditions (if enabled)
 ## and any custom validation conditions defined in the resource.
 ## Processes the validation conditions and reports any errors to the dock.
-func _validate_resource(resource: Resource):
+func validate_resource(resource: Resource):
 	var validation_conditions: Array[ValidationCondition] = []
 	if settings.use_default_validations:
 		validation_conditions.append_array(_get_default_validation_conditions(resource))
@@ -42,8 +50,8 @@ func _validate_resource(resource: Resource):
 ## custom validation conditions defined in the node (handling both @tool and non-@tool scripts),
 ## and processing the results.
 ## For non-@tool scripts, creates a temporary instance to call validation methods on.
-func _validate_node(node: Node) -> void:
-	_output._print_debug("Validating node: %s" % node.name)
+func validate_node(node: Node) -> void:
+	_output.print_message("Validating node: %s" % node.name)
 	var validation_target: Object = node
 
 	# Depending on whether the validation target is marked as @tool or not,
@@ -58,9 +66,9 @@ func _validate_node(node: Node) -> void:
 	# Now call the method on the appropriate target (the original node if @tool,
 	# or the new instance if non-@tool).
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
-		_output._print_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
+		_output.print_message("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
 		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-		_output._print_debug("Generated validation conditions: %s" % [generated_conditions])
+		_output.print_message("Generated validation conditions: %s" % [generated_conditions])
 		validation_conditions.append_array(generated_conditions)
 	elif not settings.use_default_validations:
 		# This should never happen, since we filtered for nodes that have no validation method
@@ -78,6 +86,28 @@ func _validate_node(node: Node) -> void:
 	if validation_target != node and is_instance_valid(validation_target):
 		validation_target.free()
 
+
+## Recursively finds all nodes in the scene tree that should be validated.
+## Returns nodes that have a script attached.
+## Returns all nodes that have script when default validations are enabled
+## or returns nodes that implement the VALIDATING_METHOD_NAME method.
+func find_nodes_to_validate_in_tree(node: Node) -> Array:
+	var nodes_to_validate: Array = []
+
+	# Only add nodes that have a script attached
+	var script: Script = node.get_script()
+	if script != null and not (script in settings.default_validation_ignore_list):
+		# Add all nodes if use_default_validations is true,
+		# or add only the nodes that have the method if it is false
+		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
+			nodes_to_validate.append(node)
+
+	# Add their children too, if any
+	var children: Array[Node] = node.get_children()
+	for child in children:
+		nodes_to_validate.append_array(find_nodes_to_validate_in_tree(child))
+	return nodes_to_validate
+	
 
 # ============================================================================
 # VALIDATION CONDITION PROCESSING - Processing and reporting validation results
@@ -98,7 +128,7 @@ func _validate_resource_validation_conditions(
 			. max()
 		)
 
-		_output._push_toast(
+		_output.push_toast(
 			(
 				"Found %s configuration warning(s) in %s."
 				% [validation_result.errors.size(), resource.resource_path]
@@ -107,13 +137,13 @@ func _validate_resource_validation_conditions(
 		)
 	for msg in validation_messages:
 		var name: String = resource.resource_path.split("/")[-1]
-		_output._print_debug(
+		_output.print_message(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, resource, msg.message]
 			)
 		)
-		_output._print_debug("Adding message to dock...")
+		_output.print_message("Adding message to dock...")
 		# Push the warning to the dock, passing the original resource so the user can locate it.
 		_output.add_resource_warning_to_dock(resource, msg)
 
@@ -135,7 +165,7 @@ func _validate_node_validation_conditions(
 			. max()
 		)
 
-		_output._push_toast(
+		_output.push_toast(
 			(
 				"Found %s configuration warning(s) in %s."
 				% [validation_result.errors.size(), node.name]
@@ -143,13 +173,13 @@ func _validate_node_validation_conditions(
 			severity_level
 		)
 	for msg in validation_messages:
-		_output._print_debug(
+		_output.print_message(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, node.name, msg.message]
 			)
 		)
-		_output._print_debug("Adding message to dock...")
+		_output.print_message("Adding message to dock...")
 		# Push the warning to the dock, passing the original node so the user can locate it.
 		_output.add_node_warning_to_dock(node, msg)
 
@@ -157,28 +187,6 @@ func _validate_node_validation_conditions(
 # ============================================================================
 # HELPER METHODS - Node finding and property inspection
 # ============================================================================
-
-
-## Recursively finds all nodes in the scene tree that should be validated.
-## Returns nodes that have a script attached.
-## Returns all nodes that have script when default validations are enabled
-## or returns nodes that implement the VALIDATING_METHOD_NAME method.
-func _find_nodes_to_validate_in_tree(node: Node) -> Array:
-	var nodes_to_validate: Array = []
-
-	# Only add nodes that have a script attached
-	var script: Script = node.get_script()
-	if script != null and not (script in settings.default_validation_ignore_list):
-		# Add all nodes if use_default_validations is true,
-		# or add only the nodes that have the method if it is false
-		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
-			nodes_to_validate.append(node)
-
-	# Add their children too, if any
-	var children: Array[Node] = node.get_children()
-	for child in children:
-		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
-	return nodes_to_validate
 
 
 ## Generates default validation conditions for an object by inspecting its exported properties.

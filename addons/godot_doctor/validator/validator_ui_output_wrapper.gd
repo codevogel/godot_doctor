@@ -1,24 +1,35 @@
 class_name ValidatorUIOutputWrapper extends ValidatorOutputInterface
 
+# ============================================================================
+# PRIVATE PROPERTIES
+# ============================================================================
+
 var _dock: GodotDoctorDock
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
 var _settings: GodotDoctorSettings
 
+# ============================================================================
+# INITIALIZATION - Constructor
+# ============================================================================
+
 func _init(dock: GodotDoctorDock, settings: GodotDoctorSettings) -> void :
 	_dock = dock
 	_settings = settings
 	
+# ============================================================================
+# INTERAFACE IMPLMENTATION - Implementation of the function from ValidatorOutputInterface
+# ============================================================================
 
 ## Prints a debug message to the console if debug printing is enabled in settings.
-func _print_debug(message: String) -> void:
+func print_message(message: String) -> void:
 	if _settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
 
 
 ## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
 ## [param severity] - 0 for info (default), 1 for warning, 2 for error.
-func _push_toast(message: String, severity: int = 0) -> void:
+func push_toast(message: String, severity: int = 0) -> void:
 	if _settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 		

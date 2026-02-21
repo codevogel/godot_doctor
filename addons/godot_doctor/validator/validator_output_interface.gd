@@ -2,11 +2,11 @@
 
 
 ## Prints a debug message to the console if debug printing is enabled in settings.
-@abstract func _print_debug(message: String) -> void
+@abstract func print_message(message: String) -> void
 
 ## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
 ## [param severity] - 0 for info (default), 1 for warning, 2 for error.
-@abstract func _push_toast(message: String, severity: int = 0) -> void
+@abstract func push_toast(message: String, severity: int = 0) -> void
 
 
 @abstract func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void

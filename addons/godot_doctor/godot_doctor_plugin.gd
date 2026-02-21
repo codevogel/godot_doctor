@@ -77,7 +77,7 @@ func _enter_tree():
 	
 	_connect_signals()
 	
-	_output._push_toast("Plugin loaded.", 0)
+	_output.push_toast("Plugin loaded.", 0)
 
 
 ## Called when the plugin exits the scene tree.
@@ -90,7 +90,7 @@ func _exit_tree():
 	_disconnect_signals()
 	_remove_dock()
 	
-	_output._push_toast("Plugin unloaded.", 0)
+	_output.push_toast("Plugin unloaded.", 0)
 
 
 # ============================================================================
@@ -101,7 +101,7 @@ func _exit_tree():
 ## Connects all necessary signals for the plugin to function.
 ## Connects to scene_saved and validation_requested signals.
 func _connect_signals():
-	_output._print_debug("Connecting signals...")
+	_output.print_message("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
 	validation_requested.connect(_on_validation_requested)
 
@@ -109,7 +109,7 @@ func _connect_signals():
 ## Disconnects all connected signals to avoid dangling connections.
 ## Safely disconnects even if signals are not currently connected.
 func _disconnect_signals():
-	_output._print_debug("Disconnecting signals...")
+	_output.print_message("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
 	if validation_requested.is_connected(_on_validation_requested):
@@ -156,10 +156,10 @@ func _remove_dock():
 ## Called when a scene is saved by the user.
 ## Retrieves the edited scene root and emits the validation_requested signal.
 func _on_scene_saved(file_path: String) -> void:
-	_output._print_debug("Scene saved: %s" % file_path)
+	_output.print_message("Scene saved: %s" % file_path)
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
 	if not is_instance_valid(current_edited_scene_root):
-		_output._print_debug("No current edited scene root. Skipping validation.")
+		_output.print_message("No current edited scene root. Skipping validation.")
 		return
 	validation_requested.emit(current_edited_scene_root)
 
@@ -175,15 +175,15 @@ func _on_validation_requested(scene_root: Node) -> void:
 	if edited_object is Resource:
 		var script: Script = edited_object.get_script()
 		if script not in settings.default_validation_ignore_list:
-			_validator._validate_resource(edited_object as Resource)
+			_validator.validate_resource(edited_object as Resource)
 
 	# Find all nodes to validate
-	var nodes_to_validate: Array = _validator._find_nodes_to_validate_in_tree(scene_root)
-	_output._print_debug("Found %d nodes to validate." % nodes_to_validate.size())
+	var nodes_to_validate: Array = _validator.find_nodes_to_validate_in_tree(scene_root)
+	_output.print_message("Found %d nodes to validate." % nodes_to_validate.size())
 
 	# Validate each node
 	for node: Node in nodes_to_validate:
-		_validator._validate_node(node)
+		_validator.validate_node(node)
 
 # ============================================================================
 # UTILITY METHODS - Debug printing, toasts, and configuration mapping

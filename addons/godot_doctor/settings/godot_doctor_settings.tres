@@ -4,4 +4,5 @@
 
 [resource]
 script = ExtResource("1_w45p4")
+suite_settings = "uid://d1bcuabimyit3"
 metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

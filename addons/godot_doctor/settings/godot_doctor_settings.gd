@@ -32,3 +32,6 @@ enum DockSlot {
 
 ## A list of scripts that should be ignored by Godot Doctor's default validations.
 @export var default_validation_ignore_list: Array[Script] = []
+
+
+@export_file("*.res","*.tres") var suite_settings : String = "res://test/suite_settings.tres"

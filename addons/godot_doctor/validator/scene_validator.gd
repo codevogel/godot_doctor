@@ -1,8 +1,11 @@
+## Class that handles validation of scenes and resources.
 class_name SceneValidator extends RefCounted
+
 
 # ============================================================================
 # PRIVATE PROPERTIES
 # ============================================================================
+
 
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
@@ -21,12 +24,15 @@ var settings: GodotDoctorSettings:
 
 var _output : ValidatorOutputInterface
 
+
 # ============================================================================
 # INITIALIZATION - Constructor
 # ============================================================================
 
+
 func _init(output_interface : ValidatorOutputInterface) -> void : 
 	_output = output_interface
+
 
 # ============================================================================
 # CORE VALIDATION INTERFACE - Main validation entry points for nodes and resources
@@ -51,7 +57,7 @@ func validate_resource(resource: Resource):
 ## and processing the results.
 ## For non-@tool scripts, creates a temporary instance to call validation methods on.
 func validate_node(node: Node) -> void:
-	_output.print_message("Validating node: %s" % node.name)
+	_output.push_debug("Validating node: %s" % node.name)
 	var validation_target: Object = node
 
 	# Depending on whether the validation target is marked as @tool or not,
@@ -66,9 +72,9 @@ func validate_node(node: Node) -> void:
 	# Now call the method on the appropriate target (the original node if @tool,
 	# or the new instance if non-@tool).
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
-		_output.print_message("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
+		_output.push_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
 		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-		_output.print_message("Generated validation conditions: %s" % [generated_conditions])
+		_output.push_debug("Generated validation conditions: %s" % [generated_conditions])
 		validation_conditions.append_array(generated_conditions)
 	elif not settings.use_default_validations:
 		# This should never happen, since we filtered for nodes that have no validation method
@@ -137,13 +143,13 @@ func _validate_resource_validation_conditions(
 		)
 	for msg in validation_messages:
 		var name: String = resource.resource_path.split("/")[-1]
-		_output.print_message(
+		_output.push_debug(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, resource, msg.message]
 			)
 		)
-		_output.print_message("Adding message to dock...")
+		_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original resource so the user can locate it.
 		_output.add_resource_warning_to_dock(resource, msg)
 
@@ -173,13 +179,13 @@ func _validate_node_validation_conditions(
 			severity_level
 		)
 	for msg in validation_messages:
-		_output.print_message(
+		_output.push_debug(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, node.name, msg.message]
 			)
 		)
-		_output.print_message("Adding message to dock...")
+		_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original node so the user can locate it.
 		_output.add_node_warning_to_dock(node, msg)
 

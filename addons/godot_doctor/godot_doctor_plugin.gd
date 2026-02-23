@@ -41,9 +41,7 @@ var _validator : SceneValidator
 ## Called when the plugin is enabled by the user through Project Settings > Plugins.
 ## Displays a welcome dialog if configured in settings.
 func _enable_plugin() -> void:
-	
-	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] Enabling plugin...")
+	_print_debug("Enabling plugin...")
 
 	# We don't really have any globals to load yet, but this is where we would do it.
 
@@ -53,20 +51,14 @@ func _enable_plugin() -> void:
 
 ## Called when the plugin is disabled by the user through Project Settings > Plugins.
 func _disable_plugin() -> void:
-	
-	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] Disabling plugin...")
+	_print_debug("Disabling plugin...")
 
 
 ## Called when the plugin enters the scene tree.
 ## Initializes the plugin by connecting signals and adding the dock to the editor.
 func _enter_tree():
-	
-	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] Entering tree...")
+	_print_debug("Entering tree...")
 		
-	
-	
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
 	_output = ValidatorUIOutputWrapper.new(_dock, settings)
 	_validator = SceneValidator.new(_output)
@@ -83,9 +75,7 @@ func _enter_tree():
 ## Called when the plugin exits the scene tree.
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
-	
-	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] Exiting tree...")
+	_print_debug("Exiting tree...")
 	
 	_disconnect_signals()
 	_remove_dock()
@@ -101,7 +91,7 @@ func _exit_tree():
 ## Connects all necessary signals for the plugin to function.
 ## Connects to scene_saved and validation_requested signals.
 func _connect_signals():
-	_output.print_message("Connecting signals...")
+	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
 	validation_requested.connect(_on_validation_requested)
 
@@ -109,7 +99,7 @@ func _connect_signals():
 ## Disconnects all connected signals to avoid dangling connections.
 ## Safely disconnects even if signals are not currently connected.
 func _disconnect_signals():
-	_output.print_message("Disconnecting signals...")
+	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
 	if validation_requested.is_connected(_on_validation_requested):
@@ -156,10 +146,10 @@ func _remove_dock():
 ## Called when a scene is saved by the user.
 ## Retrieves the edited scene root and emits the validation_requested signal.
 func _on_scene_saved(file_path: String) -> void:
-	_output.print_message("Scene saved: %s" % file_path)
+	_print_debug("Scene saved: %s" % file_path)
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
 	if not is_instance_valid(current_edited_scene_root):
-		_output.print_message("No current edited scene root. Skipping validation.")
+		_print_debug("No current edited scene root. Skipping validation.")
 		return
 	validation_requested.emit(current_edited_scene_root)
 
@@ -179,15 +169,20 @@ func _on_validation_requested(scene_root: Node) -> void:
 
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _validator.find_nodes_to_validate_in_tree(scene_root)
-	_output.print_message("Found %d nodes to validate." % nodes_to_validate.size())
+	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
 	# Validate each node
 	for node: Node in nodes_to_validate:
 		_validator.validate_node(node)
 
 # ============================================================================
-# UTILITY METHODS - Debug printing, toasts, and configuration mapping
+# UTILITY METHODS - Debug printing, configuration mapping
 # ============================================================================
+
+## Prints a debug message to the console if debug printing is enabled in settings.
+func _print_debug(message: String) -> void:
+	if settings.show_debug_prints:
+		print("[GODOT DOCTOR] %s" % message)
 
 ## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 ## Maps all eight dock slot positions from the settings enum to the engine enum values.

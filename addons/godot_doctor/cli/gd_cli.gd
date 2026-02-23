@@ -1,4 +1,4 @@
-## CLI based wrapper around the [SceneValidator]. Used to run validations offline in a batch.
+## CLI based wrapper around the [Validator]. Used to run validations offline in a batch.
 ## Uses [BatchValidationSettings] as source of information. Will print all results to the terminal.
 extends Node
 
@@ -33,10 +33,10 @@ var _doctor_settings : GodotDoctorSettings
 ## Settings for the batch validation, contains all scenes and resources that are to be validated.
 var _batch_settings : BatchValidationSettings
 
-var _output : ValidatorCLIOutputWrapper
+var _output : ValidatorCLIOutput
 
 ## The validator object, this the main object, it does all the actual validation logic.
-var _validator : SceneValidator
+var _validator : Validator
 
 ## Flag marking if the current iteration is processing a new suite,
 ## one that has not been processed yet.
@@ -85,7 +85,7 @@ var _total_time : int
 func _ready() -> void :
 		
 	# Initialse the settings.
-	_doctor_settings = load(SceneValidator.VALIDATOR_SETTINGS_PATH)	
+	_doctor_settings = load(Validator.VALIDATOR_SETTINGS_PATH)	
 	_batch_settings = load(_doctor_settings.suite_settings)
 	
 	# If the batch settings couldn't be loaded, the whole process can't run. We need report
@@ -95,8 +95,8 @@ func _ready() -> void :
 		get_tree().quit(ExitCode.EXIT_FAIL)
 	
 	# Initialise the validator with CLI output interface.
-	_output = ValidatorCLIOutputWrapper.new(_doctor_settings)
-	_validator = SceneValidator.new(_output)
+	_output = ValidatorCLIOutput.new(_doctor_settings)
+	_validator = Validator.new(_output)
 	
 	
 	# Load the plugin configuration file to get the current plugin version.

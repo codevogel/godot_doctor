@@ -18,7 +18,7 @@ const max_wait_iterations : int = 20
 
 
 ## Intializes the validation process. Needs to make sure the main loop is running in order
-## for the [SceneValidator] to safely process Nodes in the Scene 	Tree.
+## for the [Validator] to safely process Nodes in the Scene 	Tree.
 func _init() -> void:
 
 	# Current wait iteratrion count.

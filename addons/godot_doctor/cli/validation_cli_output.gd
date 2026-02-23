@@ -1,5 +1,5 @@
 ## UI based implmentatio of the [ValidatorOutputInterface]. Outputs information to the console.
-class_name ValidatorCLIOutputWrapper extends ValidatorOutputInterface
+class_name ValidatorCLIOutput extends ValidatorOutputInterface
 
 
 # ============================================================================
@@ -39,12 +39,12 @@ func push_toast(message: String, severity: int = 0) -> void:
 		push_message(message, severity)
 
 
-func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void :
+func add_node_warning(origin_node: Node, validation_message: ValidationMessage) -> void :
 	push_message(origin_node.name + " " + validation_message.message, validation_message.severity_level)
 
 	
 ## Add a resource-related warning to the dock.
 ## origin_resource: The resource that caused the warning.
 ## error_message: The warning message to display.
-func add_resource_warning_to_dock(origin_resource: Resource, validation_message: ValidationMessage) -> void :
+func add_resource_warning(origin_resource: Resource, validation_message: ValidationMessage) -> void :
 	push_message(origin_resource.name + " " + validation_message.message, validation_message.severity_level)

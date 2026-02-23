@@ -24,14 +24,14 @@ var settings: GodotDoctorSettings:
 		# This may be used before @onready
 		# so we lazy load it here if needed.
 		if not settings:
-			settings = load(SceneValidator.VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
+			settings = load(Validator.VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
 ## The dock for displaying validation results.
 var _dock: GodotDoctorDock
 
-var _output : ValidatorUIOutputWrapper
-var _validator : SceneValidator
+var _output : ValidatorGUIOutput
+var _validator : Validator
 
 # ============================================================================
 # LIFECYCLE METHODS - Plugin initialization and cleanup
@@ -60,8 +60,8 @@ func _enter_tree():
 	_print_debug("Entering tree...")
 		
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	_output = ValidatorUIOutputWrapper.new(_dock, settings)
-	_validator = SceneValidator.new(_output)
+	_output = ValidatorGUIOutput.new(_dock, settings)
+	_validator = Validator.new(_output)
 	
 	add_control_to_dock(
 		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock

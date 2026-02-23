@@ -1,4 +1,4 @@
-## Abstract class used by the [SceneValidator] to output information.
+## Abstract class used by the [Validator] to output information.
 @abstract class_name ValidatorOutputInterface extends RefCounted
 
 # ============================================================================
@@ -34,10 +34,10 @@ func push_debug(message: String) -> void:
 ## Add a node-related warning to the dock.
 ## origin_node: The node that caused the warning.
 ## error_message: The warning message to display.
-@abstract func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void
+@abstract func add_node_warning(origin_node: Node, validation_message: ValidationMessage) -> void
 
 
 ## Add a resource-related warning to the dock.
 ## origin_resource: The resource that caused the warning.
 ## error_message: The warning message to display.
-@abstract func add_resource_warning_to_dock(origin_resource: Resource, validation_message: ValidationMessage) -> void
+@abstract func add_resource_warning(origin_resource: Resource, validation_message: ValidationMessage) -> void

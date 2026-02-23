@@ -1,5 +1,5 @@
 ## UI based implmentatio of the [ValidatorOutputInterface]. Displays errors in the Godot Editor UI.
-class_name ValidatorUIOutputWrapper extends ValidatorOutputInterface
+class_name ValidatorGUIOutput extends ValidatorOutputInterface
 
 
 # ============================================================================
@@ -34,12 +34,12 @@ func push_toast(message: String, severity: int = 0) -> void:
 ## Add a node-related warning to the dock.
 ## origin_node: The node that caused the warning.
 ## error_message: The warning message to display.
-func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void :
+func add_node_warning(origin_node: Node, validation_message: ValidationMessage) -> void :
 	_dock.add_node_warning_to_dock(origin_node, validation_message)
 
 
 ## Add a resource-related warning to the dock.
 ## origin_resource: The resource that caused the warning.
 ## error_message: The warning message to display.
-func add_resource_warning_to_dock(origin_resource: Resource, validation_message: ValidationMessage) -> void :
+func add_resource_warning(origin_resource: Resource, validation_message: ValidationMessage) -> void :
 	_dock.add_resource_warning_to_dock(origin_resource, validation_message)

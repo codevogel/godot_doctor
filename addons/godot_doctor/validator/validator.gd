@@ -1,5 +1,5 @@
-## Class that handles validation of scenes and resources.
-class_name SceneValidator extends RefCounted
+## Class that handles validation of Scenes and Resources.
+class_name Validator extends RefCounted
 
 
 # ============================================================================
@@ -151,7 +151,7 @@ func _validate_resource_validation_conditions(
 		)
 		_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original resource so the user can locate it.
-		_output.add_resource_warning_to_dock(resource, msg)
+		_output.add_resource_warning(resource, msg)
 
 
 ## Processes validation conditions for a node.
@@ -187,7 +187,7 @@ func _validate_node_validation_conditions(
 		)
 		_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original node so the user can locate it.
-		_output.add_node_warning_to_dock(node, msg)
+		_output.add_node_warning(node, msg)
 
 
 # ============================================================================

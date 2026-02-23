@@ -31,13 +31,11 @@ func push_debug(message: String) -> void:
 @abstract func push_toast(message: String, severity: int = 0) -> void
 
 
-## Add a node-related warning to the dock.
-## origin_node: The node that caused the warning.
-## error_message: The warning message to display.
+## Add a node-related warning to the output where [param origin_node] is the node that caused
+## the warning and [param validation_message] is the warning message to display.
 @abstract func add_node_warning(origin_node: Node, validation_message: ValidationMessage) -> void
 
 
-## Add a resource-related warning to the dock.
-## origin_resource: The resource that caused the warning.
-## error_message: The warning message to display.
+## Add a resource-related error to the output where [param origin_node] is the node that caused
+## the warning and [param validation_message] is the warning message to display.
 @abstract func add_resource_warning(origin_resource: Resource, validation_message: ValidationMessage) -> void

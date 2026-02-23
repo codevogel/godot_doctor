@@ -31,15 +31,13 @@ func push_toast(message: String, severity: int = 0) -> void:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 		
 		
-## Add a node-related warning to the dock.
-## origin_node: The node that caused the warning.
-## error_message: The warning message to display.
+## Add a node-related warning to the dock where [param origin_node] is the node that caused
+## the warning and [param validation_message] is the warning message to display.
 func add_node_warning(origin_node: Node, validation_message: ValidationMessage) -> void :
 	_dock.add_node_warning_to_dock(origin_node, validation_message)
 
 
-## Add a resource-related warning to the dock.
-## origin_resource: The resource that caused the warning.
-## error_message: The warning message to display.
+## Add a resource-related error to the dock where [param origin_node] is the node that caused
+## the warning and [param validation_message] is the warning message to display.
 func add_resource_warning(origin_resource: Resource, validation_message: ValidationMessage) -> void :
 	_dock.add_resource_warning_to_dock(origin_resource, validation_message)

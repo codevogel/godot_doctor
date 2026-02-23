@@ -34,4 +34,4 @@ enum DockSlot {
 @export var default_validation_ignore_list: Array[Script] = []
 
 
-@export_file("*.res","*.tres") var suite_settings : String = "res://test/suite_settings.tres"
+@export_file("*.res","*.tres") var batch_validation : String = "res://test/batch_validation_settings.tres"

@@ -145,13 +145,13 @@ func _process(delta: float) -> void:
 	
 	# If we have just switched suites, notify the console and update count.
 	if _new_suite :
-		print_rich("\n[color=blue]Runing test suite: [/color]", suite.name)
+		print_rich("\n[color=blue]Runing validation suite: [/color]", suite.name)
 		_suite_count += 1
 		_new_suite = false
 	
-	# Validate that the suite contains tests to process.
+	# Validate that the suite contains validations to process.
 	if suite.scenes.is_empty() and suite.resources.is_empty() :
-		_output.print_global_message("Suite " + suite.name + "doesn't contain any tests.", ValidationCondition.Severity.WARNING)
+		_output.print_global_message("Suite " + suite.name + "doesn't contain any validations.", ValidationCondition.Severity.WARNING)
 	
 	
 	# These will hold the objects we will be validating. Although a PackedScene is also a resource,

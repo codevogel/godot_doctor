@@ -57,3 +57,7 @@ separation of logic.
 
 To get started, simply open any of the scenes inside the respective sub-folders
 and run the Godot Doctor validation check.
+
+### [Batch Validate example]
+
+**Core Concept:** **Batch Validation Using CLI** Contains an exmaple `BatchValidationSettings` resource that runs validation of all example scenes.

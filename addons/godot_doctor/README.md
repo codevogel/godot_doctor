@@ -278,7 +278,7 @@ Behaviour of the Godot Doctor Command Line Interface is managed by a `BatchValid
 
 The Godot Doctor settings resource (found at `addons/godot_doctor/settings/godot_doctor_settings.tres`) needs to link to a `BatchValidationSettings` resource. It will be automatically picked by the CLI when run.
 
-**NOTE:** The default locations of the `BatchValidationSettings` resource is `res://test/batch_validation_settings.tres` and that's the default path used by the Godot Doctor settings. However, that file is not supplied, it needs be created manually.  
+**NOTE:** The default location of the `BatchValidationSettings` resource is `res://test/batch_validation_settings.tres` and that's the default path used by the Godot Doctor settings. However, that file is not supplied, it needs be created manually.  
 
 ## Examples
 

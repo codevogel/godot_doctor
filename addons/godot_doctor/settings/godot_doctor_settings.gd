@@ -33,5 +33,5 @@ enum DockSlot {
 ## A list of scripts that should be ignored by Godot Doctor's default validations.
 @export var default_validation_ignore_list: Array[Script] = []
 
-
-@export_file("*.res","*.tres") var batch_validation : String = "res://test/batch_validation_settings.tres"
+@export_file("*.res", "*.tres")
+var batch_validation: String = "res://test/batch_validation_settings.tres"

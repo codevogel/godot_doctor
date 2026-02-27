@@ -1,11 +1,9 @@
 ## Class that handles validation of Scenes and Resources.
 class_name Validator extends RefCounted
 
-
 # ============================================================================
 # PRIVATE PROPERTIES
 # ============================================================================
-
 
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
@@ -22,15 +20,14 @@ var settings: GodotDoctorSettings:
 			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
-var _output : ValidatorOutputInterface
-
+var _output: ValidatorOutputInterface
 
 # ============================================================================
 # INITIALIZATION - Constructor
 # ============================================================================
 
 
-func _init(output_interface : ValidatorOutputInterface) -> void : 
+func _init(output_interface: ValidatorOutputInterface) -> void:
 	_output = output_interface
 
 
@@ -113,7 +110,7 @@ func find_nodes_to_validate_in_tree(node: Node) -> Array:
 	for child in children:
 		nodes_to_validate.append_array(find_nodes_to_validate_in_tree(child))
 	return nodes_to_validate
-	
+
 
 # ============================================================================
 # VALIDATION CONDITION PROCESSING - Processing and reporting validation results

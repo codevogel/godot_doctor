@@ -30,8 +30,8 @@ var settings: GodotDoctorSettings:
 ## The dock for displaying validation results.
 var _dock: GodotDoctorDock
 
-var _output : ValidatorGUIOutput
-var _validator : Validator
+var _output: ValidatorGUIOutput
+var _validator: Validator
 
 # ============================================================================
 # LIFECYCLE METHODS - Plugin initialization and cleanup
@@ -58,17 +58,17 @@ func _disable_plugin() -> void:
 ## Initializes the plugin by connecting signals and adding the dock to the editor.
 func _enter_tree():
 	_print_debug("Entering tree...")
-		
+
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
 	_output = ValidatorGUIOutput.new(_dock, settings)
 	_validator = Validator.new(_output)
-	
+
 	add_control_to_dock(
 		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
 	)
-	
+
 	_connect_signals()
-	
+
 	_output.push_toast("Plugin loaded.", 0)
 
 
@@ -76,10 +76,10 @@ func _enter_tree():
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
 	_print_debug("Exiting tree...")
-	
+
 	_disconnect_signals()
 	_remove_dock()
-	
+
 	_output.push_toast("Plugin unloaded.", 0)
 
 
@@ -175,14 +175,17 @@ func _on_validation_requested(scene_root: Node) -> void:
 	for node: Node in nodes_to_validate:
 		_validator.validate_node(node)
 
+
 # ============================================================================
 # UTILITY METHODS - Debug printing, configuration mapping
 # ============================================================================
+
 
 ## Prints a debug message to the console if debug printing is enabled in settings.
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
 		print("[GODOT DOCTOR] %s" % message)
+
 
 ## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
 ## Maps all eight dock slot positions from the settings enum to the engine enum values.

@@ -47,8 +47,9 @@ func _init(settings: GodotDoctorSettings) -> void:
 # ============================================================================
 
 
-## Function that outputs the input [param message] and formats it according to the input [param severity],
-## taking into conisideration whether a warning needs be output as an error [param warning_as_error].
+## Function that outputs the input [param message] and formats it
+## according to the input [param severity] taking into conisideration
+## whether a warning needs be output as an error [param warning_as_error].
 ## Used for showing information about the validation process as a whole and not specific tests.
 func print_global_message(
 	message: String,
@@ -64,7 +65,8 @@ func print_global_message(
 
 
 ## Function that prints out information about the input validation [param result],
-## taking into conisideration whether a warning needs be output as an error [param warning_as_error].
+## taking into conisideration whether a warning needs be output
+## as an error [param warning_as_error].
 func print_result(result: Result, warning_as_error: bool = false) -> void:
 	if warning_as_error and result.severity == ValidationCondition.Severity.WARNING:
 		_print_formated_message(
@@ -75,7 +77,8 @@ func print_result(result: Result, warning_as_error: bool = false) -> void:
 
 
 ## Function that prints a custom validation warning with input [param message],
-## taking into conisideration whether a warning needs be output as an error [param warning_as_error].
+## taking into conisideration whether a warning needs be output
+## as an error [param warning_as_error].
 ## Used when a warning is not attached to a validation result.
 func print_warning(message: String, warning_as_error: bool = false) -> void:
 	if warning_as_error:
@@ -107,8 +110,10 @@ func clear_results() -> void:
 # ============================================================================
 
 
-## Helper function that outputs the input [param message] and formats it according to the input [param severity]
-## and addes the input [param prefix] at the begining. The optional [param severity_name] can be used
+## Helper function that outputs the input [param message]
+## and formats it according to the input [param severity]
+## and addes the input [param prefix] at the begining.
+## The optional [param severity_name] can be used
 ## to display a custom title describing the type of message being shown.
 func _print_formated_message(
 	prefix: String,

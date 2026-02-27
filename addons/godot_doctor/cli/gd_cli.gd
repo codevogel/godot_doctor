@@ -122,7 +122,7 @@ func _ready() -> void:
 
 ## Main loop running the validation process. Will take one test (scene or resource) per frame,
 ## validate it, untill all tests have been run.
-func _process(delta: float) -> void:
+func _process(_delta: float) -> void:
 	# Grab the suite for the current run.
 	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
 
@@ -310,7 +310,8 @@ func _load_resource(path: String) -> Resource:
 	# Attempt to load the resource.
 	var resource: Resource = load(path)
 
-	# It's still possible that the resource have failed for whatever reason, if that's the case log that as an error.
+	# It's still possible that the resource have failed for whatever reason,
+	# if that's the case log that as an error.
 	if resource == null:
 		_output.print_global_message(
 			"Couldn't load file " + path + " in suite " + suite.name + ".",
@@ -324,17 +325,19 @@ func _load_resource(path: String) -> Resource:
 
 ## Returns whether the input [param suite] is set up to treat warnings as errors.
 func _should_fail_on_warning(suite: ValidationSuite) -> bool:
-	if suite.warningBehaviourOverride == ValidationSuite.WarningBehaviourOverride.FAIL_ON_WARNINGS:
+	if (
+		suite.warning_behaviour_override
+		== ValidationSuite.WarningBehaviourOverride.FAIL_ON_WARNINGS
+	):
 		return true
 
-	elif suite.warningBehaviourOverride == ValidationSuite.WarningBehaviourOverride.IGNORE_WARNINGS:
+	if suite.warning_behaviour_override == ValidationSuite.WarningBehaviourOverride.IGNORE_WARNINGS:
 		return false
 
-	else:
-		return (
-			_batch_settings.warningBehaviour
-			== BatchValidationSettings.WarningBehaviour.FAIL_ON_WARNINGS
-		)
+	return (
+		_batch_settings.warning_behaviour
+		== BatchValidationSettings.WarningBehaviour.FAIL_ON_WARNINGS
+	)
 
 
 ## Returns whether a validation has passed based on input [param results].

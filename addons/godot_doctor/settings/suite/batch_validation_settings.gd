@@ -7,14 +7,16 @@ class_name BatchValidationSettings extends Resource
 # ============================================================================
 
 ## Enum defining how Warnings in the validation process should be treated.
-enum WarningBehaviour { IGNORE_WARNINGS, FAIL_ON_WARNINGS }  ## Warnings will be reported, but will not fail validation.  ## Warning will be reported and treated as errors, therefore will fail validation.
+## IGNORE_WARNINGS: Warnings will be reported, but will not fail validation.
+## FAIL_ON_WARNINGS: Warning will be reported and treated as errors, therefore will fail validation.
+enum WarningBehaviour { IGNORE_WARNINGS, FAIL_ON_WARNINGS }
 
 # ============================================================================
 # EXPORTED PROPERTIES
 # ============================================================================
 
 ## Defines how the whole batched validation process should deal with Warnings.
-@export var warningBehaviour: WarningBehaviour
+@export var warning_behaviour: WarningBehaviour
 
 ## List of all Validation Suites that are to be processed in batch.
 @export var suites: Array[ValidationSuite]

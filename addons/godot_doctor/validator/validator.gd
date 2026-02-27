@@ -9,6 +9,7 @@ class_name Validator extends RefCounted
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 
 ## The path of the settings resource used to configure the plugin.
+# gdlint:ignore = max-line-length
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 
 ## A Resource that holds the settings for the Godot Doctor plugin.

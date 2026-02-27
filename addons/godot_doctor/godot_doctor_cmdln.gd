@@ -7,7 +7,7 @@ extends SceneTree
 # ============================================================================
 
 ## An arbitrary amount of iterations we are willing to wait for Engine to start the main loop.
-const max_wait_iterations: int = 20
+const MAX_WAIT_ITERATIONS: int = 20
 
 # ============================================================================
 # CORE IMPLEMENTATION
@@ -22,7 +22,7 @@ func _init() -> void:
 
 	# Wait for the main loop to start. We are delaying it a bit to make sure that the Engine
 	# has the time to initialise. Not seen this wait more than 1 iteration.
-	while Engine.get_main_loop() == null and iter < max_wait_iterations:
+	while Engine.get_main_loop() == null and iter < MAX_WAIT_ITERATIONS:
 		await create_timer(.01).timeout
 		iter += 1
 

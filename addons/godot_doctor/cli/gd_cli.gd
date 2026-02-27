@@ -249,18 +249,11 @@ func _process(delta: float) -> void:
 		# Grab the script of the resource. 
 		var script: Script = resource.get_script()
 		
-		# Check if the resource is in the ignore list, if so mark it as ignored.
-		if script in _doctor_settings.default_validation_ignore_list :
-			_process_ignore(name, "Resource with script " + script.resource_path + " is on the to-ignore list.")
+		# Run the resouce validation logic.
+		_validator.validate_resource(resource)
 		
-		# If the resource can be validated, do it now.
-		else :
-			
-			# Run the resouce validation logic.
-			_validator.validate_resource(resource)
-			
-			# Process the validation results.
-			_process_results(name)
+		# Process the validation results.
+		_process_results(name)
 
 		# Calulcate the time that it took to run the validation.
 		t = Time.get_ticks_usec() - t

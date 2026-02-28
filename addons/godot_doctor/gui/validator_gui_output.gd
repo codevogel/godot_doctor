@@ -1,4 +1,5 @@
-## UI based implmentatio of the [ValidatorOutputInterface]. Displays errors in the Godot Editor UI.
+## UI based Implementation of the [ValidatorOutputInterface].
+## Displays errors in the Godot Editor UI.
 class_name ValidatorGUIOutput extends ValidatorOutputInterface
 
 # ============================================================================
@@ -13,9 +14,8 @@ var _dock: GodotDoctorDock
 # ============================================================================
 
 
-func _init(dock: GodotDoctorDock, settings: GodotDoctorSettings) -> void:
+func _init(dock: GodotDoctorDock) -> void:
 	_dock = dock
-	_settings = settings
 
 
 # ============================================================================
@@ -26,7 +26,7 @@ func _init(dock: GodotDoctorDock, settings: GodotDoctorSettings) -> void:
 ## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
 ## [param severity] - 0 for info (default), 1 for warning, 2 for error.
 func push_toast(message: String, severity: int = 0) -> void:
-	if _settings.show_toasts:
+	if _godot_doctor_settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
 
 

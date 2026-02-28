@@ -4,6 +4,7 @@
 ## Report issues or feature requests at https://github.com/codevogel/godot_doctor/issues
 ## License: MIT
 @tool
+class_name GodotDoctorPlugin
 extends EditorPlugin
 
 ## Emitted when a validation is requested, passing the root node of the current edited scene.
@@ -19,12 +20,19 @@ const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor
 #gdlint: enable=max-line-length
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
-var settings: GodotDoctorSettings:
+static var settings: GodotDoctorSettings:
 	get:
 		# This may be used before @onready
 		# so we lazy load it here if needed.
 		if not settings:
-			settings = load(Validator.VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
+			settings = load(Validator.GODOT_DOCTOR_SETTINGS_PATH) as GodotDoctorSettings
+			assert(
+				is_instance_valid(settings),
+				(
+					"Failed to load Godot Doctor settings resource. Please ensure it exists at %s."
+					% Validator.GODOT_DOCTOR_SETTINGS_PATH
+				)
+			)
 		return settings
 
 ## The dock for displaying validation results.
@@ -60,7 +68,7 @@ func _enter_tree():
 	_print_debug("Entering tree...")
 
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	_output = ValidatorGUIOutput.new(_dock, settings)
+	_output = ValidatorGUIOutput.new(_dock)
 	_validator = Validator.new(_output)
 
 	add_control_to_dock(
@@ -163,9 +171,7 @@ func _on_validation_requested(scene_root: Node) -> void:
 
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
 	if edited_object is Resource:
-		var script: Script = edited_object.get_script()
-		if script not in settings.default_validation_ignore_list:
-			_validator.validate_resource(edited_object as Resource)
+		_validator.validate_resource(edited_object as Resource)
 
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _validator.find_nodes_to_validate_in_tree(scene_root)
@@ -184,7 +190,7 @@ func _on_validation_requested(scene_root: Node) -> void:
 ## Prints a debug message to the console if debug printing is enabled in settings.
 func _print_debug(message: String) -> void:
 	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] %s" % message)
+		print("[Godot Doctor]: %s" % message)
 
 
 ## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.

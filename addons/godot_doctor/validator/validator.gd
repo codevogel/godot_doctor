@@ -10,18 +10,13 @@ const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 
 ## The path of the settings resource used to configure the plugin.
 # gdlint:ignore = max-line-length
-const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
+const GODOT_DOCTOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 
-## A Resource that holds the settings for the Godot Doctor plugin.
 var settings: GodotDoctorSettings:
 	get:
-		# This may be used before @onready
-		# so we lazy load it here if needed.
-		if not settings:
-			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
-		return settings
+		return GodotDoctorPlugin.settings
 
-var _output: ValidatorOutputInterface
+var _validator_output: ValidatorOutputInterface
 
 # ============================================================================
 # INITIALIZATION - Constructor
@@ -29,7 +24,7 @@ var _output: ValidatorOutputInterface
 
 
 func _init(output_interface: ValidatorOutputInterface) -> void:
-	_output = output_interface
+	_validator_output = output_interface
 
 
 # ============================================================================
@@ -42,7 +37,10 @@ func _init(output_interface: ValidatorOutputInterface) -> void:
 ## Processes the validation conditions and reports any errors to the dock.
 func validate_resource(resource: Resource):
 	var validation_conditions: Array[ValidationCondition] = []
-	if settings.use_default_validations:
+	var script: Script = resource.get_script()
+	if script == null:
+		return
+	if settings.use_default_validations and not (script in settings.default_validation_ignore_list):
 		validation_conditions.append_array(_get_default_validation_conditions(resource))
 	if resource.has_method(VALIDATING_METHOD_NAME):
 		var generated_conditions: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
@@ -55,7 +53,7 @@ func validate_resource(resource: Resource):
 ## and processing the results.
 ## For non-@tool scripts, creates a temporary instance to call validation methods on.
 func validate_node(node: Node) -> void:
-	_output.push_debug("Validating node: %s" % node.name)
+	_validator_output.push_debug("Validating node: %s" % node.name)
 	var validation_target: Object = node
 
 	# Depending on whether the validation target is marked as @tool or not,
@@ -65,14 +63,27 @@ func validate_node(node: Node) -> void:
 	var validation_conditions: Array[ValidationCondition] = []
 
 	if settings.use_default_validations:
-		validation_conditions.append_array(_get_default_validation_conditions(validation_target))
+		# Only generate default validation conditions if the script isn't in the ignore list
+		var script: Script = validation_target.get_script()
+		if script == null:
+			# This shouldn't happen because we only call this in nodes that have scripts,
+			# as nodes without scripts are filtered in find_nodes_to_validate_in_tree,
+			# but do this just in case.
+			push_error("validate_node called on %s, but it has no script." % validation_target.name)
+			return
+		if script and not (script in settings.default_validation_ignore_list):
+			validation_conditions.append_array(
+				_get_default_validation_conditions(validation_target)
+			)
 
 	# Now call the method on the appropriate target (the original node if @tool,
 	# or the new instance if non-@tool).
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
-		_output.push_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
+		_validator_output.push_debug(
+			"Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target]
+		)
 		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-		_output.push_debug("Generated validation conditions: %s" % [generated_conditions])
+		_validator_output.push_debug("Generated validation conditions: %s" % [generated_conditions])
 		validation_conditions.append_array(generated_conditions)
 	elif not settings.use_default_validations:
 		# This should never happen, since we filtered for nodes that have no validation method
@@ -100,7 +111,7 @@ func find_nodes_to_validate_in_tree(node: Node) -> Array:
 
 	# Only add nodes that have a script attached
 	var script: Script = node.get_script()
-	if script != null and not (script in settings.default_validation_ignore_list):
+	if script != null:
 		# Add all nodes if use_default_validations is true,
 		# or add only the nodes that have the method if it is false
 		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
@@ -132,7 +143,7 @@ func _validate_resource_validation_conditions(
 			. max()
 		)
 
-		_output.push_toast(
+		_validator_output.push_toast(
 			(
 				"Found %s configuration warning(s) in %s."
 				% [validation_result.errors.size(), resource.resource_path]
@@ -141,15 +152,15 @@ func _validate_resource_validation_conditions(
 		)
 	for msg in validation_messages:
 		var name: String = resource.resource_path.split("/")[-1]
-		_output.push_debug(
+		_validator_output.push_debug(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, resource, msg.message]
 			)
 		)
-		_output.push_debug("Adding message to dock...")
+		_validator_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original resource so the user can locate it.
-		_output.add_resource_warning(resource, msg)
+		_validator_output.add_resource_warning(resource, msg)
 
 
 ## Processes validation conditions for a node.
@@ -169,7 +180,7 @@ func _validate_node_validation_conditions(
 			. max()
 		)
 
-		_output.push_toast(
+		_validator_output.push_toast(
 			(
 				"Found %s configuration warning(s) in %s."
 				% [validation_result.errors.size(), node.name]
@@ -177,15 +188,15 @@ func _validate_node_validation_conditions(
 			severity_level
 		)
 	for msg in validation_messages:
-		_output.push_debug(
+		_validator_output.push_debug(
 			(
 				"Found message with severity %s in node %s: %s"
 				% [msg.severity_level, node.name, msg.message]
 			)
 		)
-		_output.push_debug("Adding message to dock...")
+		_validator_output.push_debug("Adding message to dock...")
 		# Push the warning to the dock, passing the original node so the user can locate it.
-		_output.add_node_warning(node, msg)
+		_validator_output.add_node_warning(node, msg)
 
 
 # ============================================================================
@@ -199,6 +210,10 @@ func _validate_node_validation_conditions(
 ## - String properties: checks if they are non-empty after stripping whitespace
 ## Returns an array of generated ValidationCondition objects.
 func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
+	if validation_target == null:
+		push_warning("_get_default_validation_conditions called with null target.")
+		return []
+
 	var export_props: Array[Dictionary] = _get_export_props(validation_target)
 	var validation_conditions: Array[ValidationCondition] = []
 

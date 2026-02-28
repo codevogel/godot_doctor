@@ -8,6 +8,7 @@ extends SceneTree
 
 ## An arbitrary amount of iterations we are willing to wait for Engine to start the main loop.
 const MAX_WAIT_ITERATIONS: int = 20
+const GODOT_DOCTOR_CLI_PATH: String = "res://addons/godot_doctor/cli/godot_doctor_cli.gd"
 
 # ============================================================================
 # CORE IMPLEMENTATION
@@ -15,7 +16,7 @@ const MAX_WAIT_ITERATIONS: int = 20
 
 
 ## Intializes the validation process. Needs to make sure the main loop is running in order
-## for the [Validator] to safely process Nodes in the Scene 	Tree.
+## for the [Validator] to safely process Nodes in the SceneTree.
 func _init() -> void:
 	# Current wait iteratrion count.
 	var iter: int = 0
@@ -29,9 +30,13 @@ func _init() -> void:
 	# If after all the wait, the main loop has not started, return and error.
 	if Engine.get_main_loop() == null:
 		push_error("Main loop did not start in time.")
-		quit(1)
+		var exit_code: int = 1  # A non-zero exit code indicates an error.
+		quit(exit_code)
 		return
 
 	# Create the Godot Doctor CLI interface and let it run.
-	var cli: Node = load("res://addons/godot_doctor/cli/gd_cli.gd").new()
-	get_root().add_child(cli)
+	var cli_node: Node = load(GODOT_DOCTOR_CLI_PATH).new()
+	assert(is_instance_valid(cli_node))
+	assert(cli_node is GodotDoctorCLI)
+	var godot_doctor_cli: GodotDoctorCLI = cli_node as GodotDoctorCLI
+	get_root().add_child(godot_doctor_cli)

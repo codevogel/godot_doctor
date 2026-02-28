@@ -1,6 +1,7 @@
-## UI based implmentatio of the [ValidatorOutputInterface]. Outputs information to the console,
+## UI based implementation of the [ValidatorOutputInterface]. Outputs information to the console,
 ## as well as collects error and warning data to be processed by the CLI validation logic.
-class_name ValidatorCLIOutput extends ValidatorOutputInterface
+class_name ValidatorCLIOutput
+extends ValidatorOutputInterface
 
 # ============================================================================
 # HELPER TYPES
@@ -32,15 +33,6 @@ class Result:
 
 ## Array holding all validation results of the currently validated object.
 var _results: Array[Result]
-
-# ============================================================================
-# INITIALIZATION - Constructor
-# ============================================================================
-
-
-func _init(settings: GodotDoctorSettings) -> void:
-	_settings = settings
-
 
 # ============================================================================
 # CORE INTERFACE

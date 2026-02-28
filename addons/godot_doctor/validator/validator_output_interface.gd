@@ -7,7 +7,9 @@ class_name ValidatorOutputInterface extends RefCounted
 # ============================================================================
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
-var _settings: GodotDoctorSettings
+var _godot_doctor_settings: GodotDoctorSettings:
+	get:
+		return GodotDoctorPlugin.settings
 
 # ============================================================================
 # CORE INTERFACE
@@ -16,8 +18,8 @@ var _settings: GodotDoctorSettings
 
 ## Prints a debug message to the console if debug printing is enabled in settings.
 func push_debug(message: String) -> void:
-	if _settings.show_debug_prints:
-		print("[GODOT DOCTOR] %s" % message)
+	if _godot_doctor_settings.show_debug_prints:
+		print("[Godot Doctor]: %s" % message)
 
 
 # ============================================================================

@@ -1,5 +1,6 @@
 ## CLI based wrapper around the [Validator]. Used to run validations offline in a batch.
 ## Uses [BatchValidationSettings] as source of information. Will print all results to the terminal.
+class_name GodotDoctorCLI
 extends Node
 
 # ============================================================================
@@ -22,9 +23,6 @@ const PLUGIN_CFG_PATH: String = "res://addons/godot_doctor/plugin.cfg"
 # PRIVATE PROPERTIES
 # ============================================================================
 
-## General settings of Godot Doctor.
-var _doctor_settings: GodotDoctorSettings
-
 ## Settings for the batch validation, contains all scenes and resources that are to be validated.
 var _batch_settings: BatchValidationSettings
 
@@ -34,16 +32,16 @@ var _output: ValidatorCLIOutput
 var _validator: Validator
 
 ## Flag marking if the current iteration is processing a new suite,
-## one that has not been processed yet.
+## (one that has not been processed yet).
 var _new_suite: bool = true
 
-## Stores the index of the Validation Suite that is curentply processed.
+## Stores the index of the Validation Suite that is currently processed.
 var _current_suite_idx: int = 0
 
-## Stores the index of the Scene in the current Validation Suite that is curentply processed.
+## Stores the index of the Scene in the current Validation Suite that is currently processed.
 var _current_scene_idx: int = 0
 
-## Stores the index of the Resource in the current Validation Suite that is curentply processed.
+## Stores the index of the Resource in the current Validation Suite that is currently processed.
 var _current_resource_idx: int = 0
 
 ## The amount of warnings that the validation process has generated.
@@ -81,9 +79,9 @@ var _base_path: String
 
 ## Basic initialization of the CLI validation process - mostly loads settings.
 func _ready() -> void:
-	# Initialse the settings.
-	_doctor_settings = load(Validator.VALIDATOR_SETTINGS_PATH)
-	_batch_settings = load(_doctor_settings.batch_validation)
+	# Initialize the settings.
+	var godot_doctor_settings: GodotDoctorSettings = GodotDoctorPlugin.settings
+	_batch_settings = godot_doctor_settings.batch_validation_settings
 
 	# If the batch settings couldn't be loaded, the whole process can't run. We need report
 	# a total failure.
@@ -96,7 +94,7 @@ func _ready() -> void:
 	_base_path = get_path()
 
 	# Initialise the validator with CLI output interface.
-	_output = ValidatorCLIOutput.new(_doctor_settings)
+	_output = ValidatorCLIOutput.new()
 	_validator = Validator.new(_output)
 
 	# Load the plugin configuration file to get the current plugin version.
@@ -107,12 +105,11 @@ func _ready() -> void:
 	if error == Error.OK:
 		var plugin_version: String = config.get_value("plugin", "version", "1.0")
 		print_rich("Starting [color=blue][b]Godot Doctor[/b][/color] v" + plugin_version + ".")
-
+		return
 	# If the configuration file couldn't be read, something went very wront, stop precessing and
 	# report an error.
-	else:
-		push_error("Couldn't read Godot Doctor plugin configration file: " + PLUGIN_CFG_PATH + ".")
-		get_tree().quit(ExitCode.EXIT_FAIL)
+	push_error("Couldn't read Godot Doctor plugin configration file: " + PLUGIN_CFG_PATH + ".")
+	get_tree().quit(ExitCode.EXIT_FAIL)
 
 
 # ============================================================================

@@ -60,4 +60,5 @@ and run the Godot Doctor validation check.
 
 ### [Batch Validate example]
 
-**Core Concept:** **Batch Validation Using CLI** Contains an exmaple `BatchValidationSettings` resource that runs validation of all example scenes.
+**Core Concept:** **Batch Validation Using CLI** Contains an exmaple
+`BatchValidationSettings` resource that runs validation of all example scenes.

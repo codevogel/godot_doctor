@@ -252,16 +252,16 @@ ValidationCondition.new(
 
 ## Command Line Interface
 
-Also supplied in this repo is the `gd_cmdln.gd` script that can be run from the
-command line.
+Also supplied along with the plugin is a `godot_doctor_cmdln.gd` script which
+serves as the entry point for running Godot Doctor in the command line. This
+allows you to run Godot Doctor validations without opening the editor, making it
+ideal for integration into CI/CD pipelines.
 
-The script will run validations of set scenes (`*.tscn/*.scn`files) and
-resources (`*.tres/*.res` files).
+The script will run validations of set scene (`*.tscn/*.scn`) and resource
+(`*.tres/*.res`) files.
 
-The script will return `0` if all validation succeed and `1` if any validation
-fail. While providing Error and Warning information to the console. This makes
-it useful for integration into CI/CD (Continuous Integration / Continuous
-Delivery) pipelines.
+Running this script will return `0` if all validation succeed and `1` if any
+validation fail, while providing Error and Warning information to the console.
 
 ### Usage
 
@@ -269,36 +269,37 @@ From the command line, at the root of your project, use the following command to
 run the script.
 
 ```bash
-[godot] --headless --debug --script addons/godot_doctor/godot_doctor_cmdln.gd
+[godot] --headless --script addons/godot_doctor/godot_doctor_cmdln.gd
 ```
 
 - `[godot]` - the path to the Godot Editor executable.
 - `--headless` - tells Godor to run in headless mode - without the GUI. This is
   required on platforms that do not have GPU access, such most CI/CD servers.
-- `--debug` - tells Godot to run in debug mode which can by helpful by providing
-  more information to the console.
 - `--script` - tells Godot to run a script, in this case Godot Doctor in CLI
   mode.
 
-It should be possible to run the script from outside the project root by using
-the `--path` option.
+Optionally add the `--debug` flag to run Godot in debug mode, which will halt
+execution on any uncaught errors. This is not recommended for CI/CD pipelines,
+as it can hang your runner, but it can be useful for debugging validation logic
+locally.
+
+If you want to run the CLI from a different directory, you can specify the
+`--path` argument as well, e.g. `--path path/to/the/root/of/your/project`.
 
 ### Configuration
 
 Behaviour of the Godot Doctor Command Line Interface is managed by a
-`BatchValidationSettings` resource. It contains lists of Validation Suites, that
-contain lists of scenes and resources that are to be validated, as well as
-configuration on how to handle Warnings.
+`BatchValidationSettings` resource. It contains a lists of `ValidationSuite`
+resources. A Validation Suite contain a list of scenes and resources that are to
+be validated, as well as an option that defines how to handle Warnings.
 
 The Godot Doctor settings resource (found at
 `addons/godot_doctor/settings/godot_doctor_settings.tres`) needs to link to a
-`BatchValidationSettings` resource. It will be automatically picked by the CLI
-when run.
+`BatchValidationSettings` resource in order for the CLI to work.
 
-**NOTE:** The default location of the `BatchValidationSettings` resource is
-`res://test/batch_validation_settings.tres` and that's the default path used by
-the Godot Doctor settings. However, that file is not supplied, it needs be
-created manually.
+See the example in `addons/godot_doctory/examples/batch_validate_example/` for
+an example `BatchValidationSettings` resource that sets up a validation suite
+per example in `addons/godot_doctory/examples/`.
 
 ## Examples
 

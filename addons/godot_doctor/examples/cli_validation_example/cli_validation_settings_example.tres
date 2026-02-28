@@ -1,57 +1,57 @@
-[gd_resource type="Resource" script_class="BatchValidationSettings" format=3 uid="uid://1s1q2g0mu6is"]
+[gd_resource type="Resource" script_class="CLIValidationSettings" format=3 uid="uid://1s1q2g0mu6is"]
 
-[ext_resource type="Script" uid="uid://ce6kjtbfcdlq8" path="res://addons/godot_doctor/settings/suite/batch_validation_settings.gd" id="1_krftw"]
-[ext_resource type="Script" uid="uid://x30of7yko1sj" path="res://addons/godot_doctor/settings/suite/validation_suite.gd" id="2_feu74"]
+[ext_resource type="Script" uid="uid://ce6kjtbfcdlq8" path="res://addons/godot_doctor/settings/suite/cli_validation_settings.gd" id="1_236mx"]
+[ext_resource type="Script" uid="uid://x30of7yko1sj" path="res://addons/godot_doctor/settings/suite/validation_suite.gd" id="2_8mrmi"]
 
 [sub_resource type="Resource" id="Resource_krftw"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "general_example"
 scenes = Array[String](["uid://cx0kpt21d1x5w", "uid://cqi24df5a5oyv"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_feu74"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_child_count_example"
 scenes = Array[String](["uid://bullc4qncovb5"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_obaw2"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_default_validations_example"
 scenes = Array[String](["uid://d1y37xhp3j8ij"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_b67kp"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_exports_example"
 scenes = Array[String](["uid://dd0oba6wf8axw"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_dvffk"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_node_path_example"
 scenes = Array[String](["uid://wcfwycmxc4vu"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_tcbhq"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_resource_example"
 scenes = Array[String](["uid://bshmd6dxgteua"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_oskdr"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_tool_script_example"
 scenes = Array[String](["uid://d1qwu8667k7gi"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [sub_resource type="Resource" id="Resource_csl5i"]
-script = ExtResource("2_feu74")
+script = ExtResource("2_8mrmi")
 name = "verify_type_of_packed_scene_example"
 scenes = Array[String](["uid://cj1w4wfolltal", "uid://bhja3oqklf3um", "uid://q1x4335433kr", "uid://dn4cdfe51al2b", "uid://byl5nhml5u02o"])
 metadata/_custom_type_script = "uid://x30of7yko1sj"
 
 [resource]
-script = ExtResource("1_krftw")
-suites = Array[ExtResource("2_feu74")]([SubResource("Resource_krftw"), SubResource("Resource_feu74"), SubResource("Resource_obaw2"), SubResource("Resource_b67kp"), SubResource("Resource_dvffk"), SubResource("Resource_tcbhq"), SubResource("Resource_oskdr"), SubResource("Resource_csl5i")])
+script = ExtResource("1_236mx")
+suites = Array[ExtResource("2_8mrmi")]([SubResource("Resource_krftw"), SubResource("Resource_feu74"), SubResource("Resource_obaw2"), SubResource("Resource_b67kp"), SubResource("Resource_dvffk"), SubResource("Resource_tcbhq"), SubResource("Resource_oskdr"), SubResource("Resource_csl5i")])
 metadata/_custom_type_script = "uid://ce6kjtbfcdlq8"

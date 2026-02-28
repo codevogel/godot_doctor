@@ -1,5 +1,5 @@
 ## CLI based wrapper around the [Validator]. Used to run validations offline in a batch.
-## Uses [BatchValidationSettings] as source of information. Will print all results to the terminal.
+## Uses [CLIValidationSettings] as source of information. Will print all results to the terminal.
 class_name GodotDoctorCLI
 extends Node
 
@@ -24,7 +24,7 @@ const PLUGIN_CFG_PATH: String = "res://addons/godot_doctor/plugin.cfg"
 # ============================================================================
 
 ## Settings for the batch validation, contains all scenes and resources that are to be validated.
-var _batch_settings: BatchValidationSettings
+var _cli_validation_settings: CLIValidationSettings
 
 var _output: ValidatorCLIOutput
 
@@ -81,12 +81,12 @@ var _base_path: String
 func _ready() -> void:
 	# Initialize the settings.
 	var godot_doctor_settings: GodotDoctorSettings = GodotDoctorPlugin.settings
-	_batch_settings = godot_doctor_settings.batch_validation_settings
+	_cli_validation_settings = godot_doctor_settings.cli_validation_settings
 
-	# If the batch settings couldn't be loaded, the whole process can't run. We need report
+	# If the CLI validation settings couldn't be loaded, the whole process can't run. We need report
 	# a total failure.
-	if _batch_settings == null:
-		push_error("Couldn't find Batch Validation Settings.")
+	if _cli_validation_settings == null:
+		push_error("Couldn't find CLI Validation Settings.")
 		get_tree().quit(ExitCode.EXIT_FAIL)
 		return
 
@@ -121,7 +121,7 @@ func _ready() -> void:
 ## validate it, untill all tests have been run.
 func _process(_delta: float) -> void:
 	# Grab the suite for the current run.
-	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	# Make sure the suite is valid.
 	if suite == null:
@@ -257,7 +257,7 @@ func _process(_delta: float) -> void:
 		_current_resource_idx += 1
 
 	# If there are more suites to process, go to the next one now.
-	elif _current_suite_idx + 1 < _batch_settings.suites.size():
+	elif _current_suite_idx + 1 < _cli_validation_settings.suites.size():
 		_current_suite_idx += 1
 
 		# Rest the scene/resource indices.
@@ -283,7 +283,7 @@ func _process(_delta: float) -> void:
 ## Function that attempts to load a resource from the input path, but does it safely -
 ## checks if the file exits and can be loaded, and if necessary reports found errors.
 func _load_resource(path: String) -> Resource:
-	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	# Make sure the path is not empty. Throw a special warning for this case.
 	if path.is_empty():
@@ -332,15 +332,15 @@ func _should_fail_on_warning(suite: ValidationSuite) -> bool:
 		return false
 
 	return (
-		_batch_settings.warning_behaviour
-		== BatchValidationSettings.WarningBehaviour.FAIL_ON_WARNINGS
+		_cli_validation_settings.warning_behaviour
+		== CLIValidationSettings.WarningBehaviour.FAIL_ON_WARNINGS
 	)
 
 
 ## Returns whether a validation has passed based on input [param results].
 func _has_passed(results: Array[ValidatorCLIOutput.Result]) -> bool:
 	# Grab the current validation suite.
-	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	# Check whether the validation should fail if encountering a warning.
 	var fail_on_warnings: bool = _should_fail_on_warning(suite)
@@ -363,7 +363,7 @@ func _has_passed(results: Array[ValidatorCLIOutput.Result]) -> bool:
 ## all counters are reflecting the validation state.
 func _process_ignore(object_name: String, message: String) -> void:
 	# Grab the current validation suite.
-	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	# Ignoring an object usually, results in a warning, we check here if warnings should be
 	# treated as errors for the current suite and if so process this as an error.s
@@ -394,7 +394,7 @@ func _process_ignore(object_name: String, message: String) -> void:
 ## validation state counters.
 func _process_results(object_name: String) -> void:
 	# Grab the current validation suite.
-	var suite: ValidationSuite = _batch_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	# We have test results, so we need to mark that another test has happened.
 	_test_count += 1

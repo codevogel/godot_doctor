@@ -1,6 +1,7 @@
 ## Resource used by the CLI interface. It holds lists of all Scenes and Resources that are to be
-## validated in a batched process.
-class_name BatchValidationSettings extends Resource
+## validated when running Godot Doctor from the command line,
+## as well as settings on how to treat Warnings in the validation process.
+class_name CLIValidationSettings extends Resource
 
 # ============================================================================
 # HELPER TYPES

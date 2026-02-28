@@ -1,9 +1,9 @@
-# Example: Batch Validation
+# Example: CLI Validation
 
-This example holds an example `BatchValidationSettings` resource, which is used
-to run Godot Doctor in the CLI.
+This example holds an example `CLIValidationSettings` resource, which is used to
+run Godot Doctor in the CLI.
 
-To test the CLI, set it as the `batch_validation_settings` property in the
+To test the CLI, set it as the `cli_validation_settings` property in the
 `addons/godot_doctor/settings/godot_doctor_settings.tres` resource, and then run
 the CLI as explained in the
 [CLI instructions](../../README.md#command-line-interface).

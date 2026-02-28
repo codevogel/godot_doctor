@@ -58,7 +58,9 @@ separation of logic.
 To get started, simply open any of the scenes inside the respective sub-folders
 and run the Godot Doctor validation check.
 
-### [Batch Validate example]
+### [CLI Validation example](./cli_validation_example/README.md)
 
-**Core Concept:** **Batch Validation Using CLI** Contains an exmaple
-`BatchValidationSettings` resource that runs validation of all example scenes.
+**Core Concept:** **Batch Validation Using CLI** Contains an example
+`CLIValidationSettings` resource that demonstrates how to set up command-line
+validation for a project, allowing you to run all validations in batch mode
+without opening the editor, ideal for CI pipelines or pre-commit hooks.

@@ -289,17 +289,17 @@ If you want to run the CLI from a different directory, you can specify the
 ### Configuration
 
 Behaviour of the Godot Doctor Command Line Interface is managed by a
-`BatchValidationSettings` resource. It contains a lists of `ValidationSuite`
+`CLIValidationSettings` resource. It contains a lists of `ValidationSuite`
 resources. A Validation Suite contain a list of scenes and resources that are to
 be validated, as well as an option that defines how to handle Warnings.
 
 The Godot Doctor settings resource (found at
 `addons/godot_doctor/settings/godot_doctor_settings.tres`) needs to link to a
-`BatchValidationSettings` resource in order for the CLI to work.
+`CLIValidationSettings` resource in order for the CLI to work.
 
-See the example in `addons/godot_doctory/examples/batch_validate_example/` for
-an example `BatchValidationSettings` resource that sets up a validation suite
-per example in `addons/godot_doctory/examples/`.
+See the example in `addons/godot_doctory/examples/cli_validation_example/` for
+an example `CLIValidationSettings` resource that sets up a validation suite per
+example in `addons/godot_doctory/examples/`.
 
 ## Examples
 

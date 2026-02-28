@@ -1,5 +1,5 @@
 ## Resource used by the CLI interface. It holds lists of Scenes and Resource that are to be
-## validated in a batched process. Used by [BatchValidationSettings].
+## validated in a batched process. Used by [CLIValidationSettings].
 class_name ValidationSuite extends Resource
 
 # ============================================================================
@@ -7,7 +7,7 @@ class_name ValidationSuite extends Resource
 # ============================================================================
 
 ## Enum defining how Warnings in the validation process should be treated.
-## INHERIT: Will use the settings in the parent [BatchValidationSettings].
+## INHERIT: Will use the settings in the parent [CLIValidationSettings].
 ## IGNORE_WARNINGS: Warnings will be reported, but will not fail validation.
 ## FAIL_ON_WARNINGS: Warning will be reported and treated as errors, therefore will fail validation.
 enum WarningBehaviourOverride { INHERIT, IGNORE_WARNINGS, FAIL_ON_WARNINGS }

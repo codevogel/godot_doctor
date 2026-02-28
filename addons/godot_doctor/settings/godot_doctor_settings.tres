@@ -1,10 +1,8 @@
 [gd_resource type="Resource" script_class="GodotDoctorSettings" format=3 uid="uid://dk02mg62vw2m1"]
 
-[ext_resource type="Resource" uid="uid://1s1q2g0mu6is" path="res://addons/godot_doctor/examples/batch_validate_example/batch_validate_example.tres" id="1_np33a"]
 [ext_resource type="Script" uid="uid://dtaq5a6mhbihi" path="res://addons/godot_doctor/settings/godot_doctor_settings.gd" id="1_w45p4"]
 
 [resource]
 script = ExtResource("1_w45p4")
 default_validation_ignore_list = Array[Script]([ExtResource("1_w45p4")])
-batch_validation_settings = ExtResource("1_np33a")
 metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

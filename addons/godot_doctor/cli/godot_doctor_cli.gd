@@ -31,6 +31,10 @@ var _output: ValidatorCLIOutput
 ## The validator object, this the main object, it does all the actual validation logic.
 var _validator: Validator
 
+## Cache of suites that have been resolved generatively (index → resolved copy).
+## Only populated for suites where [member ValidationSuite.include_all] is true.
+var _resolved_suites: Dictionary = {}
+
 ## Flag marking if the current iteration is processing a new suite,
 ## (one that has not been processed yet).
 var _new_suite: bool = true
@@ -120,7 +124,7 @@ func _process(_delta: float) -> void:
 	_enter_suite_if_new(suite)
 	_warn_if_suite_empty(suite)
 	_process_current_item(suite)
-	_advance_to_next_item_or_end()
+	_advance_to_next_item_or_end(suite)
 
 
 # ============================================================================
@@ -129,12 +133,82 @@ func _process(_delta: float) -> void:
 
 
 ## Returns the current suite, quitting with an error if it is null.
+## If the suite has [member ValidationSuite.include_all] enabled, returns a resolved copy
+## with scenes and resources populated from the project — creating it once and caching it.
 func _get_current_suite() -> ValidationSuite:
 	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 	if suite == null:
 		push_error("Found null in the Validation Suite list.")
 		get_tree().quit(ExitCode.EXIT_FAIL)
-	return suite
+		return null
+
+	# If the suite doesn't have [member ValidationSuite.include_all] enabled, return it as is.
+	if not suite.include_all_generatively:
+		return suite
+
+	# Grab the cached copy of the suite if it has been resolved before,
+	if _resolved_suites.has(_current_suite_idx):
+		return _resolved_suites[_current_suite_idx]
+
+	# otherwise create a new one, cache it and return it.
+	var resolved: ValidationSuite = suite.duplicate()
+	resolved.scenes = _collect_all_scenes()
+	resolved.resources = _collect_all_resources()
+	_resolved_suites[_current_suite_idx] = resolved
+	return resolved
+
+
+## Recursively finds all .tscn/.scn files in the project, excluding paths
+## configured in [member CLIValidationSettings.exclude_directories] and
+## [member CLIValidationSettings.exclude_scenes].
+func _collect_all_scenes() -> Array[String]:
+	var all := _find_files_recursive("res://", ["*.tscn", "*.scn"])
+	var result: Array[String] = []
+	for path in all:
+		if not _cli_validation_settings.is_excluded(path):
+			result.append(path)
+	return result
+
+
+## Recursively finds all .tres/.res files in the project that have a script attached,
+## excluding paths configured in [member CLIValidationSettings.exclude_directories] and
+## [member CLIValidationSettings.exclude_resources].
+func _collect_all_resources() -> Array[String]:
+	var all := _find_files_recursive("res://", ["*.tres", "*.res"])
+	var result: Array[String] = []
+	for path in all:
+		if _cli_validation_settings.is_excluded(path):
+			continue
+		var res := ResourceLoader.load(path)
+		if res != null and res.get_script() != null:
+			result.append(path)
+	return result
+
+
+## Recursively walks [param dir_path] and returns every file matching any of [param patterns].
+func _find_files_recursive(dir_path: String, patterns: Array[String]) -> Array[String]:
+	var result: Array[String] = []
+	var dir := DirAccess.open(dir_path)
+	if dir == null:
+		push_warning("[GodotDoctorCLI] Could not open directory: %s" % dir_path)
+		return result
+
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		var full_path := dir_path.path_join(entry)
+		if dir.current_is_dir():
+			if not entry.begins_with("."):
+				result.append_array(_find_files_recursive(full_path, patterns))
+		else:
+			for pattern in patterns:
+				if entry.match(pattern):
+					result.append(full_path)
+					break
+		entry = dir.get_next()
+
+	dir.list_dir_end()
+	return result
 
 
 ## Prints the suite header and increments the suite counter when entering a new suite.
@@ -173,13 +247,11 @@ func _process_current_item(suite: ValidationSuite) -> void:
 
 ## Advances the internal indices to the next scene, resource, or suite.
 ## Calls [_end] and quits if all items have been processed.
-func _advance_to_next_item_or_end() -> void:
-	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
-
-	if _current_scene_idx + 1 < suite.scenes.size():
+func _advance_to_next_item_or_end(current_suite: ValidationSuite) -> void:
+	if _current_scene_idx + 1 < current_suite.scenes.size():
 		_current_scene_idx += 1
 
-	elif _current_resource_idx + 1 < suite.resources.size():
+	elif _current_resource_idx + 1 < current_suite.resources.size():
 		_current_resource_idx += 1
 
 	elif _current_suite_idx + 1 < _cli_validation_settings.suites.size():
@@ -282,7 +354,7 @@ func _process_resource(resource: Resource) -> void:
 ## Function that attempts to load a resource from the input path, but does it safely -
 ## checks if the file exists and can be loaded, and if necessary reports found errors.
 func _load_resource(path: String) -> Resource:
-	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _get_current_suite()
 
 	if path.is_empty():
 		_output.print_global_message(
@@ -332,7 +404,7 @@ func _should_fail_on_warning(suite: ValidationSuite) -> bool:
 
 ## Returns whether a validation has passed based on input [param results].
 func _has_passed(results: Array[ValidatorCLIOutput.Result]) -> bool:
-	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _get_current_suite()
 	var fail_on_warnings: bool = _should_fail_on_warning(suite)
 
 	for result: ValidatorCLIOutput.Result in results:
@@ -347,7 +419,7 @@ func _has_passed(results: Array[ValidatorCLIOutput.Result]) -> bool:
 
 ## Prints out validation result for an object that is marked to be ignored, and updates counters.
 func _process_ignore(object_name: String, message: String) -> void:
-	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _get_current_suite()
 
 	if _should_fail_on_warning(suite):
 		CLIPrinter.print_status(object_name, CLIPrinter.Status.FAILED)
@@ -367,7 +439,7 @@ func _process_ignore(object_name: String, message: String) -> void:
 ## Takes the current results in [_output], prints relevant info to the console and updates all
 ## validation state counters.
 func _process_results(object_name: String) -> void:
-	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
+	var suite: ValidationSuite = _get_current_suite()
 	_test_count += 1
 
 	var results: Array[ValidatorCLIOutput.Result] = _output.get_results()

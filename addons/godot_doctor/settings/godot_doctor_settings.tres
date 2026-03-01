@@ -4,4 +4,5 @@
 
 [resource]
 script = ExtResource("1_w45p4")
+default_validation_ignore_list = Array[Script]([ExtResource("1_w45p4")])
 metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

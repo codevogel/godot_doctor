@@ -42,6 +42,9 @@ Or, by manual installation:
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
+- [Command Line Interface](#command-line-interface)
+  - [Usage](#usage)
+  - [Configuration](#configuration)
 - [How It Works](#how-it-works)
 - [Examples](#examples)
 - [Installation](#installation)
@@ -236,6 +239,57 @@ ValidationCondition.new(
    "my_resource must be assigned."
   )
 ```
+
+## Command Line Interface
+
+Also supplied along with the plugin is a `godot_doctor_cmdln.gd` script which
+serves as the entry point for running Godot Doctor in the command line. This
+allows you to run Godot Doctor validations without opening the editor, making it
+ideal for integration into CI/CD pipelines.
+
+The script will run validations of set scene (`*.tscn/*.scn`) and resource
+(`*.tres/*.res`) files.
+
+Running this script will return `0` if all validation succeed and `1` if any
+validation fail, while providing Error and Warning information to the console.
+
+### Usage
+
+From the command line, at the root of your project, use the following command to
+run the script.
+
+```bash
+[godot] --headless --script addons/godot_doctor/godot_doctor_cmdln.gd
+```
+
+- `[godot]` - the path to the Godot Editor executable.
+- `--headless` - tells Godor to run in headless mode - without the GUI. This is
+  required on platforms that do not have GPU access, such most CI/CD servers.
+- `--script` - tells Godot to run a script, in this case Godot Doctor in CLI
+  mode.
+
+Optionally add the `--debug` flag to run Godot in debug mode, which will halt
+execution on any uncaught errors. This is not recommended for CI/CD pipelines,
+as it can hang your runner, but it can be useful for debugging validation logic
+locally.
+
+If you want to run the CLI from a different directory, you can specify the
+`--path` argument as well, e.g. `--path path/to/the/root/of/your/project`.
+
+### Configuration
+
+Behaviour of the Godot Doctor Command Line Interface is managed by a
+`CLIValidationSettings` resource. It contains a lists of `ValidationSuite`
+resources. A Validation Suite contain a list of scenes and resources that are to
+be validated, as well as an option that defines how to handle Warnings.
+
+The Godot Doctor settings resource (found at
+`addons/godot_doctor/settings/godot_doctor_settings.tres`) needs to link to a
+`CLIValidationSettings` resource in order for the CLI to work.
+
+See the example in `addons/godot_doctory/examples/cli_validation_example/` for
+an example `CLIValidationSettings` resource that sets up a validation suite per
+example in `addons/godot_doctory/examples/`.
 
 ## How It Works
 

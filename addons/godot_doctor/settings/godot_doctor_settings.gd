@@ -1,5 +1,6 @@
 ## A resource that holds settings for GodotDoctor.
 ## Used by GodotDoctor to store user preferences.
+@tool
 class_name GodotDoctorSettings
 extends Resource
 
@@ -18,6 +19,9 @@ enum DockSlot {
 	DOCK_SLOT_RIGHT_BR = 7,
 }
 
+#gdlint: ignore = max-line-length
+const _VALIDATION_SETTINGS_MESSAGE: String = "CLI Validation Settings is not assigned. This is necessary if you want to use Godot Doctor through the command line."
+
 ## Whether to show the welcome dialog on startup.
 @export var show_welcome_dialog: bool = true
 ## Whether to show debug prints in the output console.
@@ -32,3 +36,15 @@ enum DockSlot {
 
 ## A list of scripts that should be ignored by Godot Doctor's default validations.
 @export var default_validation_ignore_list: Array[Script] = []
+
+@export var cli_validation_settings: CLIValidationSettings
+
+
+func _get_validation_conditions() -> Array[ValidationCondition]:
+	return [
+		ValidationCondition.simple(
+			is_instance_valid(cli_validation_settings),
+			_VALIDATION_SETTINGS_MESSAGE,
+			ValidationCondition.Severity.INFO
+		)
+	]

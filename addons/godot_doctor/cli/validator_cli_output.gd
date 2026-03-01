@@ -49,11 +49,11 @@ func print_global_message(
 	warning_as_error: bool = false
 ) -> void:
 	if warning_as_error and severity == ValidationCondition.Severity.WARNING:
-		_print_formated_message(
+		CLIPrinter.print_message(
 			"", message, ValidationCondition.Severity.ERROR, WARNING_AS_ERROR_TITLE
 		)
 	else:
-		_print_formated_message("", message, severity)
+		CLIPrinter.print_message("", message, severity)
 
 
 ## Function that prints out information about the input validation [param result],
@@ -61,11 +61,11 @@ func print_global_message(
 ## as an error [param warning_as_error].
 func print_result(result: Result, warning_as_error: bool = false) -> void:
 	if warning_as_error and result.severity == ValidationCondition.Severity.WARNING:
-		_print_formated_message(
+		CLIPrinter.print_message(
 			"\t\t", result.message, ValidationCondition.Severity.ERROR, WARNING_AS_ERROR_TITLE
 		)
 	else:
-		_print_formated_message("\t\t", result.message, result.severity)
+		CLIPrinter.print_message("\t\t", result.message, result.severity)
 
 
 ## Function that prints a custom validation warning with input [param message],
@@ -74,17 +74,17 @@ func print_result(result: Result, warning_as_error: bool = false) -> void:
 ## Used when a warning is not attached to a validation result.
 func print_warning(message: String, warning_as_error: bool = false) -> void:
 	if warning_as_error:
-		_print_formated_message(
+		CLIPrinter.print_message(
 			"\t\t", message, ValidationCondition.Severity.ERROR, WARNING_AS_ERROR_TITLE
 		)
 	else:
-		_print_formated_message("\t\t", message, ValidationCondition.Severity.WARNING)
+		CLIPrinter.print_message("\t\t", message, ValidationCondition.Severity.WARNING)
 
 
 ## Function that prints a custom validation error with input [param message].
 ## Used when an error is not attached to a validation result.
 func print_error(message: String) -> void:
-	_print_formated_message("\t\t", message, ValidationCondition.Severity.ERROR)
+	CLIPrinter.print_message("\t\t", message, ValidationCondition.Severity.ERROR)
 
 
 ## Accessor returning [_results] - all validation results of the currently validated object.
@@ -95,35 +95,6 @@ func get_results() -> Array[Result]:
 ## Clears [_results] and allows for validation of the next object.
 func clear_results() -> void:
 	_results.clear()
-
-
-# ============================================================================
-# HELPER FUNCTIONS
-# ============================================================================
-
-
-## Helper function that outputs the input [param message]
-## and formats it according to the input [param severity]
-## and addes the input [param prefix] at the begining.
-## The optional [param severity_name] can be used
-## to display a custom title describing the type of message being shown.
-func _print_formated_message(
-	prefix: String,
-	message: String,
-	severity: ValidationCondition.Severity,
-	severity_name: String = ""
-) -> void:
-	# If the severity name is not set, use the default one for the input severity.
-	if severity_name.is_empty():
-		severity_name = ValidationCondition.Severity.find_key(severity)
-
-	# Format and print the message accordingly.
-	if severity == ValidationCondition.Severity.INFO:
-		print_rich(prefix + "[b]" + severity_name + ": [/b]%s" % message)
-	elif severity == ValidationCondition.Severity.WARNING:
-		print_rich(prefix + "[color=orange][b]" + severity_name + ": [/b]%s[/color]" % message)
-	elif severity == ValidationCondition.Severity.ERROR:
-		print_rich(prefix + "[color=red][b]" + severity_name + ": [/b]%s[/color]" % message)
 
 
 # ============================================================================

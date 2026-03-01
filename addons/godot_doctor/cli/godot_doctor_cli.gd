@@ -56,7 +56,7 @@ var _test_count: int = 0
 ## The total amount of tests that have been passed.
 var _passing_test_count: int = 0
 
-## The total amount of tests that have been failed.
+## The total amount of tests that have been ignored.
 var _ignore_test_count: int = 0
 
 ## The total amount of tests that have been failed.
@@ -65,7 +65,7 @@ var _fail_test_count: int = 0
 ## The total amount of Validation Suites that have been processed.
 var _suite_count: int = 0
 
-## The total time the validation process has taken
+## The total time the validation process has taken.
 var _total_time: int
 
 ## The node path to this node. Used for printing nicely path within the scene structure
@@ -79,37 +79,30 @@ var _base_path: String
 
 ## Basic initialization of the CLI validation process - mostly loads settings.
 func _ready() -> void:
-	# Initialize the settings.
 	var godot_doctor_settings: GodotDoctorSettings = GodotDoctorPlugin.settings
 	_cli_validation_settings = godot_doctor_settings.cli_validation_settings
 
-	# If the CLI validation settings couldn't be loaded, the whole process can't run. We need report
-	# a total failure.
+	# If the CLI validation settings couldn't be loaded, the whole process can't run.
 	if _cli_validation_settings == null:
 		push_error("Couldn't find CLI Validation Settings.")
 		get_tree().quit(ExitCode.EXIT_FAIL)
 		return
 
-	# Store our node path, for parsing during validation.
 	_base_path = get_path()
-
-	# Initialise the validator with CLI output interface.
 	_output = ValidatorCLIOutput.new()
 	_validator = Validator.new(_output)
 
-	# Load the plugin configuration file to get the current plugin version.
 	var config = ConfigFile.new()
 	var error: Error = config.load(PLUGIN_CFG_PATH)
 
 	# If the configuration file hasn't loaded correctly, quit early.
 	if error != Error.OK:
-		# If the configuration file couldn't be read, something went very wrong, stop processing and
-		# report an error.
 		push_error("Couldn't read Godot Doctor plugin configuration file: " + PLUGIN_CFG_PATH + ".")
 		get_tree().quit(ExitCode.EXIT_FAIL)
 		return
+
 	var plugin_version: String = config.get_value("plugin", "version", "1.0")
-	print_rich("Starting [color=blue][b]Godot Doctor[/b][/color] v" + plugin_version + ".")
+	CLIPrinter.print_startup(plugin_version)
 
 
 # ============================================================================
@@ -148,7 +141,7 @@ func _get_current_suite() -> ValidationSuite:
 func _enter_suite_if_new(suite: ValidationSuite) -> void:
 	if not _new_suite:
 		return
-	print_rich("\n[color=blue]Running validation suite: [/color]", suite.name)
+	CLIPrinter.print_suite_header(suite.name)
 	_suite_count += 1
 	_new_suite = false
 
@@ -167,7 +160,6 @@ func _process_current_item(suite: ValidationSuite) -> void:
 	if suite.scenes.size() > _current_scene_idx:
 		var scene: PackedScene = _load_resource(suite.scenes[_current_scene_idx])
 		if scene == null:
-			push_error("Scene at path " + suite.scenes[_current_scene_idx] + " couldn't be loaded.")
 			return
 		_process_scene(scene)
 		return
@@ -175,13 +167,6 @@ func _process_current_item(suite: ValidationSuite) -> void:
 	if suite.resources.size() > _current_resource_idx:
 		var resource: Resource = _load_resource(suite.resources[_current_resource_idx])
 		if resource == null:
-			push_error(
-				(
-					"Resource at path "
-					+ suite.resources[_current_resource_idx]
-					+ " couldn't be loaded."
-				)
-			)
 			return
 		_process_resource(resource)
 
@@ -212,7 +197,7 @@ func _advance_to_next_item_or_end() -> void:
 ## Validates a single [PackedScene], instantiating it and running all node validations within.
 func _process_scene(scene: PackedScene) -> void:
 	var t: int = Time.get_ticks_usec()
-	print("* " + scene.resource_path)
+	CLIPrinter.print_file_header(scene.resource_path)
 
 	if not scene.can_instantiate():
 		_process_uninstantiable_scene(scene)
@@ -224,11 +209,13 @@ func _process_scene(scene: PackedScene) -> void:
 
 ## Handles the failure case where a [PackedScene] cannot be instantiated.
 func _process_uninstantiable_scene(scene: PackedScene) -> void:
-	var name: String = scene.resource_name
-	if name.is_empty():
-		name = scene.resource_path.get_file()
+	var name: String = (
+		scene.resource_name
+		if not scene.resource_name.is_empty()
+		else scene.resource_path.get_file()
+	)
 
-	print_rich("\t[color=red][Failed] : [/color]", name)
+	CLIPrinter.print_status(name, CLIPrinter.Status.FAILED)
 	_output.print_error("Couldn't instantiate scene.")
 
 	_test_count += 1
@@ -273,11 +260,13 @@ func _validate_nodes(nodes_to_validate: Array) -> void:
 ## Validates a single [Resource] and processes the results.
 func _process_resource(resource: Resource) -> void:
 	var t: int = Time.get_ticks_usec()
-	print("* " + resource.resource_path)
+	CLIPrinter.print_file_header(resource.resource_path)
 
-	var name: String = resource.resource_name
-	if name.is_empty():
-		name = resource.resource_path.get_file()
+	var name: String = (
+		resource.resource_name
+		if not resource.resource_name.is_empty()
+		else resource.resource_path.get_file()
+	)
 
 	_validator.validate_resource(resource)
 	_process_results(name)
@@ -361,13 +350,13 @@ func _process_ignore(object_name: String, message: String) -> void:
 	var suite: ValidationSuite = _cli_validation_settings.suites[_current_suite_idx]
 
 	if _should_fail_on_warning(suite):
-		print_rich("\t[color=red][Failed] : [/color]", object_name)
+		CLIPrinter.print_status(object_name, CLIPrinter.Status.FAILED)
 		_output.print_warning(message, true)
 		_test_count += 1
 		_fail_test_count += 1
 		_error_count += 1
 	else:
-		print_rich("\t[color=orange][Ignored] : [/color]", object_name)
+		CLIPrinter.print_status(object_name, CLIPrinter.Status.IGNORED)
 		_output.print_warning(message, false)
 		_test_count += 1
 		_ignore_test_count += 1
@@ -385,10 +374,10 @@ func _process_results(object_name: String) -> void:
 	var fail_on_warnings: bool = _should_fail_on_warning(suite)
 
 	if _has_passed(results):
-		print_rich("\t[color=green][Passed] : [/color]", object_name)
+		CLIPrinter.print_status(object_name, CLIPrinter.Status.PASSED)
 		_passing_test_count += 1
 	else:
-		print_rich("\t[color=red][Failed] : [/color]", object_name)
+		CLIPrinter.print_status(object_name, CLIPrinter.Status.FAILED)
 		_fail_test_count += 1
 
 	for result: ValidatorCLIOutput.Result in results:
@@ -408,33 +397,25 @@ func _process_results(object_name: String) -> void:
 ## Gathers high-level information about the validation run, prints a summary,
 ## and returns whether the whole process passed or failed.
 func _end() -> ExitCode:
-	print("\n")
-	print_rich("[color=goldenrod]==============================================[/color]")
-	print_rich("[color=goldenrod]= Run Summary[/color]")
-	print_rich("[color=goldenrod]==============================================[/color]")
-	print("\n")
+	CLIPrinter.print_header("Run Summary")
 
-	print("Totals")
-	print("------")
-	print("Suites\t\t", _suite_count)
-	print("Tests\t\t", _test_count)
+	CLIPrinter.print_section("Totals")
+	CLIPrinter.print_stat("Suites", _suite_count)
+	CLIPrinter.print_stat("Tests", _test_count)
 
 	if _error_count > 0:
-		print("Errors\t\t", _error_count)
+		CLIPrinter.print_stat("Errors", _error_count)
 	if _warning_count > 0:
-		print("Warnings\t", _warning_count)
+		CLIPrinter.print_stat("Warnings", _warning_count)
 	if _passing_test_count > 0:
-		print("Passing Tests\t", _passing_test_count)
+		CLIPrinter.print_stat("Passing Tests", _passing_test_count)
 	if _ignore_test_count > 0:
-		print("Ignored Tests\t", _ignore_test_count)
+		CLIPrinter.print_stat("Ignored Tests", _ignore_test_count)
 	if _fail_test_count > 0:
-		print("Failing Tests\t", _fail_test_count)
+		CLIPrinter.print_stat("Failing Tests", _fail_test_count)
 
-	print("Time \t\t" + str(float(_total_time) * 0.000001) + "s")
+	CLIPrinter.print_stat("Time", str(float(_total_time) * 0.000001) + "s")
 
-	if _fail_test_count > 0:
-		print_rich("\n\n[color=red]---- " + str(_fail_test_count) + " failing tests. ----[/color]")
-	else:
-		print_rich("\n\n[color=green]---- All tests passed! ----[/color]")
+	CLIPrinter.print_final_result(_fail_test_count)
 
 	return ExitCode.EXIT_FAIL if _fail_test_count > 0 else ExitCode.EXIT_OK

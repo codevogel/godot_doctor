@@ -42,8 +42,10 @@ Or, by manual installation:
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
-- [How It Works](#how-it-works)
 - [Command Line Interface](#command-line-interface)
+  - [Usage](#usage)
+  - [Configuration](#configuration)
+- [How It Works](#how-it-works)
 - [Examples](#examples)
 - [Installation](#installation)
 - [License](#license)
@@ -238,18 +240,6 @@ ValidationCondition.new(
   )
 ```
 
-## How It Works
-
-1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes
-   for `@export` properties and a `_get_validation_conditions()` method
-2. **Instance Creation**: For non-`@tool` scripts, temporary instances are
-   created to run validation logic
-3. **Condition Evaluation**: Each validation condition's callable is executed
-4. **Error Reporting**: Failed conditions display their error messages in the
-   Godot Doctor dock
-5. **Navigation**: Click on errors in the dock to navigate directly to the
-   problematic nodes
-
 ## Command Line Interface
 
 Also supplied along with the plugin is a `godot_doctor_cmdln.gd` script which
@@ -300,6 +290,18 @@ The Godot Doctor settings resource (found at
 See the example in `addons/godot_doctory/examples/cli_validation_example/` for
 an example `CLIValidationSettings` resource that sets up a validation suite per
 example in `addons/godot_doctory/examples/`.
+
+## How It Works
+
+1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes
+   for `@export` properties and a `_get_validation_conditions()` method
+2. **Instance Creation**: For non-`@tool` scripts, temporary instances are
+   created to run validation logic
+3. **Condition Evaluation**: Each validation condition's callable is executed
+4. **Error Reporting**: Failed conditions display their error messages in the
+   Godot Doctor dock
+5. **Navigation**: Click on errors in the dock to navigate directly to the
+   problematic nodes
 
 ## Examples
 

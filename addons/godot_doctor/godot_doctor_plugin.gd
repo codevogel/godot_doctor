@@ -7,7 +7,9 @@
 extends EditorPlugin
 
 ## Emitted when a validation is requested, passing the root node of the current edited scene.
-signal validation_requested(scene_root: Node)
+signal scene_root_and_edited_resource_validation_requested
+signal scene_validation_requested(scene: Node, clear_errors: bool)
+signal resource_validation_requested(resource: Resource, clear_errors: bool)
 
 #gdlint: disable=max-line-length
 ## The method name that nodes and resources should implement to provide validation conditions.
@@ -83,7 +85,11 @@ func _exit_tree():
 func _connect_signals():
 	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
-	validation_requested.connect(_on_validation_requested)
+	scene_root_and_edited_resource_validation_requested.connect(
+		_on_scene_root_and_edited_resource_validation_requested
+	)
+	scene_validation_requested.connect(_on_scene_validation_requested)
+	resource_validation_requested.connect(_on_resource_validation_requested)
 
 
 ## Disconnects all connected signals to avoid dangling connections.
@@ -92,8 +98,16 @@ func _disconnect_signals():
 	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
-	if validation_requested.is_connected(_on_validation_requested):
-		validation_requested.disconnect(_on_validation_requested)
+	if scene_root_and_edited_resource_validation_requested.is_connected(
+		_on_scene_root_and_edited_resource_validation_requested
+	):
+		scene_root_and_edited_resource_validation_requested.disconnect(
+			_on_scene_root_and_edited_resource_validation_requested
+		)
+	if scene_validation_requested.is_connected(_on_scene_validation_requested):
+		scene_validation_requested.disconnect(_on_scene_validation_requested)
+	if resource_validation_requested.is_connected(_on_resource_validation_requested):
+		resource_validation_requested.disconnect(_on_resource_validation_requested)
 
 
 # ============================================================================
@@ -137,25 +151,49 @@ func _remove_dock():
 ## Retrieves the edited scene root and emits the validation_requested signal.
 func _on_scene_saved(file_path: String) -> void:
 	_print_debug("Scene saved: %s" % file_path)
+	scene_root_and_edited_resource_validation_requested.emit()
+
+
+func _on_scene_root_and_edited_resource_validation_requested() -> void:
+	var scene_to_validate: Node = null
+	var resource_to_validate: Resource = null
+
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
-	if not is_instance_valid(current_edited_scene_root):
-		_print_debug("No current edited scene root. Skipping validation.")
-		return
-	validation_requested.emit(current_edited_scene_root)
-
-
-## Called when validation is requested for the current scene.
-## Clears previous errors, validates the edited resource if applicable,
-## finds all nodes to validate in the scene tree, and validates each one.
-func _on_validation_requested(scene_root: Node) -> void:
-	# Clear previous errors
-	_dock.clear_errors()
+	if is_instance_valid(current_edited_scene_root):
+		scene_to_validate = current_edited_scene_root
+	else:
+		_print_debug("No current edited scene root. Skipping scene validation.")
 
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
 	if edited_object is Resource:
-		var script: Script = edited_object.get_script()
-		if script not in settings.default_validation_ignore_list:
-			_validate_resource(edited_object as Resource)
+		var resource_script: Script = edited_object.get_script()
+		if is_instance_valid(resource_script):
+			resource_to_validate = edited_object as Resource
+			return
+		_print_debug("Edited resource has no script. Skipping resource validation.")
+
+	var validating_both_scene_and_resource: bool = (
+		scene_to_validate != null and resource_to_validate != null
+	)
+	var validating_scene_only: bool = scene_to_validate != null and resource_to_validate == null
+	var validating_resource_only: bool = resource_to_validate != null and scene_to_validate == null
+
+	if validating_both_scene_and_resource:
+		scene_validation_requested.emit(scene_to_validate, true)
+		resource_validation_requested.emit(resource_to_validate, false)
+	elif validating_scene_only:
+		scene_validation_requested.emit(scene_to_validate, true)
+	elif validating_resource_only:
+		resource_validation_requested.emit(resource_to_validate, true)
+
+
+## Called when validation is requested for the current scene.
+## This will kick off the process of finding all nodes to validate in the [param scene_root]
+## and validating them, optionally clearing previous errors if [param clear_errors] is true.
+func _on_scene_validation_requested(scene_root: Node, clear_errors: bool = false) -> void:
+	if clear_errors:
+		# Clear previous errors
+		_dock.clear_errors()
 
 	# Find all nodes to validate
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
@@ -164,6 +202,20 @@ func _on_validation_requested(scene_root: Node) -> void:
 	# Validate each node
 	for node: Node in nodes_to_validate:
 		_validate_node(node)
+
+
+## Called when validation is requested for a resource.
+## This will kick off the process of validating the [param resource],
+## optionally clearing previous errors if [param clear_errors] is true.
+func _on_resource_validation_requested(resource: Resource, clear_errors: bool = false) -> void:
+	if clear_errors:
+		# Clear previous errors
+		_dock.clear_errors()
+
+	if resource is Resource:
+		var script: Script = resource.get_script()
+		if script not in settings.default_validation_ignore_list:
+			_validate_resource(resource)
 
 
 # ============================================================================

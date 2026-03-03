@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ValidationSuite" format=3 uid="uid://cmhgwyegftuv1"]
+
+[ext_resource type="Script" uid="uid://cs4sbfbc855ad" path="res://addons/godot_doctor/cli/validation_suite.gd" id="1_akrge"]
+
+[resource]
+script = ExtResource("1_akrge")
+scenes = Array[String](["uid://cqi24df5a5oyv", "uid://bullc4qncovb5", "uid://d1qwu8667k7gi"])
+resources = Array[String](["uid://dyjlsnqa3x7ew"])
+metadata/_custom_type_script = "uid://cs4sbfbc855ad"

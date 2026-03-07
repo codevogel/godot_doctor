@@ -7,9 +7,6 @@
 class_name GodotDoctorPlugin
 extends EditorPlugin
 
-## Emitted when a validation is requested, passing the root node of the current edited scene.
-signal scene_root_and_edited_resource_validation_requested
-
 #gdlint: disable=max-line-length
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
@@ -20,6 +17,12 @@ const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godo
 const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
 const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor"
 #gdlint: enable=max-line-length
+
+## Singleton instance of the plugin for global access if needed.
+## Avoid using this directly in most cases.
+## This can, however,  be useful for starting validation from external scripts
+## such as the Dock's 'Validate Now' button
+static var instance: GodotDoctorPlugin
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
 var settings: GodotDoctorSettings:
@@ -44,8 +47,8 @@ var _num_errors: int = 0
 ## Called when the plugin is enabled by the user through Project Settings > Plugins.
 ## Displays a welcome dialog if configured in settings.
 func _enable_plugin() -> void:
-	print("foo")
 	_print_debug("Enabling plugin...")
+	instance = self
 	# We don't really have any globals to load yet, but this is where we would do it.
 
 	if settings.show_welcome_dialog:
@@ -54,6 +57,7 @@ func _enable_plugin() -> void:
 
 ## Called when the plugin is disabled by the user through Project Settings > Plugins.
 func _disable_plugin() -> void:
+	instance = null
 	_print_debug("Disabling plugin...")
 
 
@@ -66,7 +70,7 @@ func _enter_tree():
 	_print_debug("Entering tree...")
 	_connect_signals()
 
-	if _headless_mode:
+	if _headless_mode and not settings.run_cli_in_headless_mode:
 		_run_cli()
 		return
 	_add_dock()
@@ -84,21 +88,28 @@ func _exit_tree():
 	_push_toast("Plugin unloaded.", 0)
 
 
+## Entry point for running the plugin in CLI mode when in headless display server.
 func _run_cli():
-	var validation_suite: ValidationSuite = load("res://test/validation_suite.tres")
+	for validation_suite in settings.validation_suites:
+		_print_debug("Running validation suite: %s" % validation_suite.name)
+		_run_cli_for_suite(validation_suite)
+
+	get_tree().quit(0 if _num_errors == 0 else 1)
+
+
+## Runs validation for a given validation suite in CLI mode.
+func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 	var editor_interface: EditorInterface = get_editor_interface()
 
 	for scene_path: String in validation_suite.scenes:
 		editor_interface.open_scene_from_path(scene_path)
-		_on_scene_root_validation_requested(editor_interface.get_edited_scene_root())
+		_start_validate_scene_root(editor_interface.get_edited_scene_root(), validation_suite)
 
 	for resource_path: String in validation_suite.resources:
 		var resource = load(resource_path) as Resource
 		editor_interface.get_inspector().edit(resource)
-		_on_resource_validation_requested(resource)
-		editor_interface.get_inspector().edit(null)  # Clear the inspector after validating each resource
-
-	get_tree().quit(0 if _num_errors == 0 else 1)
+		_start_validate_edited_resource(resource, validation_suite)
+		editor_interface.get_inspector().edit(null)
 
 
 # ============================================================================
@@ -107,27 +118,16 @@ func _run_cli():
 
 
 ## Connects all necessary signals for the plugin to function.
-## Connects to scene_saved and validation_requested signals.
 func _connect_signals():
 	_print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
-	scene_root_and_edited_resource_validation_requested.connect(
-		_on_scene_root_and_edited_resource_validation_requested
-	)
 
 
 ## Disconnects all connected signals to avoid dangling connections.
-## Safely disconnects even if signals are not currently connected.
 func _disconnect_signals():
 	_print_debug("Disconnecting signals...")
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
-	if scene_root_and_edited_resource_validation_requested.is_connected(
-		_on_scene_root_and_edited_resource_validation_requested
-	):
-		scene_root_and_edited_resource_validation_requested.disconnect(
-			_on_scene_root_and_edited_resource_validation_requested
-		)
 
 
 # ============================================================================
@@ -166,6 +166,7 @@ func _add_dock():
 
 ## Removes the validation warnings dock from the editor and frees it.
 func _remove_dock():
+	_print_debug("Removing dock from editor...")
 	remove_control_from_docks(_dock)
 	_dock.free()
 
@@ -176,20 +177,23 @@ func _remove_dock():
 
 
 ## Called when a scene is saved by the user.
-## Retrieves the edited scene root and emits the validation_requested signal.
 func _on_scene_saved(file_path: String) -> void:
 	_print_debug("Scene saved: %s" % file_path)
-	scene_root_and_edited_resource_validation_requested.emit()
+	if settings.validate_on_save:
+		validate_scene_root_and_edited_resource()
 
 
-func _on_scene_root_and_edited_resource_validation_requested() -> void:
-	print_debug("Scene root and edited resource validation requested.")
-	var scene_to_validate: Node = null
-	var resource_to_validate: Resource = null
+## Validation entry point for both scene root and edited resource.
+## NOTE: This should not be used in headless mode, as it ignores
+## the validation suites. Use _run_cli instead.
+func validate_scene_root_and_edited_resource() -> void:
+	print_debug("Validating scene root and edited resource...")
+	var edited_scene_root: Node = null
+	var edited_resource: Resource = null
 
 	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
 	if current_edited_scene_root != null:
-		scene_to_validate = current_edited_scene_root
+		edited_scene_root = current_edited_scene_root
 	else:
 		_print_debug("No current edited scene root. Skipping scene validation.")
 
@@ -197,39 +201,47 @@ func _on_scene_root_and_edited_resource_validation_requested() -> void:
 	if edited_object is Resource:
 		var resource_script: Script = edited_object.get_script()
 		if resource_script != null:
-			resource_to_validate = edited_object as Resource
+			edited_resource = edited_object as Resource
 		else:
 			_print_debug(
 				"Edited resource %s has no script. Skipping resource validation." % edited_object
 			)
 
 	var validating_both_scene_and_resource: bool = (
-		scene_to_validate != null and resource_to_validate != null
+		edited_scene_root != null and edited_resource != null
 	)
-	var validating_scene_only: bool = scene_to_validate != null and resource_to_validate == null
-	var validating_resource_only: bool = resource_to_validate != null and scene_to_validate == null
+	var validating_scene_only: bool = edited_scene_root != null and edited_resource == null
+	var validating_resource_only: bool = edited_resource != null and edited_scene_root == null
 
 	if validating_both_scene_and_resource:
 		_print_debug("Validating both scene and resource...")
-		_on_scene_root_validation_requested(scene_to_validate, true)
-		_on_resource_validation_requested(resource_to_validate, true)
+		_start_validate_scene_root(edited_scene_root, null, true)
+		_start_validate_edited_resource(edited_resource, null, true)
 	elif validating_scene_only:
 		_print_debug("Validating scene only...")
-		_on_scene_root_validation_requested(scene_to_validate, true)
+		_start_validate_scene_root(edited_scene_root, null, true)
 	elif validating_resource_only:
 		_print_debug("Validating resource only...")
-		_on_resource_validation_requested(resource_to_validate, true)
+		_start_validate_edited_resource(edited_resource, null, true)
 
 
-## Called when validation is requested for the current scene.
-## This will kick off the process of finding all nodes to validate in the [param scene_root]
-## and validating them, optionally clearing previous errors if [param clear_errors] is true.
-func _on_scene_root_validation_requested(scene_root: Node, clear_errors: bool = false) -> void:
-	_print_debug("Scene root validation requested for scene: %s" % scene_root.name)
+## Entry point to validate the currently edited scene root.
+## [param edited_scene_root] - The root node of the currently edited scene to validate.
+## [param validation_suite] - The validation suite to use for CLI mode validation.
+## Leave [null] for editor validation.
+## [param clear_errors] - Whether to clear existing errors from the dock before validating.
+## NOTE: The [edited_scene_root] must be currently open in the editor for validation to work,
+## as we need to traverse its nodes.
+## TODO: test this note
+func _start_validate_scene_root(
+	edited_scene_root: Node, validation_suite: ValidationSuite = null, clear_errors: bool = false
+) -> void:
+	_print_debug("Scene root validation requested for scene: %s" % edited_scene_root.name)
+	assert(get_editor_interface().get_edited_scene_root() == edited_scene_root)
 	if clear_errors:
 		_dock.clear_errors()
 
-	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
+	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(edited_scene_root)
 	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
 	# Key: node path (String), Value: Array[ValidationMessage]
@@ -237,45 +249,71 @@ func _on_scene_root_validation_requested(scene_root: Node, clear_errors: bool = 
 	for node: Node in nodes_to_validate:
 		var messages: Array[ValidationMessage] = _validate_node(node)
 		if messages.size() > 0:
-			node_messages[scene_root.get_path_to(node)] = messages
+			node_messages[edited_scene_root.get_path_to(node)] = messages
 
 	if _headless_mode:
-		_process_cli_scene_output(scene_root, node_messages)
+		_process_cli_scene_output(validation_suite, edited_scene_root, node_messages)
 
 
-## Called when validation is requested for a resource.
-## This will kick off the process of validating the [param resource],
-## optionally clearing previous errors if [param clear_errors] is true.
-func _on_resource_validation_requested(resource: Resource, clear_errors: bool = false) -> void:
-	_print_debug("Resource validation requested for resource: %s" % resource.resource_path)
+## Entry point to validate the currently edited resource.
+## [param edited_resource] - The currently edited resource to validate.
+## [param validation_suite] - The validation suite to use for CLI mode validation.
+## Leave [null] for editor validation.
+## [param clear_errors] - Whether to clear existing errors from the dock before validating.
+func _start_validate_edited_resource(
+	edited_resource: Resource, validation_suite: ValidationSuite = null, clear_errors: bool = false
+) -> void:
+	_print_debug("Resource validation requested for resource: %s" % edited_resource.resource_path)
 	if clear_errors:
 		_dock.clear_errors()
 
 	var resource_validation_messages: Array[ValidationMessage] = []
-	if resource is Resource:
-		var script: Script = resource.get_script()
+	if edited_resource is Resource:
+		var script: Script = edited_resource.get_script()
 		if script not in settings.default_validation_ignore_list:
-			resource_validation_messages.append_array(_validate_resource(resource))
+			resource_validation_messages.append_array(_validate_resource(edited_resource))
 
 	if _headless_mode:
-		_process_cli_resource_output(resource, resource_validation_messages)
+		_process_cli_resource_output(
+			validation_suite, edited_resource, resource_validation_messages
+		)
 
 
-func _process_cli_scene_output(scene_root: Node, node_messages: Dictionary) -> void:
+## Processes and prints validation results for scene validation in CLI mode.
+func _process_cli_scene_output(
+	validation_suite: ValidationSuite, scene_root: Node, node_messages: Dictionary
+) -> void:
+	assert(validation_suite != null)
 	print("Scene: %s" % scene_root.name)
 	for node_path in node_messages:
 		var messages: Array = node_messages[node_path]
 		for msg: ValidationMessage in messages:
 			print("  [%s] %s: %s" % [msg.severity_level, node_path, msg.message])
-			if msg.severity_level == ValidationCondition.Severity.ERROR:
+			if (
+				msg.severity_level == ValidationCondition.Severity.ERROR
+				or (
+					msg.severity_level == ValidationCondition.Severity.WARNING
+					and validation_suite.treat_warnings_as_errors
+				)
+			):
 				_num_errors += 1
 
 
-func _process_cli_resource_output(resource: Resource, messages: Array[ValidationMessage]) -> void:
+## Processes and prints validation results for resource validation in CLI mode.
+func _process_cli_resource_output(
+	validation_suite: ValidationSuite, resource: Resource, messages: Array[ValidationMessage]
+) -> void:
+	assert(validation_suite != null)
 	print("Resource: %s" % resource.resource_path)
 	for msg: ValidationMessage in messages:
 		print("  [%s] %s" % [msg.severity_level, msg.message])
-		if msg.severity_level == ValidationCondition.Severity.ERROR:
+		if (
+			msg.severity_level == ValidationCondition.Severity.ERROR
+			or (
+				msg.severity_level == ValidationCondition.Severity.WARNING
+				and validation_suite.treat_warnings_as_errors
+			)
+		):
 			_num_errors += 1
 
 
@@ -287,6 +325,8 @@ func _process_cli_resource_output(resource: Resource, messages: Array[Validation
 ## Validates a resource by collecting default validation conditions (if enabled)
 ## and any custom validation conditions defined in the resource.
 ## Processes the validation conditions and reports any errors to the dock.
+## NOTE: This should not be called directly - use _start_validate_edited_resource instead,
+## which handles setup and teardown for resource validation.
 func _validate_resource(resource: Resource) -> Array[ValidationMessage]:
 	var validation_conditions: Array[ValidationCondition] = []
 	if settings.use_default_validations:
@@ -304,6 +344,8 @@ func _validate_resource(resource: Resource) -> Array[ValidationMessage]:
 ## custom validation conditions defined in the node (handling both @tool and non-@tool scripts),
 ## and processing the results.
 ## For non-@tool scripts, creates a temporary instance to call validation methods on.
+## NOTE: This should not be called directly - use _start_validate_scene_root instead,
+## which handles setup and teardown for scene validation.
 func _validate_node(node: Node) -> Array[ValidationMessage]:
 	_print_debug("Validating node: %s" % node.name)
 	var validation_target: Object = node
@@ -356,8 +398,22 @@ func _validate_resource_validation_conditions(
 	resource: Resource, validation_conditions: Array[ValidationCondition]
 ) -> Array[ValidationMessage]:
 	var validation_result: ValidationResult = ValidationResult.new(validation_conditions)
-	var validation_messages: Array[ValidationMessage] = validation_result.errors
+	var validation_messages: Array[ValidationMessage] = validation_result.messages
 	if validation_messages.size() > 0:
+		# Transform messages into errors if the setting is enabled.
+		# NOTE: This is not done in headless mode, since the Validation Suites can define
+		# this behavior themselves, and the plugin setting should not override that.
+		if not _headless_mode:
+			validation_messages.map(
+				func(msg: ValidationMessage) -> ValidationMessage:
+					var severity_level = msg.severity_level
+					if settings.treat_warnings_as_errors:
+						if severity_level == ValidationCondition.Severity.WARNING:
+							severity_level = ValidationCondition.Severity.ERROR
+					return ValidationMessage.new(msg.message, severity_level)
+			)
+
+		# Get the highest severity level among the messages to determine the toast severity.
 		var severity_level = (
 			validation_messages
 			. map(func(msg: ValidationMessage) -> int: return msg.severity_level)
@@ -368,7 +424,7 @@ func _validate_resource_validation_conditions(
 			_push_toast(
 				(
 					"Found %s configuration warning(s) in %s."
-					% [validation_result.errors.size(), resource.resource_path]
+					% [validation_result.messages.size(), resource.resource_path]
 				),
 				severity_level
 			)
@@ -396,9 +452,23 @@ func _validate_node_validation_conditions(
 	var validation_messages: Array[ValidationMessage] = []
 	# ValidationResult processes the conditions upon instantiation.
 	var validation_result = ValidationResult.new(validation_conditions)
-	validation_messages.append_array(validation_result.errors)
+	validation_messages.append_array(validation_result.messages)
 	# Process the resulting errors
 	if validation_messages.size() > 0:
+		# Transform messages into errors if the setting is enabled.
+		# NOTE: This is not done in headless mode, since the Validation Suites can define
+		# this behavior themselves, and the plugin setting should not override that.
+		if not _headless_mode:
+			validation_messages.map(
+				func(msg: ValidationMessage) -> ValidationMessage:
+					var severity_level = msg.severity_level
+					if settings.treat_warnings_as_errors:
+						if severity_level == ValidationCondition.Severity.WARNING:
+							severity_level = ValidationCondition.Severity.ERROR
+					return ValidationMessage.new(msg.message, severity_level)
+			)
+
+		# Get the highest severity level among the messages to determine the toast severity.
 		var severity_level = (
 			validation_messages
 			. map(func(msg: ValidationMessage) -> int: return msg.severity_level)
@@ -409,7 +479,7 @@ func _validate_node_validation_conditions(
 			_push_toast(
 				(
 					"Found %s configuration warning(s) in %s."
-					% [validation_result.errors.size(), node.name]
+					% [validation_result.messages.size(), node.name]
 				),
 				severity_level
 			)

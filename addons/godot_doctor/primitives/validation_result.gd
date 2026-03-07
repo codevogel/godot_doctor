@@ -6,17 +6,17 @@ class_name ValidationResult
 extends RefCounted
 
 ## Indicates whether the validation passed or failed.
-## True if there are no errors, false otherwise.
+## True if there are no messages, false otherwise.
 var ok: bool:
 	get:
-		return errors.size() == 0
+		return messages.size() == 0
 
 ## The list of error messages
-var errors: Array[ValidationMessage] = []
+var messages: Array[ValidationMessage] = []
 
 
 ## Initializes the ValidationResult.
 ## Provide an array of ValidationCondition, and it will evaluate them,
-## populating the Results' errors array with any resulting error messages.
+## populating the Results' messages array with any resulting error messages.
 func _init(conditions: Array[ValidationCondition]) -> void:
-	errors = GodotDoctor.evaluate_conditions(conditions)
+	messages = GodotDoctor.evaluate_conditions(conditions)

@@ -21,6 +21,22 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/
 
 ## The container that holds the error/warning instances.
 @onready var error_holder: VBoxContainer = $ErrorHolder
+@export var validate_now_button: Button
+
+
+func _enter_tree() -> void:
+	print("GodotDoctorDock entered the scene tree.")
+	validate_now_button.pressed.connect(_on_validate_now_button_pressed)
+
+
+func _exit_tree() -> void:
+	print("GodotDoctorDock exiting the scene tree.")
+	if validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
+		validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
+
+
+func _on_validate_now_button_pressed() -> void:
+	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
 ## Add a node-related warning to the dock.

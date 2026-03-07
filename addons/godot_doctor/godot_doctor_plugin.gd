@@ -69,10 +69,7 @@ func _enter_tree():
 	if _headless_mode:
 		_run_cli()
 		return
-	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	add_control_to_dock(
-		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
-	)
+	_add_dock()
 	_push_toast("Plugin loaded.", 0)
 
 
@@ -157,6 +154,14 @@ func _show_welcome_dialog():
 	get_editor_interface().get_base_control().add_child(dialog)
 	dialog.exclusive = false
 	dialog.popup_centered()
+
+
+func _add_dock():
+	_print_debug("Adding dock to editor...")
+	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
+	add_control_to_dock(
+		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
+	)
 
 
 ## Removes the validation warnings dock from the editor and frees it.

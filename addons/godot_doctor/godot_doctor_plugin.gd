@@ -61,11 +61,13 @@ func _enable_plugin() -> void:
 
 	if settings.show_welcome_dialog:
 		_show_welcome_dialog()
+	GodotDoctorNotifier.print_debug("Plugin enabled")
 
 
 ## Called when the plugin is disabled by the user through Project Settings > Plugins.
 func _disable_plugin() -> void:
 	GodotDoctorNotifier.print_debug("Disabling plugin...")
+	GodotDoctorNotifier.print_debug("Plugin disabled")
 
 
 ## Called when the plugin enters the scene tree.
@@ -73,6 +75,7 @@ func _disable_plugin() -> void:
 ## or running in CLI mode when headless.
 func _enter_tree():
 	_instance = self
+	GodotDoctorNotifier.print_debug("Set plugin singleton")
 	GodotDoctorNotifier.print_debug("Entering tree...")
 
 	if DisplayServer.get_name() == "headless":
@@ -86,6 +89,7 @@ func _enter_tree():
 	_reporter = EditorValidationReporter.new(_dock, settings)
 	_connect_signals()
 	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)
+	GodotDoctorNotifier.print_debug("Entered tree")
 
 
 ## Called when the plugin exits the scene tree.
@@ -95,15 +99,19 @@ func _exit_tree():
 	_disconnect_signals()
 
 	if _dock != null:
-		_remove_dock()
-		GodotDoctorNotifier.push_toast("Plugin unloaded.", 0)
+		await _remove_dock()
+		print("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Dock tree exited confirmed.")
+	GodotDoctorNotifier.push_toast("Plugin unloaded.", 0)
+	GodotDoctorNotifier.print_debug("Exited tree")
+
+	GodotDoctorNotifier.print_debug("Clearing plugin singleton")
 	_instance = null
 
 
 ## Entry point for running the plugin in CLI mode when in headless display server.
 func _run_cli():
+	GodotDoctorNotifier.print_debug("Running in CLI mode. Starting validation...")
 	for validation_suite in settings.validation_suites:
-		GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.name)
 		_run_cli_for_suite(validation_suite)
 	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
 	validation_complete.emit()
@@ -111,6 +119,7 @@ func _run_cli():
 
 ## Runs validation for a given validation suite in CLI mode.
 func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
+	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
 	var cli_reporter := _reporter as CLIValidationReporter
 	cli_reporter.treat_warnings_as_errors = validation_suite.treat_warnings_as_errors
 
@@ -191,6 +200,7 @@ func _remove_dock():
 	GodotDoctorNotifier.print_debug("Removing dock from editor...")
 	remove_control_from_docks(_dock)
 	_dock.free()
+	await _dock.tree_exited
 	_dock = null
 
 
@@ -315,6 +325,7 @@ func _collect_node_messages(node: Node) -> Array[ValidationMessage]:
 
 ## Collects all validation messages for a resource by evaluating its conditions.
 func _collect_resource_messages(resource: Resource) -> Array[ValidationMessage]:
+	GodotDoctorNotifier.print_debug("Collecting messages for resource: %s" % resource.resource_path)
 	var conditions: Array[ValidationCondition] = []
 
 	if settings.use_default_validations:
@@ -336,7 +347,9 @@ func _collect_resource_messages(resource: Resource) -> Array[ValidationMessage]:
 ## Returns nodes that have a script attached.
 ## Returns all nodes that have a script when default validations are enabled,
 ## or only nodes that implement the VALIDATING_METHOD_NAME method.
-func _find_nodes_to_validate_in_tree(node: Node) -> Array:
+func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Array:
+	if not recursing:
+		GodotDoctorNotifier.print_debug("Finding nodes to validate at root: %s" % node.name)
 	var nodes_to_validate: Array = []
 
 	var script: Script = node.get_script()
@@ -345,7 +358,7 @@ func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 			nodes_to_validate.append(node)
 
 	for child in node.get_children():
-		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
+		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child, true))
 	return nodes_to_validate
 
 
@@ -354,6 +367,9 @@ func _find_nodes_to_validate_in_tree(node: Node) -> Array:
 ## - Object properties: checks if they are valid instances.
 ## - String properties: checks if they are non-empty after stripping whitespace.
 func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
+	GodotDoctorNotifier.print_debug(
+		"Generating default validation conditions for: %s" % validation_target
+	)
 	var export_props: Array[Dictionary] = _get_export_props(validation_target)
 	var validation_conditions: Array[ValidationCondition] = []
 
@@ -378,6 +394,7 @@ func _get_default_validation_conditions(validation_target: Object) -> Array[Vali
 ## Retrieves all exported properties from an object's script.
 ## Only includes properties that are both script variables and marked for editor visibility.
 func _get_export_props(object: Object) -> Array[Dictionary]:
+	GodotDoctorNotifier.print_debug("Getting export properties for object: %s" % object)
 	if object == null:
 		return []
 
@@ -406,6 +423,9 @@ func _get_export_props(object: Object) -> Array[Dictionary]:
 ## For non-@tool scripts, creates a new instance and copies properties and children.
 ## For @tool scripts or nodes without a script, returns the original node unchanged.
 func _make_instance_from_placeholder(original_node: Node) -> Object:
+	GodotDoctorNotifier.print_debug(
+		"Making instance from placeholder for node: %s" % original_node.name
+	)
 	var script: Script = original_node.get_script()
 	var is_tool_script: bool = script and script.is_tool()
 
@@ -424,6 +444,9 @@ func _make_instance_from_placeholder(original_node: Node) -> Object:
 ## Copies all editor-visible properties from one node to another.
 ## Used to transfer state from the editor node to a temporary validation instance.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
+	GodotDoctorNotifier.print_debug(
+		"Copying properties from %s to placeholder instance" % [from_node.name]
+	)
 	for prop in from_node.get_property_list():
 		if prop.usage & PROPERTY_USAGE_EDITOR:
 			to_node.set(prop.name, from_node.get(prop.name))

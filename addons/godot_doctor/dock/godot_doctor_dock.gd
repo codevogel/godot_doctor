@@ -20,8 +20,8 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/
 #gdlint: enable=max-line-length
 
 ## The container that holds the error/warning instances.
-@onready var error_holder: VBoxContainer = $ErrorHolder
 @export var validate_now_button: Button
+@onready var error_holder: VBoxContainer = $ErrorHolder
 
 
 func _enter_tree() -> void:

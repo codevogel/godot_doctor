@@ -2,9 +2,11 @@
 
 [ext_resource type="Script" uid="uid://dtaq5a6mhbihi" path="res://addons/godot_doctor/settings/godot_doctor_settings.gd" id="1_w45p4"]
 [ext_resource type="Script" uid="uid://cs4sbfbc855ad" path="res://addons/godot_doctor/cli/validation_suite.gd" id="2_np33a"]
+[ext_resource type="Resource" uid="uid://cmhgwyegftuv1" path="res://test/validation_suite.tres" id="3_g2m2r"]
 
 [resource]
 script = ExtResource("1_w45p4")
 default_dock_position = 5
 show_debug_prints = true
+validation_suites = Array[ExtResource("2_np33a")]([ExtResource("3_g2m2r")])
 metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

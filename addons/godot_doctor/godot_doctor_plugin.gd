@@ -100,7 +100,6 @@ func _exit_tree():
 
 	if _dock != null:
 		await _remove_dock()
-		print("HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Dock tree exited confirmed.")
 	GodotDoctorNotifier.push_toast("Plugin unloaded.", 0)
 	GodotDoctorNotifier.print_debug("Exited tree")
 
@@ -110,7 +109,14 @@ func _exit_tree():
 
 ## Entry point for running the plugin in CLI mode when in headless display server.
 func _run_cli():
-	GodotDoctorNotifier.print_debug("Running in CLI mode. Starting validation...")
+	GodotDoctorNotifier.print_debug(
+		(
+			"Running in CLI mode. Starting validation after configured delay (%s seconds)..."
+			% settings.delay_before_running_cli
+		)
+	)
+	await get_tree().create_timer(settings.delay_before_running_cli).timeout
+
 	for validation_suite in settings.validation_suites:
 		_run_cli_for_suite(validation_suite)
 	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
@@ -120,13 +126,12 @@ func _run_cli():
 ## Runs validation for a given validation suite in CLI mode.
 func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
+	_reporter.current_suite = validation_suite
 	var cli_reporter := _reporter as CLIValidationReporter
-	cli_reporter.treat_warnings_as_errors = validation_suite.treat_warnings_as_errors
-
 	var editor_interface: EditorInterface = get_editor_interface()
 
 	for scene_path: String in validation_suite.scenes:
-		print("Scene: %s" % scene_path)
+		cli_reporter.current_scene_path = scene_path  # set before validating
 		editor_interface.open_scene_from_path(scene_path)
 		_validate_scene_root(editor_interface.get_edited_scene_root())
 

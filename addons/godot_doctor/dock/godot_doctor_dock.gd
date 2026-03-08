@@ -25,17 +25,16 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/
 
 
 func _enter_tree() -> void:
-	print("GodotDoctorDock entered the scene tree.")
 	validate_now_button.pressed.connect(_on_validate_now_button_pressed)
 
 
 func _exit_tree() -> void:
-	print("GodotDoctorDock exiting the scene tree.")
 	if validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
 		validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
 
 
 func _on_validate_now_button_pressed() -> void:
+	GodotDoctorNotifier.print_debug("Validate Now button pressed. Triggering validation.")
 	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
@@ -43,6 +42,12 @@ func _on_validate_now_button_pressed() -> void:
 ## origin_node: The node that caused the warning.
 ## error_message: The warning message to display.
 func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void:
+	GodotDoctorNotifier.print_debug(
+		(
+			"Adding node warning to dock for node: %s, message: %s"
+			% [origin_node.name, validation_message.message]
+		)
+	)
 	var warning_instance: NodeValidationWarning = (
 		load(NODE_WARNING_SCENE_PATH).instantiate() as NodeValidationWarning
 	)
@@ -59,6 +64,12 @@ func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationM
 func add_resource_warning_to_dock(
 	origin_resource: Resource, validation_message: ValidationMessage
 ) -> void:
+	GodotDoctorNotifier.print_debug(
+		(
+			"Adding resource warning to dock for resource: %s, message: %s"
+			% [origin_resource.resource_path, validation_message.message]
+		)
+	)
 	var warning_instance: ResourceValidationWarning = (
 		load(RESOURCE_WARNING_SCENE_PATH).instantiate() as ResourceValidationWarning
 	)
@@ -71,9 +82,10 @@ func add_resource_warning_to_dock(
 
 ## Clear all warnings from the dock.
 func clear_errors() -> void:
+	GodotDoctorNotifier.print_debug("Clearing all warnings from the dock.")
 	var children: Array[Node] = error_holder.get_children()
 	for child in children:
-		child.queue_free.call_deferred()
+		child.free()
 
 
 ## Helper method to get the appropriate scene path for a node warning based on its severity level.

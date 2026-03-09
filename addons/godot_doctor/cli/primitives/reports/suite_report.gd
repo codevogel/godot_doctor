@@ -24,6 +24,21 @@ func get_message_counts() -> MessageCounts:
 	return counts
 
 
+func get_scene_count() -> int:
+	return scene_reports.size()
+
+
+func get_node_count() -> int:
+	var count: int = 0
+	for scene_report in scene_reports:
+		count += scene_report.get_node_count()
+	return count
+
+
+func get_resource_count() -> int:
+	return resource_reports.size()
+
+
 func get_error_count() -> int:
 	var c: int = 0
 	for msg in _collect_messages():

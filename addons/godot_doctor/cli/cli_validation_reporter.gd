@@ -80,7 +80,7 @@ func _print_suite_reports() -> void:
 	for suite_report in suite_reports.values():
 		_print_suite_header(suite_report.suite)
 		for scene_report in suite_report.scene_reports:
-			_print_scene_header(scene_report.scene_path)
+			_print_scene_header(scene_report)
 			_print_node_reports(
 				scene_report.node_reports, suite_report.suite.treat_warnings_as_errors
 			)
@@ -141,27 +141,27 @@ func _print_suite_header(suite: ValidationSuite) -> void:
 	_print_rich_text("└" + "─".repeat(40), ReportColors.HEADER)
 
 
-func _print_scene_header(scene_path: String) -> void:
-	_print_rich_text("Scene: %s" % scene_path, ReportColors.SCENE)
+func _print_scene_header(scene_report: SceneReport) -> void:
+	_print_rich_text("Scene: %s" % scene_report.scene_path, ReportColors.SCENE)
+	_print_rich_text(
+		"Found %d nodes to validate" % scene_report.get_node_count(), ReportColors.NODE
+	)
 
 
 func _print_resource_header(resource_path: String) -> void:
 	_print_rich_text("Resource: %s" % resource_path, ReportColors.SCENE)
 
 
-func _get_total_validated_count() -> int:
-	var count: int = 0
-	for suite_report in suite_reports.values():
-		for scene_report in suite_report.scene_reports:
-			count += scene_report.node_reports.size()
-		count += suite_report.resource_reports.size()
-	return count
-
-
 func _print_summary() -> void:
 	var totals: MessageCounts = MessageCounts.new()
+	var total_scenes: int = 0
+	var total_nodes: int = 0
+	var total_resources: int = 0
 	for suite_report in suite_reports.values():
 		totals.add(suite_report.get_message_counts())
+		total_scenes += suite_report.get_scene_count()
+		total_nodes += suite_report.get_node_count()
+		total_resources += suite_report.get_resource_count()
 
 	var passed: bool = totals.total_errors == 0
 	var divider: String = "═".repeat(52)
@@ -169,8 +169,12 @@ func _print_summary() -> void:
 	_print_rich_text("\n" + divider, ReportColors.HEADER)
 	_print_rich_text("  SUMMARY", ReportColors.HEADER)
 	_print_rich_text(divider, ReportColors.HEADER)
-	_print_rich_text("Total validated : %d" % _get_total_validated_count(), ReportColors.HEADER)  # new
-	_print_rich_text("Total messages  : %d" % totals.total, ReportColors.HEADER)
+	_print_rich_text("Total Suites ran           : %d" % suite_reports.size(), ReportColors.HEADER)
+	_print_rich_text("Total Scenes validated     : %d" % total_scenes, ReportColors.HEADER)
+	_print_rich_text("Total Nodes found to validate: %d" % total_nodes, ReportColors.HEADER)
+	_print_rich_text("Total Resources validated  : %d" % total_resources, ReportColors.HEADER)
+	_print_rich_text("Total Messages reported    : %d" % totals.total, ReportColors.HEADER)
+	_print_rich_text("\nStatus:", ReportColors.HEADER)
 	if passed:
 		_print_rich_text("  ✔  PASSED", ReportColors.PASSED)
 	else:

@@ -99,7 +99,7 @@ func _exit_tree():
 	_disconnect_signals()
 
 	if _dock != null:
-		await _remove_dock()
+		_remove_dock()
 	GodotDoctorNotifier.push_toast("Plugin unloaded.", 0)
 	GodotDoctorNotifier.print_debug("Exited tree")
 
@@ -205,7 +205,6 @@ func _remove_dock():
 	GodotDoctorNotifier.print_debug("Removing dock from editor...")
 	remove_control_from_docks(_dock)
 	_dock.free()
-	await _dock.tree_exited
 	_dock = null
 
 

@@ -86,7 +86,7 @@ func _enter_tree():
 		return
 
 	_add_dock()
-	_reporter = EditorValidationReporter.new(_dock, settings)
+	_reporter = EditorValidationReporter.new(_dock)
 	_connect_signals()
 	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)
 	GodotDoctorNotifier.print_debug("Entered tree")

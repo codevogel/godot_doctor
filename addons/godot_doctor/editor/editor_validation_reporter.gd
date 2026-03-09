@@ -4,12 +4,10 @@ class_name EditorValidationReporter
 extends ValidationReporter
 
 var _dock: GodotDoctorDock
-var _settings: GodotDoctorSettings
 
 
-func _init(dock: GodotDoctorDock, settings: GodotDoctorSettings) -> void:
+func _init(dock: GodotDoctorDock) -> void:
 	_dock = dock
-	_settings = settings
 
 
 func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> void:
@@ -17,7 +15,7 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 		return
 
 	var effective_messages := messages
-	if _settings.treat_warnings_as_errors:
+	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
 		effective_messages = _apply_warnings_as_errors(messages)
 
 	var severity_level: int = (
@@ -38,7 +36,7 @@ func report_resource_messages(resource: Resource, messages: Array[ValidationMess
 		return
 
 	var effective_messages := messages
-	if _settings.treat_warnings_as_errors:
+	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
 		effective_messages = _apply_warnings_as_errors(messages)
 
 	var severity_level: int = (

@@ -9,14 +9,14 @@ extends Control
 
 #gdlint: disable=max-line-length
 
-const SEVERITY_INFO_ICON_PATH: StringName = "res://addons/godot_doctor/assets/icon/info.png"
-const SEVERITY_WARNING_ICON_PATH: StringName = "res://addons/godot_doctor/assets/icon/warning.png"
-const EVERITY_ERROR_ICON_PATH: StringName = "res://addons/godot_doctor/assets/icon/error.png"
+const SEVERITY_INFO_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/info.png"
+const SEVERITY_WARNING_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/warning.png"
+const EVERITY_ERROR_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/error.png"
 
 ## A path to the scene used for node validation warnings.
-const NODE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/warning/node_validation_warning.tscn"
+const NODE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/node_validation_warning.tscn"
 ## A path to the scene used for resource validation warnings.
-const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/warning/resource_validation_warning.tscn"
+const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/resource_validation_warning.tscn"
 #gdlint: enable=max-line-length
 
 ## The container that holds the error/warning instances.

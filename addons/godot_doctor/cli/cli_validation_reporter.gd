@@ -4,22 +4,17 @@
 class_name CLIValidationReporter
 extends ValidationReporter
 
-enum ReportPart {
-	WELCOME_HEADER,
-	SUITE_HEADER,
-	REPORT_HEADER,
-}
 
-const _SEVERITY_TO_COLOR: Dictionary[ValidationCondition.Severity, Color] = {
-	ValidationCondition.Severity.INFO: Color.WHITE,
-	ValidationCondition.Severity.WARNING: Color.ORANGE_RED,
-	ValidationCondition.Severity.ERROR: Color.RED,
-}
+class ReportColors:
+	const INFO: Color = Color.WHITE
+	const WARNING: Color = Color.ORANGE
+	const ERROR: Color = Color.RED
+	const HEADER: Color = Color.CORNFLOWER_BLUE
+	const SCENE: Color = Color.STEEL_BLUE
+	const NODE: Color = Color.GRAY
+	const PASSED: Color = Color.GREEN
+	const FAILED: Color = Color.RED
 
-const _REPORT_PART_TO_COLOR: Dictionary[ReportPart, Color] = {
-	ReportPart.REPORT_HEADER: Color.YELLOW,
-	ReportPart.SUITE_HEADER: Color.CORNFLOWER_BLUE,
-}
 
 # Report helper classes moved to validation/reports/*.gd
 
@@ -74,6 +69,13 @@ func _print_validation_results() -> void:
 	_print_summary()
 
 
+func _print_report_header() -> void:
+	var divider := "═".repeat(52)
+	_print_rich_text(divider, ReportColors.HEADER)
+	_print_rich_text("  VALIDATION REPORT", ReportColors.HEADER)
+	_print_rich_text(divider, ReportColors.HEADER)
+
+
 func _print_suite_reports() -> void:
 	for suite_report in suite_reports.values():
 		_print_suite_header(suite_report.suite)
@@ -91,7 +93,7 @@ func _print_node_reports(node_reports: Array[NodeReport], treat_warnings_as_erro
 	for node_report in node_reports:
 		if node_report.messages.is_empty():
 			continue
-		_print_rich_text("    Node: %s" % _node_path_string(node_report.node), Color.LIGHT_GRAY)
+		_print_rich_text("    Node: %s" % _node_path_string(node_report.node), ReportColors.NODE)
 		for msg in node_report.messages:
 			_print_message(msg, treat_warnings_as_errors)
 
@@ -107,12 +109,9 @@ func _print_resource_reports(
 			_print_message(msg, treat_warnings_as_errors)
 
 
-func _print_resource_header(resource_path: String) -> void:
-	_print_rich_text("Resource: %s" % resource_path, Color.STEEL_BLUE)
-
-
+# _print_message
 func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> void:
-	var is_warning_as_error: bool = (
+	var is_warning_as_error := (
 		treat_warnings_as_errors and msg.severity_level == ValidationCondition.Severity.WARNING
 	)
 
@@ -120,41 +119,34 @@ func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> v
 	var color: Color
 	if is_warning_as_error:
 		label = "[WARNING→ERROR]"
-		color = _SEVERITY_TO_COLOR[ValidationCondition.Severity.ERROR]
+		color = ReportColors.ERROR
 	else:
-		color = _SEVERITY_TO_COLOR[msg.severity_level]
 		match msg.severity_level:
 			ValidationCondition.Severity.INFO:
 				label = "[INFO]   "
+				color = ReportColors.INFO
 			ValidationCondition.Severity.WARNING:
 				label = "[WARNING]"
+				color = ReportColors.WARNING
 			ValidationCondition.Severity.ERROR:
 				label = "[ERROR]  "
-
+				color = ReportColors.ERROR
 	_print_rich_text("      %s  %s" % [label, msg.message], color)
 
 
-func _print_report_header() -> void:
-	var divider: String = "═".repeat(52)
-	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text("  VALIDATION REPORT", _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-
-
 func _print_suite_header(suite: ValidationSuite) -> void:
-	_print_rich_text(
-		"\n┌─ Suite: %s" % suite.resource_path, _REPORT_PART_TO_COLOR[ReportPart.SUITE_HEADER]
-	)
+	_print_rich_text("\n┌─ Suite: %s" % suite.resource_path, ReportColors.HEADER)
 	if suite.treat_warnings_as_errors:
-		_print_rich_text(
-			"│  ⚠ warnings are treated as errors",
-			_SEVERITY_TO_COLOR[ValidationCondition.Severity.WARNING]
-		)
-	_print_rich_text("└" + "─".repeat(40), _REPORT_PART_TO_COLOR[ReportPart.SUITE_HEADER])
+		_print_rich_text("│  ⚠ warnings are treated as errors", ReportColors.WARNING)
+	_print_rich_text("└" + "─".repeat(40), ReportColors.HEADER)
 
 
 func _print_scene_header(scene_path: String) -> void:
-	_print_rich_text("Scene: %s" % scene_path, Color.STEEL_BLUE)
+	_print_rich_text("Scene: %s" % scene_path, ReportColors.SCENE)
+
+
+func _print_resource_header(resource_path: String) -> void:
+	_print_rich_text("Resource: %s" % resource_path, ReportColors.SCENE)
 
 
 func _print_summary() -> void:
@@ -165,33 +157,22 @@ func _print_summary() -> void:
 	var passed: bool = totals.total_errors == 0
 	var divider: String = "═".repeat(52)
 
-	_print_rich_text("\n" + divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text("  SUMMARY", _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text("Total messages : %d" % totals.total, Color.WHITE)
-	_print_rich_text(
-		"  INFO         : %d" % totals.info, _SEVERITY_TO_COLOR[ValidationCondition.Severity.INFO]
-	)
-	_print_rich_text(
-		"  WARNING      : %d" % totals.warning,
-		_SEVERITY_TO_COLOR[ValidationCondition.Severity.WARNING]
-	)
-	_print_rich_text(
-		"  ERROR        : %d" % totals.hard_error,
-		_SEVERITY_TO_COLOR[ValidationCondition.Severity.ERROR]
-	)
+	_print_rich_text("Total messages : %d" % totals.total, ReportColors.HEADER)
+	_print_rich_text("  INFO         : %d" % totals.info, ReportColors.INFO)
+	_print_rich_text("  WARNING      : %d" % totals.warning, ReportColors.WARNING)
+	_print_rich_text("  ERROR        : %d" % totals.hard_error, ReportColors.ERROR)
 	if totals.warnings_as_errors > 0:
 		_print_rich_text(
 			"  (+ %d warning(s) promoted to errors)" % totals.warnings_as_errors,
-			_SEVERITY_TO_COLOR[ValidationCondition.Severity.WARNING],
+			ReportColors.WARNING
 		)
-	_print_rich_text("Total errors   : %d" % totals.total_errors, Color.WHITE)
-	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
+	_print_rich_text("Total errors   : %d" % totals.total_errors, ReportColors.HEADER)
+	_print_rich_text(divider, ReportColors.HEADER)
 	if passed:
-		_print_rich_text("  ✔  PASSED", Color.GREEN)
+		_print_rich_text("  ✔  PASSED", ReportColors.PASSED)
 	else:
-		_print_rich_text("  ✘  FAILED", Color.RED)
-	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
+		_print_rich_text("  ✘  FAILED", ReportColors.FAILED)
+	_print_rich_text(divider, ReportColors.HEADER)
 
 
 ## Returns true if this message should increment the error count.

@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dtaq5a6mhbihi" path="res://addons/godot_doctor/settings/godot_doctor_settings.gd" id="1_w45p4"]
 [ext_resource type="Script" uid="uid://cs4sbfbc855ad" path="res://addons/godot_doctor/cli/validation_suite.gd" id="2_np33a"]
-[ext_resource type="Resource" uid="uid://cmhgwyegftuv1" path="res://test/validation_suite.tres" id="3_g2m2r"]
+[ext_resource type="Resource" uid="uid://dgu2xfjuhcfpu" path="res://test/empty_suite.tres" id="3_g2m2r"]
 
 [resource]
 script = ExtResource("1_w45p4")

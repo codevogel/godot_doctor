@@ -118,7 +118,7 @@ func _run_cli():
 	await get_tree().create_timer(settings.delay_before_running_cli).timeout
 
 	for validation_suite in settings.validation_suites:
-		_run_cli_for_suite(validation_suite)
+		await _run_cli_for_suite(validation_suite)
 	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
 	validation_complete.emit()
 
@@ -131,8 +131,9 @@ func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 	var editor_interface: EditorInterface = get_editor_interface()
 
 	for scene_path: String in validation_suite.scenes:
-		cli_reporter.current_scene_path = scene_path  # set before validating
+		cli_reporter.current_scene_path = _resolve_scene_path(scene_path)
 		editor_interface.open_scene_from_path(scene_path)
+		await scene_changed
 		_validate_scene_root(editor_interface.get_edited_scene_root())
 
 	for resource_path: String in validation_suite.resources:
@@ -140,6 +141,12 @@ func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 		editor_interface.get_inspector().edit(resource)
 		_validate_resource(resource)
 		editor_interface.get_inspector().edit(null)
+
+
+func _resolve_scene_path(path: String) -> String:
+	if path.begins_with("uid://"):
+		return ResourceUID.get_id_path(ResourceUID.text_to_id(path))
+	return path
 
 
 # ============================================================================

@@ -63,11 +63,75 @@ class SuiteReport:
 		self.scene_reports = scene_reports
 		self.resource_reports = resource_reports
 
+	func get_message_counts() -> CLIValidationReporter.MessageCounts:
+		var counts: CLIValidationReporter.MessageCounts = CLIValidationReporter.MessageCounts.new()
+		var messages: Array[ValidationMessage] = _collect_messages()
+		counts.info = get_message_count(messages, ValidationCondition.Severity.INFO)
+		counts.warning = get_message_count(messages, ValidationCondition.Severity.WARNING)
+		counts.hard_error = get_message_count(messages, ValidationCondition.Severity.ERROR)
+		if suite.treat_warnings_as_errors:
+			counts.warnings_as_errors = counts.warning
+		return counts
+
+	func get_error_count() -> int:
+		return _collect_messages().reduce(
+			func(acc: int, msg: ValidationMessage) -> int:
+				return acc + (1 if counts_as_error(msg) else 0),
+			0
+		)
+
+	func counts_as_error(msg: ValidationMessage) -> bool:
+		return (
+			msg.severity_level == ValidationCondition.Severity.ERROR
+			or (
+				suite.treat_warnings_as_errors
+				and msg.severity_level == ValidationCondition.Severity.WARNING
+			)
+		)
+
+	static func get_message_count(
+		messages: Array[ValidationMessage], severity: ValidationCondition.Severity
+	) -> int:
+		return messages.reduce(
+			func(acc: int, msg: ValidationMessage) -> int:
+				return acc + (1 if msg.severity_level == severity else 0),
+			0
+		)
+
+	func _collect_messages() -> Array[ValidationMessage]:
+		var messages: Array[ValidationMessage] = []
+		for scene_report in scene_reports:
+			for node_report in scene_report.node_reports:
+				messages.append_array(node_report.messages)
+		for resource_report in resource_reports:
+			messages.append_array(resource_report.messages)
+		return messages
+
+
+class MessageCounts:
+	var info: int = 0
+	var warning: int = 0
+	var hard_error: int = 0
+	var warnings_as_errors: int = 0
+
+	var total: int:
+		get:
+			return info + warning + hard_error
+
+	var total_errors: int:
+		get:
+			return hard_error + warnings_as_errors
+
+	func add(other: CLIValidationReporter.MessageCounts) -> void:
+		info += other.info
+		warning += other.warning
+		hard_error += other.hard_error
+		warnings_as_errors += other.warnings_as_errors
+
 
 var current_suite: ValidationSuite
 var current_scene_path: String
 var suite_reports: Dictionary[ValidationSuite, SuiteReport] = {}
-var error_count: int = 0
 
 ## The SceneTree, used to quit the application when validation is complete.
 var _scene_tree: SceneTree
@@ -81,7 +145,7 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 	if not suite_reports.has(current_suite):
 		suite_reports[current_suite] = SuiteReport.new(current_suite, [], [])
 
-	var suite_report := suite_reports[current_suite]
+	var suite_report: SuiteReport = suite_reports[current_suite]
 	var scene_report: SceneReport = null
 	for r in suite_report.scene_reports:
 		if r.scene_path == current_scene_path:
@@ -94,10 +158,6 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 
 	scene_report.node_reports.append(NodeReport.new(node, messages))
 
-	for msg in messages:
-		if counts_as_error(msg, current_suite.treat_warnings_as_errors):
-			error_count += 1
-
 
 func report_resource_messages(resource: Resource, messages: Array[ValidationMessage]) -> void:
 	if not suite_reports.has(current_suite):
@@ -105,13 +165,12 @@ func report_resource_messages(resource: Resource, messages: Array[ValidationMess
 
 	suite_reports[current_suite].resource_reports.append(ResourceReport.new(resource, messages))
 
-	for msg in messages:
-		if counts_as_error(msg, current_suite.treat_warnings_as_errors):
-			error_count += 1
-
 
 func on_validation_complete() -> void:
 	_print_validation_results()
+	var error_count: int = suite_reports.values().reduce(
+		func(acc: int, sr: SuiteReport) -> int: return acc + sr.get_error_count(), 0
+	)
 	_scene_tree.quit(0 if error_count == 0 else 1)
 
 
@@ -159,7 +218,7 @@ func _print_resource_header(resource_path: String) -> void:
 
 
 func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> void:
-	var is_warning_as_error := (
+	var is_warning_as_error: bool = (
 		treat_warnings_as_errors and msg.severity_level == ValidationCondition.Severity.WARNING
 	)
 
@@ -182,7 +241,7 @@ func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> v
 
 
 func _print_report_header() -> void:
-	var divider := "═".repeat(52)
+	var divider: String = "═".repeat(52)
 	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
 	_print_rich_text("  VALIDATION REPORT", _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
 	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
@@ -205,65 +264,34 @@ func _print_scene_header(scene_path: String) -> void:
 
 
 func _print_summary() -> void:
-	var info_count := 0
-	var warning_count := 0
-	var hard_error_count := 0
-	var warnings_as_errors := 0
-
+	var totals: MessageCounts = MessageCounts.new()
 	for suite_report in suite_reports.values():
-		var treat_warning_as_error: bool = suite_report.suite.treat_warnings_as_errors
+		totals.add(suite_report.get_message_counts())
 
-		for scene_report in suite_report.scene_reports:
-			for node_report in scene_report.node_reports:
-				for msg: ValidationMessage in node_report.messages:
-					match msg.severity_level:
-						ValidationCondition.Severity.INFO:
-							info_count += 1
-						ValidationCondition.Severity.WARNING:
-							warning_count += 1
-							if treat_warning_as_error:
-								warnings_as_errors += 1
-						ValidationCondition.Severity.ERROR:
-							hard_error_count += 1
-
-		for resource_report in suite_report.resource_reports:
-			for msg: ValidationMessage in resource_report.messages:
-				match msg.severity_level:
-					ValidationCondition.Severity.INFO:
-						info_count += 1
-					ValidationCondition.Severity.WARNING:
-						warning_count += 1
-						if treat_warning_as_error:
-							warnings_as_errors += 1
-					ValidationCondition.Severity.ERROR:
-						hard_error_count += 1
-
-	var total := info_count + warning_count + hard_error_count
-	var total_errors := hard_error_count + warnings_as_errors
-	var passed := total_errors == 0
-	var divider := "═".repeat(52)
+	var passed: bool = totals.total_errors == 0
+	var divider: String = "═".repeat(52)
 
 	_print_rich_text("\n" + divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
 	_print_rich_text("  SUMMARY", _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
 	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
-	_print_rich_text("Total messages : %d" % total, Color.WHITE)
+	_print_rich_text("Total messages : %d" % totals.total, Color.WHITE)
 	_print_rich_text(
-		"  INFO         : %d" % info_count, _SEVERITY_TO_COLOR[ValidationCondition.Severity.INFO]
+		"  INFO         : %d" % totals.info, _SEVERITY_TO_COLOR[ValidationCondition.Severity.INFO]
 	)
 	_print_rich_text(
-		"  WARNING      : %d" % warning_count,
+		"  WARNING      : %d" % totals.warning,
 		_SEVERITY_TO_COLOR[ValidationCondition.Severity.WARNING]
 	)
 	_print_rich_text(
-		"  ERROR        : %d" % hard_error_count,
+		"  ERROR        : %d" % totals.hard_error,
 		_SEVERITY_TO_COLOR[ValidationCondition.Severity.ERROR]
 	)
-	if warnings_as_errors > 0:
+	if totals.warnings_as_errors > 0:
 		_print_rich_text(
-			"  (+ %d warning(s) promoted to errors)" % warnings_as_errors,
+			"  (+ %d warning(s) promoted to errors)" % totals.warnings_as_errors,
 			_SEVERITY_TO_COLOR[ValidationCondition.Severity.WARNING],
 		)
-	_print_rich_text("Total errors   : %d" % total_errors, Color.WHITE)
+	_print_rich_text("Total errors   : %d" % totals.total_errors, Color.WHITE)
 	_print_rich_text(divider, _REPORT_PART_TO_COLOR[ReportPart.REPORT_HEADER])
 	if passed:
 		_print_rich_text("  ✔  PASSED", Color.GREEN)
@@ -283,7 +311,7 @@ static func counts_as_error(msg: ValidationMessage, treat_warnings_as_errors: bo
 
 static func _node_path_string(node: Node) -> String:
 	var names: Array[String] = []
-	var current := node
+	var current: Node = node
 	while current != null:
 		names.push_front(current.name)
 		if current.owner == null:

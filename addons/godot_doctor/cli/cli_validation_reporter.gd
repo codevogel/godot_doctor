@@ -149,6 +149,15 @@ func _print_resource_header(resource_path: String) -> void:
 	_print_rich_text("Resource: %s" % resource_path, ReportColors.SCENE)
 
 
+func _get_total_validated_count() -> int:
+	var count: int = 0
+	for suite_report in suite_reports.values():
+		for scene_report in suite_report.scene_reports:
+			count += scene_report.node_reports.size()
+		count += suite_report.resource_reports.size()
+	return count
+
+
 func _print_summary() -> void:
 	var totals: MessageCounts = MessageCounts.new()
 	for suite_report in suite_reports.values():
@@ -157,17 +166,11 @@ func _print_summary() -> void:
 	var passed: bool = totals.total_errors == 0
 	var divider: String = "═".repeat(52)
 
-	_print_rich_text("Total messages : %d" % totals.total, ReportColors.HEADER)
-	_print_rich_text("  INFO         : %d" % totals.info, ReportColors.INFO)
-	_print_rich_text("  WARNING      : %d" % totals.warning, ReportColors.WARNING)
-	_print_rich_text("  ERROR        : %d" % totals.hard_error, ReportColors.ERROR)
-	if totals.warnings_as_errors > 0:
-		_print_rich_text(
-			"  (+ %d warning(s) promoted to errors)" % totals.warnings_as_errors,
-			ReportColors.WARNING
-		)
-	_print_rich_text("Total errors   : %d" % totals.total_errors, ReportColors.HEADER)
+	_print_rich_text("\n" + divider, ReportColors.HEADER)
+	_print_rich_text("  SUMMARY", ReportColors.HEADER)
 	_print_rich_text(divider, ReportColors.HEADER)
+	_print_rich_text("Total validated : %d" % _get_total_validated_count(), ReportColors.HEADER)  # new
+	_print_rich_text("Total messages  : %d" % totals.total, ReportColors.HEADER)
 	if passed:
 		_print_rich_text("  ✔  PASSED", ReportColors.PASSED)
 	else:

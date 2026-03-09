@@ -269,8 +269,7 @@ func _validate_scene_root(scene_root: Node) -> void:
 
 	for node: Node in nodes_to_validate:
 		var messages: Array[ValidationMessage] = _collect_node_messages(node)
-		if not messages.is_empty():
-			_reporter.report_node_messages(node, messages)
+		_reporter.report_node_messages(node, messages)
 
 
 ## Validates a resource and reports results via the active reporter.
@@ -285,8 +284,7 @@ func _validate_resource(resource: Resource) -> void:
 		return
 
 	var messages: Array[ValidationMessage] = _collect_resource_messages(resource)
-	if not messages.is_empty():
-		_reporter.report_resource_messages(resource, messages)
+	_reporter.report_resource_messages(resource, messages)
 
 
 # ============================================================================

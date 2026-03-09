@@ -34,6 +34,9 @@ enum DockSlot {
 @export var show_toasts: bool = true
 
 @export_group("Validation settings")
+## Whether to treat warnings as errors in validation results.
+## (This has no effect on the CLI, see [ValidationSuite.treat_warnings_as_errors] instead).
+@export var treat_warnings_as_errors: bool = false
 ## Use default validations on `@export` variables (is instance valid, and non-empty strings)
 @export var use_default_validations: bool = true
 ## A list of scripts that should be ignored by Godot Doctor's default validations.

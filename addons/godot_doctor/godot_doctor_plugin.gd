@@ -16,7 +16,7 @@ signal validation_complete
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 ## The path of the dock scene used to display validation warnings.
-const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
+const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/editor/dock/godot_doctor_dock.tscn"
 ## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"

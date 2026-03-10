@@ -15,6 +15,8 @@ signal validation_complete
 #gdlint: disable=max-line-length
 ## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
+const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
+const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor"
 #gdlint: enable=max-line-length
 
 ## Singleton instance of the plugin for global access if needed.
@@ -74,8 +76,8 @@ func _enter_tree():
 func _enable_plugin() -> void:
 	GodotDoctorNotifier.print_debug("Enabling plugin...")
 
-	if _editor_runner and settings.show_welcome_dialog:
-		_editor_runner.show_welcome_dialog()
+	if settings.show_welcome_dialog:
+		_show_welcome_dialog()
 	GodotDoctorNotifier.print_debug("Plugin enabled")
 
 
@@ -128,6 +130,32 @@ func _disconnect_signals():
 	)
 	if active_reporter and validation_complete.is_connected(active_reporter.on_validation_complete):
 		validation_complete.disconnect(active_reporter.on_validation_complete)
+
+
+# ============================================================================
+# UI - Welcome dialog
+# ============================================================================
+
+
+## Shows the welcome dialog on first plugin enable.
+func _show_welcome_dialog() -> void:
+	GodotDoctorNotifier.print_debug("Showing welcome dialog...")
+	var dialog: AcceptDialog = AcceptDialog.new()
+	dialog.title = "Godot Doctor"
+	dialog.dialog_text = ""
+	var vbox: VBoxContainer = VBoxContainer.new()
+	dialog.add_child(vbox)
+	var label: Label = Label.new()
+	label.text = PLUGIN_WELCOME_MESSAGE
+	vbox.add_child(label)
+	var link_button: LinkButton = LinkButton.new()
+	link_button.text = "GitHub Repository"
+	link_button.uri = PLUGIN_REPOSITORY_URL
+	vbox.add_child(link_button)
+
+	EditorInterface.get_base_control().add_child(dialog)
+	dialog.exclusive = false
+	dialog.popup_centered()
 
 
 # ============================================================================

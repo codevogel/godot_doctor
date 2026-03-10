@@ -23,6 +23,30 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/
 @onready var error_holder: VBoxContainer = $ErrorHolder
 
 
+func change_title(title: String) -> void:
+	_update_dock_title(title)
+
+
+#TODO: reform with GodotNotifier from feat/ci
+func _update_dock_title(new_title: String) -> void:
+	var parent := get_parent()
+	print("Parent of dock: " + str(parent))
+	var editor_dock := parent as EditorDock
+	if not editor_dock:
+		print("Parent is not an EditorDock, cannot update title.")
+		return
+	var tab_container := editor_dock.get_parent() as TabContainer
+	print("TabContainer: " + str(tab_container))
+	if not tab_container:
+		print("Could not find parent TabContainer to update dock title.")
+		return
+	var tab_idx := tab_container.get_tab_idx_from_control(editor_dock)
+	if tab_idx == -1:
+		print("Could not find tab index for this dock to update title.")
+		return
+	tab_container.set_tab_title(tab_idx, new_title)
+
+
 ## Add a node-related warning to the dock.
 ## origin_node: The node that caused the warning.
 ## error_message: The warning message to display.

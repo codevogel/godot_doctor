@@ -107,6 +107,11 @@ func _exit_tree():
 	_instance = null
 
 
+# ============================================================================
+# CLI MODE - Headless validation without EditorInterface
+# ============================================================================
+
+
 ## Entry point for running the plugin in CLI mode when in headless display server.
 func _run_cli():
 	GodotDoctorNotifier.print_debug(
@@ -118,29 +123,41 @@ func _run_cli():
 	await get_tree().create_timer(settings.delay_before_running_cli).timeout
 
 	for validation_suite in settings.validation_suites:
-		await _run_cli_for_suite(validation_suite)
+		_run_cli_for_suite(validation_suite)
 	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
 	validation_complete.emit()
 
 
 ## Runs validation for a given validation suite in CLI mode.
+## Loads and instantiates each scene directly without opening it in the editor.
 func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
 	_reporter.current_suite = validation_suite
 	var cli_reporter := _reporter as CLIValidationReporter
-	var editor_interface: EditorInterface = get_editor_interface()
 
 	for scene_path: String in validation_suite.scenes:
-		cli_reporter.current_scene_path = _resolve_scene_path(scene_path)
-		editor_interface.open_scene_from_path(scene_path)
-		await scene_changed
-		_validate_scene_root(editor_interface.get_edited_scene_root())
+		var uid_resolved_path: String = _resolve_uid_path(scene_path)
+		cli_reporter.current_scene_path = uid_resolved_path
+		GodotDoctorNotifier.print_debug("Validating scene: %s" % uid_resolved_path)
+
+		var packed_scene := load(uid_resolved_path) as PackedScene
+		if packed_scene == null:
+			push_error("Failed to load scene: %s" % uid_resolved_path)
+			continue
+
+		var scene_root := packed_scene.instantiate()
+		_validate_scene_root(scene_root)
+		scene_root.free()
 
 	for resource_path: String in validation_suite.resources:
 		var resource := load(resource_path) as Resource
-		editor_interface.get_inspector().edit(resource)
 		_validate_resource(resource)
-		editor_interface.get_inspector().edit(null)
+
+
+func _resolve_uid_path(path: String) -> String:
+	if path.begins_with("uid://"):
+		return ResourceUID.get_id_path(ResourceUID.text_to_id(path))
+	return path
 
 
 # ============================================================================
@@ -167,7 +184,7 @@ func _disconnect_signals():
 
 
 # ============================================================================
-# UI AND DIALOG MANAGEMENT - Welcome dialog and dock management
+# UI AND DIALOG MANAGEMENT - Welcome dialog and dock management (editor mode only)
 # ============================================================================
 
 
@@ -210,7 +227,7 @@ func _remove_dock():
 
 
 # ============================================================================
-# EVENT HANDLERS - Signal callbacks for scene saves and validation requests
+# EVENT HANDLERS - Signal callbacks for scene saves and validation requests (editor mode only)
 # ============================================================================
 
 
@@ -259,10 +276,12 @@ func validate_scene_root_and_edited_resource() -> void:
 
 ## Validates all eligible nodes in a scene and reports results via the active reporter.
 ## [param scene_root] - The root node of the scene to validate.
-## NOTE: The scene must be currently open in the editor for validation to work.
+## In editor mode, the scene must be currently open in the editor.
+## In headless mode, any instantiated scene root can be passed directly.
 func _validate_scene_root(scene_root: Node) -> void:
 	GodotDoctorNotifier.print_debug("Validating scene root: %s" % scene_root.name)
-	assert(get_editor_interface().get_edited_scene_root() == scene_root)
+	if DisplayServer.get_name() != "headless":
+		assert(get_editor_interface().get_edited_scene_root() == scene_root)
 
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
 	GodotDoctorNotifier.print_debug("Found %d nodes to validate." % nodes_to_validate.size())
@@ -456,7 +475,7 @@ func _copy_properties(from_node: Node, to_node: Node) -> void:
 
 
 # ============================================================================
-# UTILITY METHODS - Debug printing, toasts, and configuration mapping
+# UTILITY METHODS - Configuration mapping
 # ============================================================================
 
 

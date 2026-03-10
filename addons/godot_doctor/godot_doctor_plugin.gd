@@ -48,22 +48,6 @@ var _cli_runner: GodotDoctorCliRunner
 # ============================================================================
 
 
-## Called when the plugin is enabled by the user through Project Settings > Plugins.
-## Displays a welcome dialog if configured in settings.
-func _enable_plugin() -> void:
-	GodotDoctorNotifier.print_debug("Enabling plugin...")
-
-	if _editor_runner and settings.show_welcome_dialog:
-		_editor_runner.show_welcome_dialog()
-	GodotDoctorNotifier.print_debug("Plugin enabled")
-
-
-## Called when the plugin is disabled by the user through Project Settings > Plugins.
-func _disable_plugin() -> void:
-	GodotDoctorNotifier.print_debug("Disabling plugin...")
-	GodotDoctorNotifier.print_debug("Plugin disabled")
-
-
 ## Called when the plugin enters the scene tree.
 ## Initializes the plugin by connecting signals and adding the dock to the editor,
 ## or running in CLI mode when headless.
@@ -80,10 +64,25 @@ func _enter_tree():
 		return
 
 	_editor_runner = GodotDoctorEditorRunner.new()
-	_editor_runner.setup()
 	_connect_signals()
 	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)
 	GodotDoctorNotifier.print_debug("Entered tree")
+
+
+## Called when the plugin is enabled by the user through Project Settings > Plugins.
+## Displays a welcome dialog if configured in settings.
+func _enable_plugin() -> void:
+	GodotDoctorNotifier.print_debug("Enabling plugin...")
+
+	if _editor_runner and settings.show_welcome_dialog:
+		_editor_runner.show_welcome_dialog()
+	GodotDoctorNotifier.print_debug("Plugin enabled")
+
+
+## Called when the plugin is disabled by the user through Project Settings > Plugins.
+func _disable_plugin() -> void:
+	GodotDoctorNotifier.print_debug("Disabling plugin...")
+	GodotDoctorNotifier.print_debug("Plugin disabled")
 
 
 ## Called when the plugin exits the scene tree.

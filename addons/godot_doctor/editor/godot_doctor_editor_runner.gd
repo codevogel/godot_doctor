@@ -19,7 +19,7 @@ var validator: GodotDoctorValidator
 
 
 ## Adds the dock to the editor and creates the reporter and validator.
-func setup() -> void:
+func _init() -> void:
 	GodotDoctorNotifier.print_debug("Adding dock to editor...")
 	dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
 	GodotDoctorPlugin.instance.add_control_to_dock(

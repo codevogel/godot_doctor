@@ -4,6 +4,5 @@
 
 [resource]
 script = ExtResource("1_akrge")
-scenes = Array[String](["uid://cqi24df5a5oyv", "uid://bullc4qncovb5", "uid://d1qwu8667k7gi"])
-resources = Array[String](["uid://dyjlsnqa3x7ew"])
+generate_suite_contents = true
 metadata/_custom_type_script = "uid://cs4sbfbc855ad"

@@ -46,7 +46,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
 	reporter.current_suite = validation_suite
 
-	for scene_path: String in validation_suite.scenes:
+	for scene_path: String in validation_suite.get_scenes():
 		var uid_resolved_path: String = _resolve_uid_path(scene_path)
 		reporter.current_scene_path = uid_resolved_path
 		GodotDoctorNotifier.print_debug("Validating scene: %s" % uid_resolved_path)
@@ -60,7 +60,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 		validator.validate_scene_root(scene_root)
 		scene_root.free()
 
-	for resource_path: String in validation_suite.resources:
+	for resource_path: String in validation_suite.get_resources():
 		var resource := load(resource_path) as Resource
 		validator.validate_resource(resource)
 

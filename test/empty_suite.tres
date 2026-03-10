@@ -1,7 +1,0 @@
-[gd_resource type="Resource" script_class="GodotDoctorValidationSuite" format=3 uid="uid://dgu2xfjuhcfpu"]
-
-[ext_resource type="Script" uid="uid://cs4sbfbc855ad" path="res://addons/godot_doctor/cli/godot_doctor_validation_suite.gd" id="1_v6bv1"]
-
-[resource]
-script = ExtResource("1_v6bv1")
-metadata/_custom_type_script = "uid://cs4sbfbc855ad"

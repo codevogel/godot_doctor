@@ -6,8 +6,10 @@ class_name GodotDoctor
 
 ## Evaluates a list of ValidationConditions
 ## and returns a PackedStringArray of error messages for those that fail.
-static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Array[ValidationMessage]:
-	var errors: Array[ValidationMessage] = []
+static func evaluate_conditions(
+	conditions: Array[ValidationCondition]
+) -> Array[GodotDoctorValidationMessage]:
+	var errors: Array[GodotDoctorValidationMessage] = []
 	for condition in conditions:
 		var result: Variant = condition.evaluate()
 		match typeof(result):
@@ -17,7 +19,9 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Array
 				var condition_passed: bool = result
 				if not condition_passed:
 					errors.append(
-						ValidationMessage.new(condition.error_message, condition.severity_level)
+						GodotDoctorValidationMessage.new(
+							condition.error_message, condition.severity_level
+						)
 					)
 			TYPE_ARRAY:
 				# The result of the evaluation is an array of nested ValidationConditions,
@@ -32,7 +36,9 @@ static func evaluate_conditions(conditions: Array[ValidationCondition]) -> Array
 						)
 					nested_conditions.append(expected_condition as ValidationCondition)
 
-				var nested_errors: Array[ValidationMessage] = evaluate_conditions(nested_conditions)
+				var nested_errors: Array[GodotDoctorValidationMessage] = evaluate_conditions(
+					nested_conditions
+				)
 				errors.append_array(nested_errors)
 			_:
 				push_error(

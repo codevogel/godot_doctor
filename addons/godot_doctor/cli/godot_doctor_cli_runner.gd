@@ -1,9 +1,9 @@
 ## Handles the CLI (headless) validation flow.
-## Creates a CLIValidationReporter and GodotDoctorValidator, then runs validation
+## Creates a GodotDoctorCLIValidationReporter and GodotDoctorValidator, then runs validation
 ## for all suites configured in GodotDoctorSettings.
 class_name GodotDoctorCliRunner
 
-var reporter: CLIValidationReporter
+var reporter: GodotDoctorCLIValidationReporter
 var validator: GodotDoctorValidator
 
 var _scene_tree: SceneTree
@@ -11,7 +11,7 @@ var _scene_tree: SceneTree
 
 func _init(scene_tree: SceneTree) -> void:
 	_scene_tree = scene_tree
-	reporter = CLIValidationReporter.new(scene_tree)
+	reporter = GodotDoctorCLIValidationReporter.new(scene_tree)
 	validator = GodotDoctorValidator.new(reporter)
 
 
@@ -33,7 +33,7 @@ func run() -> void:
 	)
 	await _scene_tree.create_timer(settings.delay_before_running_cli).timeout
 
-	for validation_suite: ValidationSuite in settings.validation_suites:
+	for validation_suite: GodotDoctorValidationSuite in settings.validation_suites:
 		_run_for_suite(validation_suite)
 
 	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
@@ -42,7 +42,7 @@ func run() -> void:
 
 ## Runs validation for a given validation suite.
 ## Loads and instantiates each scene directly without opening it in the editor.
-func _run_for_suite(validation_suite: ValidationSuite) -> void:
+func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
 	reporter.current_suite = validation_suite
 

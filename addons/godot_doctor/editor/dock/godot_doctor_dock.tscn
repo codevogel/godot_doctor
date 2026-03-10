@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://d2i0wno12y3v3"]
 
-[ext_resource type="Script" uid="uid://3dc6vbnqyd7f" path="res://addons/godot_doctor/dock/godot_doctor_dock.gd" id="1_0jykx"]
+[ext_resource type="Script" uid="uid://3dc6vbnqyd7f" path="res://addons/godot_doctor/editor/dock/godot_doctor_dock.gd" id="1_0jykx"]
 
 [node name="Godot Doctor" type="VBoxContainer" unique_id=723311386 node_paths=PackedStringArray("validate_now_button")]
 anchors_preset = 15

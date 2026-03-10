@@ -1,6 +1,6 @@
 ## A class representing a range of floating-point numbers with
 ## customizable inclusivity for the start and end points.
-class_name RangeFloat
+class_name GodotDoctorRangeFloat
 extends RefCounted
 
 const EPSILON_DEFAULT: float = 0.00001
@@ -16,14 +16,14 @@ var inclusive: bool = false
 var epsilon: float = EPSILON_DEFAULT
 
 
-## Initializes the RangeFloat with the given parameters.
+## Initializes the GodotDoctorRangeFloat with the given parameters.
 ## `start` is the start of the range. `end` is the end of the range.
 ## `inclusive` determines if the range contains `end`.
 ## `epsilon` is the tolerance for floating-point comparisons.
 ## By default, the range is exclusive.
 ## e.g.
-## RangeFloat(1.0, 10.0) will contain [1 ... (10 - epsilon) +/- epsilon].
-## RangeFloat(1.0, 10.0, true) will contain [1 ... 10 +/- epsilon].
+## GodotDoctorRangeFloat(1.0, 10.0) will contain [1 ... (10 - epsilon) +/- epsilon].
+## GodotDoctorRangeFloat(1.0, 10.0, true) will contain [1 ... 10 +/- epsilon].
 func _init(
 	start: float = 0.0,
 	end: float = 0.0,
@@ -31,7 +31,7 @@ func _init(
 	epsilon: float = EPSILON_DEFAULT
 ) -> void:
 	if start > end:
-		push_error("End of RangeFloat must be greater than or equal to start.")
+		push_error("End of GodotDoctorRangeFloat must be greater than or equal to start.")
 		return
 	self.start = start
 	self.end = end
@@ -46,8 +46,8 @@ func contains(value: float) -> bool:
 	return value >= start and (value < end or GodotDoctor.is_equal_approx(value, end, epsilon))
 
 
-## Returns true if the other RangeFloat is completely within this range, false otherwise.
-func contains_range(other: RangeFloat) -> bool:
+## Returns true if the other GodotDoctorRangeFloat is completely within this range, false otherwise.
+func contains_range(other: GodotDoctorRangeFloat) -> bool:
 	if other.start < start and not GodotDoctor.is_equal_approx(other.start, start, epsilon):
 		return false
 	if other.end > end and not GodotDoctor.is_equal_approx(other.end, end, epsilon):

@@ -1,8 +1,8 @@
 ## Validation reporter for headless / CLI mode.
 ## Prints results to stdout and exits the process when validation is complete.
-## Each ValidationSuite controls whether warnings count as errors for that suite.
-class_name CLIValidationReporter
-extends ValidationReporter
+## Each GodotDoctorValidationSuite controls whether warnings count as errors for that suite.
+class_name GodotDoctorCLIValidationReporter
+extends GodotDoctorValidationReporter
 
 
 class ReportColors:
@@ -18,9 +18,9 @@ class ReportColors:
 
 # Report helper classes moved to validation/reports/*.gd
 
-var current_suite: ValidationSuite
+var current_suite: GodotDoctorValidationSuite
 var current_scene_path: String
-var suite_reports: Dictionary[ValidationSuite, SuiteReport] = {}
+var suite_reports: Dictionary[GodotDoctorValidationSuite, GodotDoctorSuiteReport] = {}
 
 ## The SceneTree, used to quit the application when validation is complete.
 var _scene_tree: SceneTree
@@ -30,35 +30,39 @@ func _init(scene_tree: SceneTree) -> void:
 	_scene_tree = scene_tree
 
 
-func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> void:
+func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessage]) -> void:
 	if not suite_reports.has(current_suite):
-		suite_reports[current_suite] = SuiteReport.new(current_suite, [], [])
+		suite_reports[current_suite] = GodotDoctorSuiteReport.new(current_suite, [], [])
 
-	var suite_report: SuiteReport = suite_reports[current_suite]
-	var scene_report: SceneReport = null
+	var suite_report: GodotDoctorSuiteReport = suite_reports[current_suite]
+	var scene_report: GodotDoctorSceneReport = null
 	for r in suite_report.scene_reports:
 		if r.scene_path == current_scene_path:
 			scene_report = r
 			break
 
 	if scene_report == null:
-		scene_report = SceneReport.new(current_scene_path, [])
+		scene_report = GodotDoctorSceneReport.new(current_scene_path, [])
 		suite_report.scene_reports.append(scene_report)
 
-	scene_report.node_reports.append(NodeReport.new(_node_path_string(node), messages))
+	scene_report.node_reports.append(GodotDoctorNodeReport.new(_node_path_string(node), messages))
 
 
-func report_resource_messages(resource: Resource, messages: Array[ValidationMessage]) -> void:
+func report_resource_messages(
+	resource: Resource, messages: Array[GodotDoctorValidationMessage]
+) -> void:
 	if not suite_reports.has(current_suite):
-		suite_reports[current_suite] = SuiteReport.new(current_suite, [], [])
+		suite_reports[current_suite] = GodotDoctorSuiteReport.new(current_suite, [], [])
 
-	suite_reports[current_suite].resource_reports.append(ResourceReport.new(resource, messages))
+	suite_reports[current_suite].resource_reports.append(
+		GodotDoctorResourceReport.new(resource, messages)
+	)
 
 
 func on_validation_complete() -> void:
 	_print_validation_results()
 	var error_count: int = suite_reports.values().reduce(
-		func(acc: int, sr: SuiteReport) -> int: return acc + sr.get_error_count(), 0
+		func(acc: int, sr: GodotDoctorSuiteReport) -> int: return acc + sr.get_error_count(), 0
 	)
 	_scene_tree.quit(0 if error_count == 0 else 1)
 
@@ -89,7 +93,9 @@ func _print_suite_reports() -> void:
 		)
 
 
-func _print_node_reports(node_reports: Array[NodeReport], treat_warnings_as_errors: bool) -> void:
+func _print_node_reports(
+	node_reports: Array[GodotDoctorNodeReport], treat_warnings_as_errors: bool
+) -> void:
 	for node_report in node_reports:
 		if node_report.messages.is_empty():
 			continue
@@ -99,7 +105,7 @@ func _print_node_reports(node_reports: Array[NodeReport], treat_warnings_as_erro
 
 
 func _print_resource_reports(
-	resource_reports: Array[ResourceReport], treat_warnings_as_errors: bool
+	resource_reports: Array[GodotDoctorResourceReport], treat_warnings_as_errors: bool
 ) -> void:
 	for resource_report in resource_reports:
 		if resource_report.messages.is_empty():
@@ -110,7 +116,7 @@ func _print_resource_reports(
 
 
 # _print_message
-func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> void:
+func _print_message(msg: GodotDoctorValidationMessage, treat_warnings_as_errors: bool) -> void:
 	var is_warning_as_error := (
 		treat_warnings_as_errors and msg.severity_level == ValidationCondition.Severity.WARNING
 	)
@@ -134,14 +140,14 @@ func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> v
 	_print_rich_text("      %s  %s" % [label, msg.message], color)
 
 
-func _print_suite_header(suite: ValidationSuite) -> void:
+func _print_suite_header(suite: GodotDoctorValidationSuite) -> void:
 	_print_rich_text("\n┌─ Suite: %s" % _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
 	if suite.treat_warnings_as_errors:
 		_print_rich_text("│  ⚠ warnings are treated as errors", ReportColors.WARNING)
 	_print_rich_text("└" + "─".repeat(40), ReportColors.HEADER)
 
 
-func _print_scene_header(scene_report: SceneReport) -> void:
+func _print_scene_header(scene_report: GodotDoctorSceneReport) -> void:
 	_print_rich_text("Scene: %s" % scene_report.scene_path, ReportColors.SCENE)
 	_print_rich_text(
 		"Found %d nodes to validate" % scene_report.get_node_count(), ReportColors.NODE
@@ -159,7 +165,7 @@ func _print_resource_header(resource_path: String) -> void:
 
 
 func _print_summary() -> void:
-	var totals: MessageCounts = MessageCounts.new()
+	var totals: GodotDoctorMessageCounts = GodotDoctorMessageCounts.new()
 	var total_scenes: int = 0
 	var total_nodes: int = 0
 	var total_resources: int = 0
@@ -189,7 +195,9 @@ func _print_summary() -> void:
 
 
 ## Returns true if this message should increment the error count.
-static func counts_as_error(msg: ValidationMessage, treat_warnings_as_errors: bool) -> bool:
+static func counts_as_error(
+	msg: GodotDoctorValidationMessage, treat_warnings_as_errors: bool
+) -> bool:
 	if msg.severity_level == ValidationCondition.Severity.ERROR:
 		return true
 	if treat_warnings_as_errors and msg.severity_level == ValidationCondition.Severity.WARNING:

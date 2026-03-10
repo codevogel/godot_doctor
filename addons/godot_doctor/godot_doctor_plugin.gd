@@ -113,7 +113,7 @@ func _connect_signals():
 	GodotDoctorNotifier.print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
 
-	var active_reporter: ValidationReporter = (
+	var active_reporter: GodotDoctorValidationReporter = (
 		_cli_runner.reporter if _cli_runner else _editor_runner.reporter
 	)
 	validation_complete.connect(active_reporter.on_validation_complete)
@@ -125,7 +125,7 @@ func _disconnect_signals():
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
 
-	var active_reporter: ValidationReporter = (
+	var active_reporter: GodotDoctorValidationReporter = (
 		_cli_runner.reporter if _cli_runner else _editor_runner.reporter if _editor_runner else null
 	)
 	if active_reporter and validation_complete.is_connected(active_reporter.on_validation_complete):

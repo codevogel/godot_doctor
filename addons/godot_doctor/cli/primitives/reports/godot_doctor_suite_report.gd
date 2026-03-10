@@ -1,24 +1,32 @@
-class_name SuiteReport
+class_name GodotDoctorSuiteReport
 
-var suite: ValidationSuite
+var suite: GodotDoctorValidationSuite
 var scene_reports: Array
-var resource_reports: Array[ResourceReport]
+var resource_reports: Array[GodotDoctorResourceReport]
 
 
 func _init(
-	suite: ValidationSuite, scene_reports: Array, resource_reports: Array[ResourceReport]
+	suite: GodotDoctorValidationSuite,
+	scene_reports: Array,
+	resource_reports: Array[GodotDoctorResourceReport]
 ) -> void:
 	self.suite = suite
 	self.scene_reports = scene_reports
 	self.resource_reports = resource_reports
 
 
-func get_message_counts() -> MessageCounts:
-	var counts: MessageCounts = MessageCounts.new()
+func get_message_counts() -> GodotDoctorMessageCounts:
+	var counts: GodotDoctorMessageCounts = GodotDoctorMessageCounts.new()
 	var messages: Array = _collect_messages()
-	counts.info = SuiteReport.get_message_count(messages, ValidationCondition.Severity.INFO)
-	counts.warning = SuiteReport.get_message_count(messages, ValidationCondition.Severity.WARNING)
-	counts.hard_error = SuiteReport.get_message_count(messages, ValidationCondition.Severity.ERROR)
+	counts.info = GodotDoctorSuiteReport.get_message_count(
+		messages, ValidationCondition.Severity.INFO
+	)
+	counts.warning = GodotDoctorSuiteReport.get_message_count(
+		messages, ValidationCondition.Severity.WARNING
+	)
+	counts.hard_error = GodotDoctorSuiteReport.get_message_count(
+		messages, ValidationCondition.Severity.ERROR
+	)
 	if suite.treat_warnings_as_errors:
 		counts.warnings_as_errors = counts.warning
 	return counts
@@ -47,7 +55,7 @@ func get_error_count() -> int:
 	return c
 
 
-func counts_as_error(msg: ValidationMessage) -> bool:
+func counts_as_error(msg: GodotDoctorValidationMessage) -> bool:
 	return (
 		msg.severity_level == ValidationCondition.Severity.ERROR
 		or (

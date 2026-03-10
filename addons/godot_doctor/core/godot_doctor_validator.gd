@@ -1,16 +1,16 @@
 ## Handles all validation logic for GodotDoctor.
 ## Validates scene roots and resources by collecting and evaluating ValidationConditions,
-## then reporting results via the active ValidationReporter.
+## then reporting results via the active GodotDoctorValidationReporter.
 ## Settings are accessed via the GodotDoctorPlugin singleton.
 class_name GodotDoctorValidator
 
 ## The method name that nodes and resources should implement to provide validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 
-var _reporter: ValidationReporter
+var _reporter: GodotDoctorValidationReporter
 
 
-func _init(reporter: ValidationReporter) -> void:
+func _init(reporter: GodotDoctorValidationReporter) -> void:
 	_reporter = reporter
 
 
@@ -30,7 +30,7 @@ func validate_scene_root(scene_root: Node) -> void:
 	GodotDoctorNotifier.print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
 	for node: Node in nodes_to_validate:
-		var messages: Array[ValidationMessage] = _collect_node_messages(node)
+		var messages: Array[GodotDoctorValidationMessage] = _collect_node_messages(node)
 		_reporter.report_node_messages(node, messages)
 
 
@@ -45,7 +45,7 @@ func validate_resource(resource: Resource) -> void:
 	if script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list:
 		return
 
-	var messages: Array[ValidationMessage] = _collect_resource_messages(resource)
+	var messages: Array[GodotDoctorValidationMessage] = _collect_resource_messages(resource)
 	_reporter.report_resource_messages(resource, messages)
 
 
@@ -56,7 +56,7 @@ func validate_resource(resource: Resource) -> void:
 
 ## Collects all validation messages for a node by evaluating its conditions.
 ## Handles both @tool and non-@tool scripts transparently.
-func _collect_node_messages(node: Node) -> Array[ValidationMessage]:
+func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug("Collecting messages for node: %s" % node.name)
 	var validation_target: Object = _make_instance_from_placeholder(node)
 
@@ -80,7 +80,9 @@ func _collect_node_messages(node: Node) -> Array[ValidationMessage]:
 			)
 		)
 
-	var messages: Array[ValidationMessage] = ValidationResult.new(conditions).messages
+	var messages: Array[GodotDoctorValidationMessage] = (
+		GodotDoctorValidationResult.new(conditions).messages
+	)
 
 	if validation_target != node and is_instance_valid(validation_target):
 		validation_target.free()
@@ -89,7 +91,7 @@ func _collect_node_messages(node: Node) -> Array[ValidationMessage]:
 
 
 ## Collects all validation messages for a resource by evaluating its conditions.
-func _collect_resource_messages(resource: Resource) -> Array[ValidationMessage]:
+func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug("Collecting messages for resource: %s" % resource.resource_path)
 	var conditions: Array[ValidationCondition] = []
 
@@ -100,7 +102,7 @@ func _collect_resource_messages(resource: Resource) -> Array[ValidationMessage]:
 		var generated: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
 		conditions.append_array(generated)
 
-	return ValidationResult.new(conditions).messages
+	return GodotDoctorValidationResult.new(conditions).messages
 
 
 # ============================================================================

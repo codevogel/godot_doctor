@@ -103,12 +103,12 @@ static func stripped_string_not_empty(
 
 ## Helper method that creates a ValidationCondition that checks whether a given value is within a specified integer range.
 ## `value` should be the integer we want to validate.
-## `range` should be the `RangeInt` we want to check against.
+## `range` should be the `GodotDoctorRangeInt` we want to check against.
 ## `variable_name` is the name of the variable being checked, and is "Value" by default.
 ## This is a convenience method for checking integer ranges, that generates a default error message.
 static func is_in_range_int(
 	value: int,
-	range: RangeInt,
+	range: GodotDoctorRangeInt,
 	variable_name: String = "Value",
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
@@ -121,12 +121,12 @@ static func is_in_range_int(
 
 ## Helper method that creates a ValidationCondition that checks whether a given value is within a specified float range.
 ## `value` should be the float we want to validate.
-## `range` should be the `RangeFloat` we want to check against.
+## `range` should be the `GodotDoctorRangeFloat` we want to check against.
 ## `variable_name` is the name of the variable being checked, and is "Value" by default.
 ## This is a convenience method for checking float ranges, that generates a default error message.
 static func is_in_range_float(
 	value: float,
-	range: RangeFloat,
+	range: GodotDoctorRangeFloat,
 	variable_name: String = "Value",
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
@@ -245,7 +245,9 @@ static func scene_is_of_type(
 				return [ValidationCondition.simple(false, "%s is null." % variable_name)]
 
 			# Get the class name, and convert the expected type to a StringName
-			var class_result: ClassNameQueryResult = _get_class_name_from_packed_scene(packed_scene)
+			var class_result: GodotDoctorClassNameQueryResult = _get_class_name_from_packed_scene(
+				packed_scene
+			)
 			var expected_name: StringName = expected_type.get_global_name()
 
 			# If there's no script, return a nested condition indicating failure.
@@ -298,7 +300,9 @@ static func scene_is_of_type(
 
 
 ## Helper method that extracts the class name from a PackedScene.
-static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> ClassNameQueryResult:
+static func _get_class_name_from_packed_scene(
+	packed_scene: PackedScene
+) -> GodotDoctorClassNameQueryResult:
 	var state: SceneState = packed_scene.get_state()
 
 	# Walk up the tree in case this PackedScene inherits from another PackedScene
@@ -309,8 +313,8 @@ static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> Clas
 	for i in state.get_node_property_count(0):
 		if state.get_node_property_name(0, i) == &"script":
 			var script: Script = state.get_node_property_value(0, i)
-			return ClassNameQueryResult.new(true, script.get_global_name())
-	return ClassNameQueryResult.new(false)
+			return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
+	return GodotDoctorClassNameQueryResult.new(false)
 
 
 ## Helper method that checks if a class (by name) inherits from another class (by name).

@@ -41,15 +41,17 @@ func _on_validate_now_button_pressed() -> void:
 ## Add a node-related warning to the dock.
 ## origin_node: The node that caused the warning.
 ## error_message: The warning message to display.
-func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationMessage) -> void:
+func add_node_warning_to_dock(
+	origin_node: Node, validation_message: GodotDoctorValidationMessage
+) -> void:
 	GodotDoctorNotifier.print_debug(
 		(
 			"Adding node warning to dock for node: %s, message: %s"
 			% [origin_node.name, validation_message.message]
 		)
 	)
-	var warning_instance: NodeValidationWarning = (
-		load(NODE_WARNING_SCENE_PATH).instantiate() as NodeValidationWarning
+	var warning_instance: GodotDoctorNodeValidationWarning = (
+		load(NODE_WARNING_SCENE_PATH).instantiate() as GodotDoctorNodeValidationWarning
 	)
 	var icon_path: String = _get_warning_icon_path_for_severity(validation_message.severity_level)
 	warning_instance.icon.texture = load(icon_path) as Texture2D
@@ -62,7 +64,7 @@ func add_node_warning_to_dock(origin_node: Node, validation_message: ValidationM
 ## origin_resource: The resource that caused the warning.
 ## error_message: The warning message to display.
 func add_resource_warning_to_dock(
-	origin_resource: Resource, validation_message: ValidationMessage
+	origin_resource: Resource, validation_message: GodotDoctorValidationMessage
 ) -> void:
 	GodotDoctorNotifier.print_debug(
 		(
@@ -70,8 +72,8 @@ func add_resource_warning_to_dock(
 			% [origin_resource.resource_path, validation_message.message]
 		)
 	)
-	var warning_instance: ResourceValidationWarning = (
-		load(RESOURCE_WARNING_SCENE_PATH).instantiate() as ResourceValidationWarning
+	var warning_instance: GodotDoctorResourceValidationWarning = (
+		load(RESOURCE_WARNING_SCENE_PATH).instantiate() as GodotDoctorResourceValidationWarning
 	)
 	var icon_path: String = _get_warning_icon_path_for_severity(validation_message.severity_level)
 	warning_instance.icon.texture = load(icon_path) as Texture2D

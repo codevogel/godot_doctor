@@ -1,4 +1,4 @@
-class_name MessageCounts
+class_name GodotDoctorMessageCounts
 
 var info: int = 0
 var warning: int = 0
@@ -14,7 +14,7 @@ var total_errors: int:
 		return hard_error + warnings_as_errors
 
 
-func add(other: MessageCounts) -> void:
+func add(other: GodotDoctorMessageCounts) -> void:
 	info += other.info
 	warning += other.warning
 	hard_error += other.hard_error

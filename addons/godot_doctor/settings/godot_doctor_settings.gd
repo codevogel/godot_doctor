@@ -35,7 +35,7 @@ enum DockSlot {
 
 @export_group("Validation settings")
 ## Whether to treat warnings as errors in validation results.
-## (This has no effect on the CLI, see [ValidationSuite.treat_warnings_as_errors] instead).
+## (This has no effect on the CLI, see [GodotDoctorValidationSuite.treat_warnings_as_errors] instead).
 @export var treat_warnings_as_errors: bool = false
 ## Use default validations on `@export` variables (is instance valid, and non-empty strings)
 @export var use_default_validations: bool = true
@@ -49,4 +49,4 @@ enum DockSlot {
 ## This can help ensure that the editor is fully initialized before the CLI runs.
 @export var delay_before_running_cli: float = 0.5
 ## The validation suites that should be run when executing the CLI.
-@export var validation_suites: Array[ValidationSuite] = []
+@export var validation_suites: Array[GodotDoctorValidationSuite] = []

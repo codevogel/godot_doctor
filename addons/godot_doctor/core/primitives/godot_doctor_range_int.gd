@@ -1,7 +1,7 @@
 ## A class representing a range of integers
 ## with customizable inclusivity for the start and end points.
 ## Used in GodotDoctor for validating integer values against specified ranges.
-class_name RangeInt
+class_name GodotDoctorRangeInt
 extends RefCounted
 
 ## The start of the range.
@@ -13,16 +13,16 @@ var end: int = NAN
 var inclusive: bool = false
 
 
-## Initializes the RangeInt with the given parameters.
+## Initializes the GodotDoctorRangeInt with the given parameters.
 ## `start` is the start of the range. `end` is the end of the range.
 ## `inclusive` determines if the range contains `end`.
 ## By default, the range is exclusive.
 ## e.g.
-## RangeInt(1, 10) will contain [1 ... 9].
-## RangeInt(1, 10, true) will contain [1 ... 10].
+## GodotDoctorRangeInt(1, 10) will contain [1 ... 9].
+## GodotDoctorRangeInt(1, 10, true) will contain [1 ... 10].
 func _init(start: int = 0, end: int = 0, inclusive_end: bool = false) -> void:
 	if start > end:
-		push_error("end of RangeInt must be greater than start.")
+		push_error("end of GodotDoctorRangeInt must be greater than start.")
 		return
 	self.start = start
 	self.end = end
@@ -36,8 +36,8 @@ func contains(value: int) -> bool:
 	return value >= start and value < end
 
 
-## Returns true if the other RangeInt is completely within this range, false otherwise.
-func contains_range(other: RangeInt) -> bool:
+## Returns true if the other GodotDoctorRangeInt is completely within this range, false otherwise.
+func contains_range(other: GodotDoctorRangeInt) -> bool:
 	if other.start < start:
 		return false
 	if other.end > end:

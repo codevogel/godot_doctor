@@ -1,4 +1,4 @@
-class_name ValidationSuite
+class_name GodotDoctorValidationSuite
 extends Resource
 
 ## Whether to treat warnings as errors when validating the scenes and resources in this suite.

@@ -1,5 +1,5 @@
 ## Handles all editor-mode setup, dock management, and editor-triggered validation.
-## Creates an EditorValidationReporter and GodotDoctorValidator.
+## Creates an GodotDoctorEditorValidationReporter and GodotDoctorValidator.
 ## Accesses settings and editor API via the GodotDoctorPlugin singleton.
 class_name GodotDoctorEditorRunner
 
@@ -8,7 +8,7 @@ const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/editor/dock
 #gdlint: enable=max-line-length
 
 var dock: GodotDoctorDock
-var reporter: EditorValidationReporter
+var reporter: GodotDoctorEditorValidationReporter
 var validator: GodotDoctorValidator
 
 # ============================================================================
@@ -26,7 +26,7 @@ func _init() -> void:
 		),
 		dock
 	)
-	reporter = EditorValidationReporter.new(dock)
+	reporter = GodotDoctorEditorValidationReporter.new(dock)
 	validator = GodotDoctorValidator.new(reporter)
 
 

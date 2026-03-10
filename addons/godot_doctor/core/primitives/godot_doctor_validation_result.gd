@@ -2,7 +2,7 @@
 ## Evaluates a set of ValidationCondition upon initialization,
 ## and stores any resulting error messages.
 ## Used by GodotDoctor to report validation results.
-class_name ValidationResult
+class_name GodotDoctorValidationResult
 extends RefCounted
 
 ## Indicates whether the validation passed or failed.
@@ -12,10 +12,10 @@ var ok: bool:
 		return messages.size() == 0
 
 ## The list of error messages
-var messages: Array[ValidationMessage] = []
+var messages: Array[GodotDoctorValidationMessage] = []
 
 
-## Initializes the ValidationResult.
+## Initializes the GodotDoctorValidationResult.
 ## Provide an array of ValidationCondition, and it will evaluate them,
 ## populating the Results' messages array with any resulting error messages.
 func _init(conditions: Array[ValidationCondition]) -> void:

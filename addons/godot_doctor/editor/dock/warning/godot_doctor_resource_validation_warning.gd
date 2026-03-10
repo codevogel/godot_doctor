@@ -3,8 +3,8 @@
 ## in the FileSystem dock.
 ## Used by GodotDoctor to show warnings related to resources.
 @tool
-class_name ResourceValidationWarning
-extends ValidationWarning
+class_name GodotDoctorResourceValidationWarning
+extends GodotDoctorValidationWarning
 
 ## The resource that caused the warning.
 var origin_resource: Resource

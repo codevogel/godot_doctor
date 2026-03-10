@@ -2,8 +2,8 @@
 ## Clicking on the warning will select the `Node` in the scene tree.
 ## Used by GodotDoctor to show warnings related to nodes.
 @tool
-class_name NodeValidationWarning
-extends ValidationWarning
+class_name GodotDoctorNodeValidationWarning
+extends GodotDoctorValidationWarning
 
 ## The node that caused the warning.
 var origin_node: Node

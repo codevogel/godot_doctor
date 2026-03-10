@@ -1,7 +1,7 @@
 ## Validation reporter for the Godot Editor.
 ## Displays results as toasts and pushes them to the Godot Doctor dock.
-class_name EditorValidationReporter
-extends ValidationReporter
+class_name GodotDoctorEditorValidationReporter
+extends GodotDoctorValidationReporter
 
 var _dock: GodotDoctorDock
 
@@ -10,7 +10,7 @@ func _init(dock: GodotDoctorDock) -> void:
 	_dock = dock
 
 
-func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> void:
+func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessage]) -> void:
 	if messages.is_empty():
 		return
 
@@ -19,7 +19,9 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 		effective_messages = _apply_warnings_as_errors(messages)
 
 	var severity_level: int = (
-		effective_messages.map(func(msg: ValidationMessage) -> int: return msg.severity_level).max()
+		effective_messages
+		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
+		. max()
 	)
 
 	GodotDoctorNotifier.push_toast(
@@ -31,7 +33,9 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 		_dock.add_node_warning_to_dock(node, msg)
 
 
-func report_resource_messages(resource: Resource, messages: Array[ValidationMessage]) -> void:
+func report_resource_messages(
+	resource: Resource, messages: Array[GodotDoctorValidationMessage]
+) -> void:
 	if messages.is_empty():
 		return
 
@@ -40,7 +44,9 @@ func report_resource_messages(resource: Resource, messages: Array[ValidationMess
 		effective_messages = _apply_warnings_as_errors(messages)
 
 	var severity_level: int = (
-		effective_messages.map(func(msg: ValidationMessage) -> int: return msg.severity_level).max()
+		effective_messages
+		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
+		. max()
 	)
 
 	GodotDoctorNotifier.push_toast(

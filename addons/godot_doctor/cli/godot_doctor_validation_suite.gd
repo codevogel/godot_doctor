@@ -7,8 +7,8 @@ extends Resource
 
 ## Set this to true to automatically generate the suite contents
 ## based on the generative suite content filters below.
-## Note: You must at least set one directory to include in
-## the "Directories to include" property for this to work.
+## This is useful to avoid having to manually maintain
+## the list of scenes and resources to validate in a suite.
 @export var generate_suite_contents: bool = false
 
 @export_group("Generate Suite Filters")

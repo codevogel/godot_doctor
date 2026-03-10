@@ -32,3 +32,8 @@ enum DockSlot {
 
 ## A list of scripts that should be ignored by Godot Doctor's default validations.
 @export var default_validation_ignore_list: Array[Script] = []
+
+## Whether to check for updates on startup.
+## If true, Godot Doctor will check for updates
+## when the editor starts and notify the user if a new version is available.
+@export var check_for_updates_on_startup: bool = true

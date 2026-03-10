@@ -32,6 +32,8 @@ var settings: GodotDoctorSettings:
 ## The dock for displaying validation results.
 var _dock: GodotDoctorDock
 
+var _update_checker: GodotDoctorUpdateChecker
+
 # ============================================================================
 # LIFECYCLE METHODS - Plugin initialization and cleanup
 # ============================================================================
@@ -56,6 +58,9 @@ func _disable_plugin() -> void:
 ## Initializes the plugin by connecting signals and adding the dock to the editor.
 func _enter_tree():
 	_print_debug("Entering tree...")
+	if settings.check_for_updates_on_startup:
+		_update_checker = GodotDoctorUpdateChecker.new()
+	add_child(_update_checker)
 	_connect_signals()
 	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
 	add_control_to_dock(
@@ -70,6 +75,10 @@ func _exit_tree():
 	_print_debug("Exiting tree...")
 	_disconnect_signals()
 	_remove_dock()
+
+	if _update_checker != null:
+		_update_checker.free()
+		_update_checker = null
 	_push_toast("Plugin unloaded.", 0)
 
 

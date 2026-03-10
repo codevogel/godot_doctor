@@ -45,7 +45,7 @@ func report_node_messages(node: Node, messages: Array[ValidationMessage]) -> voi
 		scene_report = SceneReport.new(current_scene_path, [])
 		suite_report.scene_reports.append(scene_report)
 
-	scene_report.node_reports.append(NodeReport.new(node, messages))
+	scene_report.node_reports.append(NodeReport.new(_node_path_string(node), messages))
 
 
 func report_resource_messages(resource: Resource, messages: Array[ValidationMessage]) -> void:
@@ -93,7 +93,7 @@ func _print_node_reports(node_reports: Array[NodeReport], treat_warnings_as_erro
 	for node_report in node_reports:
 		if node_report.messages.is_empty():
 			continue
-		_print_rich_text("    Node: %s" % _node_path_string(node_report.node), ReportColors.NODE)
+		_print_rich_text("    Node: %s" % node_report.node_path, ReportColors.NODE)
 		for msg in node_report.messages:
 			_print_message(msg, treat_warnings_as_errors)
 

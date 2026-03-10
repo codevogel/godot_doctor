@@ -143,12 +143,6 @@ func _run_cli_for_suite(validation_suite: ValidationSuite) -> void:
 		editor_interface.get_inspector().edit(null)
 
 
-func _resolve_scene_path(path: String) -> String:
-	if path.begins_with("uid://"):
-		return ResourceUID.get_id_path(ResourceUID.text_to_id(path))
-	return path
-
-
 # ============================================================================
 # SIGNAL MANAGEMENT - Connection and disconnection of signals
 # ============================================================================

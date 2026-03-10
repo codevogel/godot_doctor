@@ -135,7 +135,7 @@ func _print_message(msg: ValidationMessage, treat_warnings_as_errors: bool) -> v
 
 
 func _print_suite_header(suite: ValidationSuite) -> void:
-	_print_rich_text("\n┌─ Suite: %s" % suite.resource_path, ReportColors.HEADER)
+	_print_rich_text("\n┌─ Suite: %s" % _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
 	if suite.treat_warnings_as_errors:
 		_print_rich_text("│  ⚠ warnings are treated as errors", ReportColors.WARNING)
 	_print_rich_text("└" + "─".repeat(40), ReportColors.HEADER)
@@ -148,8 +148,14 @@ func _print_scene_header(scene_report: SceneReport) -> void:
 	)
 
 
+func _resolve_uid_path(path: String) -> String:
+	if path.begins_with("uid://"):
+		return ResourceUID.get_id_path(ResourceUID.text_to_id(path))
+	return path
+
+
 func _print_resource_header(resource_path: String) -> void:
-	_print_rich_text("Resource: %s" % resource_path, ReportColors.SCENE)
+	_print_rich_text("Resource: %s" % _resolve_uid_path(resource_path), ReportColors.SCENE)
 
 
 func _print_summary() -> void:

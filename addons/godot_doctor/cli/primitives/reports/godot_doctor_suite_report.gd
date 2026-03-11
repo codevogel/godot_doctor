@@ -7,7 +7,7 @@ var resource_reports: Array[GodotDoctorResourceReport]
 
 func _init(
 	suite: GodotDoctorValidationSuite,
-	scene_reports: Array,
+	scene_reports: Array[GodotDoctorSceneReport],
 	resource_reports: Array[GodotDoctorResourceReport]
 ) -> void:
 	self.suite = suite
@@ -15,69 +15,66 @@ func _init(
 	self.resource_reports = resource_reports
 
 
-func get_message_counts() -> GodotDoctorMessageCounts:
-	var counts: GodotDoctorMessageCounts = GodotDoctorMessageCounts.new()
-	var messages: Array = _collect_messages()
-	counts.info = GodotDoctorSuiteReport.get_message_count(
-		messages, ValidationCondition.Severity.INFO
-	)
-	counts.warning = GodotDoctorSuiteReport.get_message_count(
-		messages, ValidationCondition.Severity.WARNING
-	)
-	counts.hard_error = GodotDoctorSuiteReport.get_message_count(
-		messages, ValidationCondition.Severity.ERROR
-	)
-	if suite.treat_warnings_as_errors:
-		counts.warnings_as_errors = counts.warning
-	return counts
-
-
-func get_scene_count() -> int:
+func get_scenes_validated_count() -> int:
 	return scene_reports.size()
 
 
-func get_node_count() -> int:
-	var count: int = 0
-	for scene_report in scene_reports:
-		count += scene_report.get_node_count()
-	return count
+func get_nodes_validated_count() -> int:
+	return scene_reports.reduce(
+		func(acc: int, sr: GodotDoctorSceneReport) -> int:
+			return acc + sr.get_nodes_validated_count(),
+		0
+	)
 
 
-func get_resource_count() -> int:
-	return resource_reports.size()
-
-
-func get_error_count() -> int:
-	var c: int = 0
-	for msg in _collect_messages():
-		if counts_as_error(msg):
-			c += 1
-	return c
-
-
-func counts_as_error(msg: GodotDoctorValidationMessage) -> bool:
+func get_info_messages_count() -> int:
 	return (
-		msg.severity_level == ValidationCondition.Severity.ERROR
-		or (
-			suite.treat_warnings_as_errors
-			and msg.severity_level == ValidationCondition.Severity.WARNING
+		scene_reports.reduce(
+			func(acc: int, sr: GodotDoctorSceneReport) -> int:
+				return acc + sr.get_info_messages_count(),
+			0
+		)
+		+ resource_reports.reduce(
+			func(acc: int, rr: GodotDoctorResourceReport) -> int:
+				return acc + rr.get_info_messages_count(),
+			0
 		)
 	)
 
 
-static func get_message_count(messages: Array, severity: ValidationCondition.Severity) -> int:
-	var acc: int = 0
-	for msg in messages:
-		if msg.severity_level == severity:
-			acc += 1
-	return acc
+func get_warning_messages_count() -> int:
+	return (
+		scene_reports.reduce(
+			func(acc: int, sr: GodotDoctorSceneReport) -> int:
+				return acc + sr.get_warning_messages_count(),
+			0
+		)
+		+ resource_reports.reduce(
+			func(acc: int, rr: GodotDoctorResourceReport) -> int:
+				return acc + rr.get_warning_messages_count(),
+			0
+		)
+	)
 
 
-func _collect_messages() -> Array:
-	var messages: Array = []
-	for scene_report in scene_reports:
-		for node_report in scene_report.node_reports:
-			messages.append_array(node_report.messages)
-	for resource_report in resource_reports:
-		messages.append_array(resource_report.messages)
-	return messages
+func get_hard_error_messages_count() -> int:
+	return (
+		scene_reports.reduce(
+			func(acc: int, sr: GodotDoctorSceneReport) -> int:
+				return acc + sr.get_hard_error_messages_count(),
+			0
+		)
+		+ resource_reports.reduce(
+			func(acc: int, rr: GodotDoctorResourceReport) -> int:
+				return acc + rr.get_hard_error_messages_count(),
+			0
+		)
+	)
+
+
+func get_warning_messages_as_errors_count() -> int:
+	return get_warning_messages_count() if suite.treat_warnings_as_errors else 0
+
+
+func get_error_count() -> int:
+	return get_hard_error_messages_count() + get_warning_messages_as_errors_count()

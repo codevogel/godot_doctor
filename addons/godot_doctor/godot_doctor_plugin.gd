@@ -58,11 +58,13 @@ func _enter_tree():
 	GodotDoctorNotifier.print_debug("Set plugin singleton")
 	GodotDoctorNotifier.print_debug("Entering tree...")
 
-	if DisplayServer.get_name() == "headless":
-		if settings.run_cli_in_headless_mode:
-			_cli_runner = GodotDoctorCliRunner.new(get_tree())
-			_connect_signals()
-			_cli_runner.run()
+	if (
+		DisplayServer.get_name() == "headless"
+		and OS.get_cmdline_user_args().has("--run-godot-doctor")
+	):
+		_cli_runner = GodotDoctorCliRunner.new(get_tree())
+		_connect_signals()
+		_cli_runner.run()
 		return
 
 	_editor_runner = GodotDoctorEditorRunner.new()

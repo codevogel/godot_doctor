@@ -44,8 +44,6 @@ enum DockSlot {
 @export var default_validation_ignore_list: Array[Script] = []
 
 @export_group("CLI settings")
-## Whether to run the CLI in headless mode.
-@export var run_cli_in_headless_mode: bool = true
 ## The delay (in seconds) before running the CLI.
 ## This can help ensure that the editor is fully initialized before the CLI runs.
 @export var delay_before_running_cli: float = 0.5

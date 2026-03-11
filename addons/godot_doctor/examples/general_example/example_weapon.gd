@@ -9,7 +9,6 @@ extends Resource
 
 
 func _get_validation_conditions() -> Array[ValidationCondition]:
-	print("foo")
 	var warnings: Array[ValidationCondition] = [
 		ValidationCondition.simple(damage > 0, "Damage should be a positive value."),
 		ValidationCondition.simple(

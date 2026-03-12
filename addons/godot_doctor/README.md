@@ -9,7 +9,7 @@ approach. No `@tool` required!
 
 See Godot Doctor in action:
 
-![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
+![Godot Doctor Example Gif](/github_assets/gif/doctor_example.gif)
 
 ## Quickstart 🚀
 
@@ -85,11 +85,11 @@ your gameplay code being muddied by editor-specific logic.
 
 See the difference for yourself:
 
-![Before and After Godot Doctor](./github_assets/png/before_after.png)
+![Before and After Godot Doctor](/github_assets/png/before_after.png)
 
 Or how about this:
 
-![Before and After Godot Doctor](./github_assets/png/before_after_2.png)
+![Before and After Godot Doctor](/github_assets/png/before_after_2.png)
 
 Our gameplay code stays much more clean and focused!
 
@@ -115,7 +115,7 @@ Validations run automatically when you save scenes, providing immediate feedback
 during development. Errors are displayed in a dedicated dock, and you can click
 on them to navigate directly to the problematic nodes.
 
-![Godot Doctor Example Gif](./github_assets/gif/doctor_example.gif)
+![Godot Doctor Example Gif](/github_assets/gif/doctor_example.gif)
 
 ### Validate Nodes AND Resources
 
@@ -192,7 +192,7 @@ methods on the `ValidationCondition` class, such as `scene_is_of_type`,
 common validation logic.
 
 You can find them all in
-[the `ValidationCondition` class](./addons/godot_doctor/primitives/validation_condition.gd)
+[the `ValidationCondition` class](/addons/godot_doctor/primitives/validation_condition.gd)
 
 ### Reuse validation logic with Callables
 
@@ -252,7 +252,7 @@ ValidationCondition.new(
 ## Examples
 
 For detailed examples and common validation patterns, see
-[the examples README](./addons/godot_doctor/examples/README.md).
+[the examples README](/addons/godot_doctor/examples/README.md).
 
 ## Installation
 

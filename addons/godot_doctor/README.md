@@ -256,7 +256,7 @@ To run Godot Doctor on the CLI:
    validate specific scenes or resources.
 
    > ℹ️ There is an
-   > [example](./addons/godot_doctor/examples/validation_suite_example/README.md)
+   > [example](/addons/godot_doctor/examples/validation_suite_example/README.md)
    > that goes more in depth on how to set up validation suites.
 
 2. Assign the suite resource to the `validation_suites` property of the
@@ -276,7 +276,7 @@ To run Godot Doctor on the CLI:
 The output is presented in a tree structure, making it easy to identify which
 scenes and nodes have validation issues:
 
-![cli-output-example](./github_assets/gif/doctor_example.gif)
+![cli-output-example](/github_assets/gif/doctor_example.gif)
 
 The CLI output exits with a non-zero status code if any validation conditions
 fail, making it easy to integrate into CI/CD pipelines.

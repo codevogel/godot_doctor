@@ -42,6 +42,8 @@ Or, by manual installation:
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
+- [Running Godot Doctor on the CLI](#running-godot-doctor-on-the-cli)
+  - [CI/CD Integration](#cicd-integration)
 - [How It Works](#how-it-works)
 - [Examples](#examples)
 - [Installation](#installation)
@@ -237,6 +239,97 @@ ValidationCondition.new(
   )
 ```
 
+## Running Godot Doctor on the CLI
+
+Godot Doctor can be run from the command line, allowing you to integrate it into
+your CI/CD pipeline or run it as a standalone validation tool. While using it in
+the editor provides real-time feedback, running it on the CLI can be useful for
+automated checks during development or before commits, ensuring your entire
+project adheres to your validation rules.
+
+To run Godot Doctor on the CLI:
+
+1. Create a `GodotDoctorValidationSuite` resource in your project. By default,
+   it will generatively collect _all_ scenes and resources in your project. You
+   can also exclude specific scripts or directories in the suite asset from this
+   collection process, or create multiple custom validation suites that only
+   validate specific scenes or resources.
+
+   > ℹ️ There is an
+   > [example](./addons/godot_doctor/examples/validation_suite_example/README.md)
+   > that goes more in depth on how to set up validation suites.
+
+2. Assign the suite resource to the `validation_suites` property of the
+   `GodotDoctorSettings` resource
+   (`addons/godot_doctor/settings/godot_doctor_settings.tres`).
+
+3. run Godot Doctor on the CLI, use the following command:
+
+   ```bash
+   godot --headless --editor --quit-after 30 -- --run-godot-doctor
+   ```
+
+   > ℹ️ The `--quit-after 30` flag is used to ensure that Godot exits after 30
+   > seconds, just in case there are any issues that cause the validation
+   > process to hang. You can adjust this timeout as needed.
+
+The output is presented in a tree structure, making it easy to identify which
+scenes and nodes have validation issues:
+
+![cli-output-example](./github_assets/gif/doctor_example.gif)
+
+The CLI output exits with a non-zero status code if any validation conditions
+fail, making it easy to integrate into CI/CD pipelines.
+
+### CI/CD Integration
+
+You can integrate Godot Doctor into your CI/CD pipeline (e.g., GitHub Actions,
+GitLab CI, Jenkins) to automatically validate your project on every push or pull
+request. This helps catch issues early and maintain code quality across your
+team.
+
+An example GitHub Actions workflow may look like this:
+
+```yaml
+name: "Godot Doctor"
+
+on:
+  workflow_dispatch: # this allows you to manually trigger the workflow from the Actions tab in GitHub
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  gdscript-checks:
+    name: "Run Godot Doctor CLI"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Install Godot
+        run: |
+          GODOT_VERSION="4.6.1"
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q "Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+      - name: Import project
+        run: godot --headless --editor --quit --quit-after 30 || true
+      - name: "Run Godot Doctor CLI"
+        run: godot --headless --editor --quit-after 30 -- --run-godot-doctor
+```
+
+Placing this file at `.github/workflows/godot_doctor.yaml` in your repository
+will set up the workflow to run on every push and pull request, installing
+Godot, importing the project, and executing Godot Doctor in headless mode. If
+any validation conditions fail, the workflow will exit with a non-zero status,
+causing the check to fail and alerting the developers to the issues that need to
+be addressed.
+
+You can setup GitHub to require this check to pass before allowing pull requests
+to be merged, ensuring that all code merged into your main branches adheres to
+your validation rules.
+
 ## How It Works
 
 1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes
@@ -251,7 +344,9 @@ ValidationCondition.new(
 
 ## Examples
 
-For detailed examples and common validation patterns, see
+There are many examples available that help you better understand how to use
+Godot Doctor in your project, and how to write validation conditions for
+different use cases. You can find them all in
 [the examples README](/addons/godot_doctor/examples/README.md).
 
 ## Installation

@@ -48,7 +48,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	for scene_path: String in validation_suite.get_scenes():
 		# Resolve the scene path from a uid:// string to a filesystem path if needed,
 		var uid_resolved_path: String = _resolve_uid_path(scene_path)
-		reporter.current_scene_path = uid_resolved_path
+		reporter.current_scene_resource_path = uid_resolved_path
 		GodotDoctorNotifier.print_debug("Validating scene: %s" % uid_resolved_path)
 
 		# Load the scene as a PackedScene and validate its root node.

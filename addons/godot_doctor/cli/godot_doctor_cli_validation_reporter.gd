@@ -48,7 +48,8 @@ func _indent(level: int) -> String:
 	return " ".repeat(INDENT_SIZE).repeat(level)
 
 
-## Records the validation [param messages] for [param node] into the current suite report under the current scene.
+## Records the validation [param messages] for [param node]
+## into the current suite report under the current scene.
 func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessage]) -> void:
 	# If there is no report for the current suite yet,
 	if not _suite_reports.has(current_suite):

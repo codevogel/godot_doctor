@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c0itjwae6omh2"]
 
-[ext_resource type="Texture2D" uid="uid://cdytkavplc54w" path="res://addons/godot_doctor/assets/icon/warning.png" id="1_ew3ci"]
+[ext_resource type="Texture2D" uid="uid://cdytkavplc54w" path="res://addons/godot_doctor/editor/dock/warning/assets/icon/warning.png" id="1_ew3ci"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_rylcf"]
 content_margin_left = 4.0

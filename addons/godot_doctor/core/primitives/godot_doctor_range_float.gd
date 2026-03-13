@@ -1,6 +1,6 @@
 ## A class representing a range of floating-point numbers with
 ## customizable inclusivity for the start and end points.
-class_name RangeFloat
+class_name GodotDoctorRangeFloat
 extends RefCounted
 
 const EPSILON_DEFAULT: float = 0.00001
@@ -31,7 +31,7 @@ func _init(
 	epsilon: float = EPSILON_DEFAULT
 ) -> void:
 	if start > end:
-		push_error("End of RangeFloat must be greater than or equal to start.")
+		push_error("End of GodotDoctorRangeFloat must be greater than or equal to start.")
 		return
 	self.start = start
 	self.end = end
@@ -42,16 +42,22 @@ func _init(
 ## Returns true if the value is within the range, false otherwise.
 func contains(value: float) -> bool:
 	if inclusive:
-		return value >= start and (value <= end or GodotDoctor.is_equal_approx(value, end, epsilon))
-	return value >= start and (value < end or GodotDoctor.is_equal_approx(value, end, epsilon))
+		return value >= start and (value <= end or _is_equal_approx(value, end, epsilon))
+	return value >= start and (value < end or _is_equal_approx(value, end, epsilon))
 
 
 ## Returns true if the other RangeFloat is completely within this range, false otherwise.
-func contains_range(other: RangeFloat) -> bool:
-	if other.start < start and not GodotDoctor.is_equal_approx(other.start, start, epsilon):
+func contains_range(other: GodotDoctorRangeFloat) -> bool:
+	if other.start < start and not _is_equal_approx(other.start, start, epsilon):
 		return false
-	if other.end > end and not GodotDoctor.is_equal_approx(other.end, end, epsilon):
+	if other.end > end and not _is_equal_approx(other.end, end, epsilon):
 		return false
-	if GodotDoctor.is_equal_approx(other.end, end, epsilon) and not inclusive and other.inclusive:
+	if _is_equal_approx(other.end, end, epsilon) and not inclusive and other.inclusive:
 		return false
 	return true
+
+
+## Compares two floating-point numbers for
+## approximate equality within a specified epsilon tolerance.
+static func _is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
+	return abs(a - b) <= epsilon

@@ -18,18 +18,22 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 	if messages.is_empty():
 		return
 
+	var effective_messages := messages
+	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
+		effective_messages = _apply_warnings_as_errors(messages)
+
 	var severity_level: int = (
-		messages
+		effective_messages
 		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
 		. max()
 	)
 
 	GodotDoctorNotifier.push_toast(
-		"Found %s configuration warning(s) in %s." % [messages.size(), node.name],
+		"Found %s configuration warning(s) in %s." % [effective_messages.size(), node.name],
 		severity_level
 	)
 
-	for msg in messages:
+	for msg in effective_messages:
 		_dock.add_node_warning_to_dock(node, msg)
 
 
@@ -41,8 +45,12 @@ func report_resource_messages(
 	if messages.is_empty():
 		return
 
+	var effective_messages := messages
+	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
+		effective_messages = _apply_warnings_as_errors(messages)
+
 	var severity_level: int = (
-		messages
+		effective_messages
 		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
 		. max()
 	)
@@ -50,12 +58,12 @@ func report_resource_messages(
 	GodotDoctorNotifier.push_toast(
 		(
 			"Found %s configuration warning(s) in %s."
-			% [messages.size(), resource.resource_path]
+			% [effective_messages.size(), resource.resource_path]
 		),
 		severity_level
 	)
 
-	for msg in messages:
+	for msg in effective_messages:
 		_dock.add_resource_warning_to_dock(resource, msg)
 
 

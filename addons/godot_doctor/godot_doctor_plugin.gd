@@ -113,10 +113,12 @@ func _disconnect_signals():
 #region Event Handlers
 
 
-## Called when a scene is saved by the user; triggers validation.
+## Called when a scene is saved by the user; triggers validation if
+## [member GodotDoctorSettings.validate_on_save] is enabled.
 func _on_scene_saved(file_path: String) -> void:
 	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path)
-	validate_scene_root_and_edited_resource()
+	if settings.validate_on_save:
+		validate_scene_root_and_edited_resource()
 
 
 #endregion

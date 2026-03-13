@@ -1,6 +1,6 @@
 ## Holds the results for a class name query.
 ## Used by GodotDoctor to determine if a script has a class name and what it is
-class_name ClassNameQueryResult
+class_name GodotDoctorClassNameQueryResult
 extends RefCounted
 
 var has_script: bool
@@ -15,4 +15,4 @@ var has_class_name: bool
 func _init(script_found: bool, class_name_found: StringName = &""):
 	has_script = script_found
 	found_class_name = class_name_found
-	has_class_name = not found_class_name.is_empty()
+	has_class_name = found_class_name != &""

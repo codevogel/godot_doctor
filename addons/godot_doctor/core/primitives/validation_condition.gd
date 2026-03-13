@@ -81,7 +81,7 @@ static func is_instance_valid(
 ## `value` should be the String we want to validate.
 ## `variable_name` is the name of the variable being checked, and is "String" by default.
 ## This is a convenience method for checking string emptiness, that generates a default error message.
-static func string_not_empty(
+static func is_string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
 	return ValidationCondition.new(
@@ -95,20 +95,20 @@ static func string_not_empty(
 ## `variable_name` is the name of the variable being checked, and is "String" by default.
 ## This is a convenience method for checking stripped string emptiness,
 ## that generates a default error message.
-static func stripped_string_not_empty(
+static func is_stripped_string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
-	return string_not_empty(value.strip_edges(), variable_name, severity_level)
+	return is_string_not_empty(value.strip_edges(), variable_name, severity_level)
 
 
 ## Helper method that creates a ValidationCondition that checks whether a given value is within a specified integer range.
 ## `value` should be the integer we want to validate.
-## `range` should be the `RangeInt` we want to check against.
+## `range` should be the `GodotDoctorRangeInt` we want to check against.
 ## `variable_name` is the name of the variable being checked, and is "Value" by default.
 ## This is a convenience method for checking integer ranges, that generates a default error message.
 static func is_in_range_int(
 	value: int,
-	range: RangeInt,
+	range: GodotDoctorRangeInt,
 	variable_name: String = "Value",
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
@@ -121,12 +121,12 @@ static func is_in_range_int(
 
 ## Helper method that creates a ValidationCondition that checks whether a given value is within a specified float range.
 ## `value` should be the float we want to validate.
-## `range` should be the `RangeFloat` we want to check against.
+## `range` should be the `GodotDoctorRangeFloat` we want to check against.
 ## `variable_name` is the name of the variable being checked, and is "Value" by default.
 ## This is a convenience method for checking float ranges, that generates a default error message.
 static func is_in_range_float(
 	value: float,
-	range: RangeFloat,
+	range: GodotDoctorRangeFloat,
 	variable_name: String = "Value",
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
@@ -138,10 +138,6 @@ static func is_in_range_float(
 
 
 ## Returns a validation condition that checks whether the `node` has `expected_count` children.
-## `node` should be the Node we want to validate.
-## `expected_count` should be the number of children we expect the node to have.
-## `variable_name` is the name of the variable name used for the `node`, and is "Node" by default.
-## This is a convenience method for checking child count, that generates a default error message.
 static func has_child_count(
 	node: Node,
 	expected_count: int,
@@ -159,10 +155,6 @@ static func has_child_count(
 
 
 ## Returns a validation condition that checks whether the `node` has at least `minimum_count` children.
-## `node` should be the Node we want to validate.
-## `minimum_count` should be the minimum number of children we expect the node to have.
-## `variable_name` is the name of the variable name used for the `node`, and is "Node" by default.
-## This is a convenience method for checking minimum child count, that generates a default error message.
 static func has_minimum_child_count(
 	node: Node,
 	minimum_count: int,
@@ -180,10 +172,6 @@ static func has_minimum_child_count(
 
 
 ## Returns a validation condition that checks whether the `node` has at most `maximum_count` children.
-## `node` should be the Node we want to validate.
-## `maximum_count` should be the maximum number of children we expect the node to have.
-## `variable_name` is the name of the variable name used for the `node`, and is "Node" by default.
-## This is a convenience method for checking maximum child count, that generates a default error message.
 static func has_maximum_child_count(
 	node: Node,
 	maximum_count: int,
@@ -201,9 +189,6 @@ static func has_maximum_child_count(
 
 
 ## Returns a validation condition that checks whether the `node` has no children.
-## `node` should be the Node we want to validate.
-## `variable_name` is the name of the variable name used for the `node`, and is "Node" by default.
-## This is a convenience method for checking absence of children, that generates a default error message.
 static func has_no_children(
 	node: Node, variable_name: String = "Node", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
@@ -211,10 +196,6 @@ static func has_no_children(
 
 
 ## Returns a validation condition that checks whether the `node` has a child at the specified `path`.
-## `node` should be the Node we want to validate.
-## `path` should be the NodePath we want to check for existence.
-## `variable_name` is the name of the variable name used for the `node`, and is "Node" by default.
-## This is a convenience method for checking child existence, that generates a default error message.
 static func has_node_path(
 	node: Node,
 	path: NodePath,
@@ -228,11 +209,24 @@ static func has_node_path(
 	)
 
 
+## DEPRECATED: Please use `is_scene_of_type` instead.
+static func scene_is_of_type(
+	packed_scene: PackedScene,
+	expected_type: Variant,
+	variable_name: String = "Packed Scene",
+	severity_level: Severity = Severity.ERROR
+) -> ValidationCondition:
+	push_warning(
+		"[GODOT DOCTOR]: ValidationCondition.scene_is_of_type is deprecated. Please use ValidationCondition.is_scene_of_type instead. (this change will not affect functionality, but aligns the method name with the rest of the codebase)."
+	)
+	return is_scene_of_type(packed_scene, expected_type, variable_name, severity_level)
+
+
 ## Returns a validation condition that checks whether the `packed_scene` is of `expected_type`.
 ## `packed_scene` should be the scene we want to validate.
 ## `expected_type` should be the type of the script attached to the root node of the `packed_scene`.
 ## `variable_name` is the name of the variable name used for the `packed_scene`, and is "Packed Scene" by default.
-static func scene_is_of_type(
+static func is_scene_of_type(
 	packed_scene: PackedScene,
 	expected_type: Variant,
 	variable_name: String = "Packed Scene",
@@ -245,7 +239,9 @@ static func scene_is_of_type(
 				return [ValidationCondition.simple(false, "%s is null." % variable_name)]
 
 			# Get the class name, and convert the expected type to a StringName
-			var class_result: ClassNameQueryResult = _get_class_name_from_packed_scene(packed_scene)
+			var class_result: GodotDoctorClassNameQueryResult = _get_class_name_from_packed_scene(
+				packed_scene
+			)
 			var expected_name: StringName = expected_type.get_global_name()
 
 			# If there's no script, return a nested condition indicating failure.
@@ -298,7 +294,9 @@ static func scene_is_of_type(
 
 
 ## Helper method that extracts the class name from a PackedScene.
-static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> ClassNameQueryResult:
+static func _get_class_name_from_packed_scene(
+	packed_scene: PackedScene
+) -> GodotDoctorClassNameQueryResult:
 	var state: SceneState = packed_scene.get_state()
 
 	# Walk up the tree in case this PackedScene inherits from another PackedScene
@@ -309,8 +307,8 @@ static func _get_class_name_from_packed_scene(packed_scene: PackedScene) -> Clas
 	for i in state.get_node_property_count(0):
 		if state.get_node_property_name(0, i) == &"script":
 			var script: Script = state.get_node_property_value(0, i)
-			return ClassNameQueryResult.new(true, script.get_global_name())
-	return ClassNameQueryResult.new(false)
+			return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
+	return GodotDoctorClassNameQueryResult.new(false)
 
 
 ## Helper method that checks if a class (by name) inherits from another class (by name).
@@ -329,3 +327,65 @@ static func _inherits_from(child_class_name: StringName, parent_class_name: Stri
 			)
 	# If not found, return false.
 	return false
+
+
+#region Default Validation Generation
+
+
+## Generates default validation conditions for an object by inspecting its exported properties.
+## Creates validation conditions for:
+## - Object properties: checks if they are valid instances
+## - String properties: checks if they are non-empty after stripping whitespace
+## Returns an array of generated ValidationCondition objects.
+static func get_default_validation_conditions(
+	validation_target: Object
+) -> Array[ValidationCondition]:
+	GodotDoctorNotifier.print_debug(
+		"Generating default validation conditions for: %s" % validation_target
+	)
+	## Grab all exported properties from the target's script
+	var export_props: Array[Dictionary] = _get_export_props(validation_target)
+	var validation_conditions: Array[ValidationCondition] = []
+
+	## For each exported property, generate a validation condition based on its type.
+	for export_prop in export_props:
+		var prop_name: String = export_prop["name"]
+		var prop_value: Variant = validation_target.get(prop_name)
+		var prop_type: Variant.Type = export_prop["type"]
+		match prop_type:
+			TYPE_OBJECT:
+				validation_conditions.append(
+					ValidationCondition.is_instance_valid(prop_value, prop_name)
+				)
+			TYPE_STRING:
+				validation_conditions.append(
+					ValidationCondition.is_stripped_string_not_empty(prop_value, prop_name)
+				)
+			_:
+				continue
+	return validation_conditions
+
+
+## Retrieves all exported properties from an object's script.
+## Only includes properties that are both script variables and marked for editor visibility.
+static func _get_export_props(object: Object) -> Array[Dictionary]:
+	GodotDoctorNotifier.print_debug("Getting export properties for object: %s" % object)
+	if object == null:
+		return []
+
+	var script: Script = object.get_script()
+	if script == null:
+		return []
+
+	var export_props: Array[Dictionary] = []
+
+	for prop in script.get_script_property_list():
+		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE):
+			continue
+		if not (prop.usage & PROPERTY_USAGE_EDITOR):
+			continue
+		export_props.append(prop)
+
+	return export_props
+
+#endregion

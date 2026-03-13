@@ -1,10 +1,10 @@
-## A warning that is associated with a `Resource`.
-## Clicking on the warning will open the `Resource` in the inspector and navigate to it
+## A warning that is associated with a [Resource].
+## Clicking on the warning will open the [Resource] in the inspector and navigate to it
 ## in the FileSystem dock.
 ## Used by GodotDoctor to show warnings related to resources.
 @tool
-class_name ResourceValidationWarning
-extends ValidationWarning
+class_name GodotDoctorResourceValidationWarning
+extends GodotDoctorValidationWarning
 
 ## The resource that caused the warning.
 var origin_resource: Resource

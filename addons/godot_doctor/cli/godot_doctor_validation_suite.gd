@@ -17,8 +17,8 @@ extends Resource
 ## If this has at least one directory listed, only scenes and resources in that directory
 ## (and any of its subdirectories) will be included in the generated suite contents.
 ## If this is empty, defaults to including the entire project directory.
-## NOTE: Scenes and resources in directories listed in the [directories_to_exclude],
-## [scenes_to_exclude], and [resources_to_exclude] properties will still be excluded
+## NOTE: Scenes and resources in directories listed in [member directories_to_exclude],
+## [member scenes_to_exclude], and [member resources_to_exclude] will still be excluded
 ## from the generated suite contents
 @export_dir var directories_to_include: Array[String] = []
 ## Directories to exclude when generating the suite contents
@@ -39,13 +39,13 @@ extends Resource
 
 @export_group("Suite Contents")
 ## The paths to the scenes to validate in this suite.
-## NOTE: If [generate_suite_contents] is enabled, the contents of this list will be ignored
+## NOTE: If [member generate_suite_contents] is enabled, the contents of this list will be ignored
 ## and the suite contents will be generated based on the
 ## [member directories_to_include], [member directories_to_exclude],
 ## [member scenes_to_exclude], and [member resources_to_exclude] properties.
 @export_file("*.tscn", "*.scn") var _scenes: Array[String] = []
 ## The paths to the resources to validate in this suite.
-## NOTE: If [generate_suite_contents] is enabled, the contents of this list will be ignored
+## NOTE: If [member generate_suite_contents] is enabled, the contents of this list will be ignored
 ## and the suite contents will be generated based on the
 ## [member directories_to_include], [member directories_to_exclude],
 ## [member scenes_to_exclude], and [member resources_to_exclude] properties.

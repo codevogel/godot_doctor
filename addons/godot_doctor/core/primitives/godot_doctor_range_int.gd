@@ -13,13 +13,13 @@ var end: int = NAN
 var inclusive: bool = false
 
 
-## Initializes the GodotDoctorRangeInt with the given parameters.
-## `start` is the start of the range. `end` is the end of the range.
-## `inclusive` determines if the range contains `end`.
+## Initializes the [GodotDoctorRangeInt] with the given parameters.
+## [param start] is the start of the range. [param end] is the end of the range.
+## [param inclusive_end] determines whether [param end] is included in the range.
 ## By default, the range is exclusive.
 ## e.g.
-## GodotDoctorRangeInt(1, 10) will contain [1 ... 9].
-## GodotDoctorRangeInt(1, 10, true) will contain [1 ... 10].
+## [code]GodotDoctorRangeInt(1, 10)[/code] contains [1 ... 9].
+## [code]GodotDoctorRangeInt(1, 10, true)[/code] contains [1 ... 10].
 func _init(start: int = 0, end: int = 0, inclusive_end: bool = false) -> void:
 	if start > end:
 		push_error("end of GodotDoctorRangeInt must be greater than start.")
@@ -29,14 +29,16 @@ func _init(start: int = 0, end: int = 0, inclusive_end: bool = false) -> void:
 	self.inclusive = inclusive_end
 
 
-## Returns true if the value is within the range, false otherwise.
+## Returns [code]true[/code] if [param value] is within this range,
+## [code]false[/code] otherwise.
 func contains(value: int) -> bool:
 	if inclusive:
 		return value >= start and value <= end
 	return value >= start and value < end
 
 
-## Returns true if the other GodotDoctorRangeInt is completely within this range, false otherwise.
+## Returns [code]true[/code] if [param other] is completely within this range,
+## [code]false[/code] otherwise.
 func contains_range(other: GodotDoctorRangeInt) -> bool:
 	if other.start < start:
 		return false

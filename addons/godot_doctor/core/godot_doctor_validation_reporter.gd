@@ -15,7 +15,7 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 @abstract func on_validation_complete() -> void
 
 
-## Convert an array of validation [param validation_messages] to treat warnings as errors.
+## Returns a copy of [param validation_messages] with all WARNING severity levels promoted to ERROR.
 func _apply_warnings_as_errors(
 	validation_messages: Array[GodotDoctorValidationMessage],
 ) -> Array[GodotDoctorValidationMessage]:

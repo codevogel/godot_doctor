@@ -11,7 +11,7 @@ extends Node
 @export var my_node: Node
 
 
-## Get `ValidationCondition`s for exported variables.
+## Returns [ValidationCondition]s for [member my_int] and [member my_node].
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
 		# The string not empty check is handled by the default validation conditions

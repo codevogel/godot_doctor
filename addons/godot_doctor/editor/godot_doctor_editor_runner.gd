@@ -1,4 +1,4 @@
-## Handles all editor-mode setup, dock management, and editor-triggered validation.
+## Handles all editor-mode setup, _dock management, and editor-triggered validation.
 ## Creates an GodotDoctorEditorValidationReporter and GodotDoctorValidator.
 ## Accesses settings and editor API via the GodotDoctorPlugin singleton.
 class_name GodotDoctorEditorRunner
@@ -7,60 +7,57 @@ class_name GodotDoctorEditorRunner
 const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/editor/dock/godot_doctor_dock.tscn"
 #gdlint: enable=max-line-length
 
-var dock: GodotDoctorDock
-var reporter: GodotDoctorEditorValidationReporter
-var validator: GodotDoctorValidator
+## The dock instance added to the editor for displaying validation results.
+var _dock: GodotDoctorDock
+## The reporter responsible for receiving validation messages and updating the _dock UI accordingly.
+var _reporter: GodotDoctorEditorValidationReporter
+## The validator responsible for performing validation on scenes
+## and resources and reporting results via the _reporter.
+var _validator: GodotDoctorValidator
 
-# ============================================================================
-# LIFECYCLE - Dock setup and teardown
-# ============================================================================
 
-
-## Adds the dock to the editor and creates the reporter and validator.
+## Adds the _dock to the editor and creates the _reporter and _validator.
 func _init() -> void:
-	GodotDoctorNotifier.print_debug("Adding dock to editor...")
-	dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
+	GodotDoctorNotifier.print_debug("Adding _dock to editor...")
+	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
 	GodotDoctorPlugin.instance.add_control_to_dock(
 		_settings_dock_slot_to_editor_dock_slot(
 			GodotDoctorPlugin.instance.settings.default_dock_position
 		),
-		dock
+		_dock
 	)
-	reporter = GodotDoctorEditorValidationReporter.new(dock)
-	validator = GodotDoctorValidator.new(reporter)
+	_reporter = GodotDoctorEditorValidationReporter.new(_dock)
+	_validator = GodotDoctorValidator.new(_reporter)
 
 
-## Removes the dock from the editor and frees it.
+## Removes the _dock from the editor and frees it.
 func teardown() -> void:
-	GodotDoctorNotifier.print_debug("Removing dock from editor...")
-	GodotDoctorPlugin.instance.remove_control_from_docks(dock)
-	dock.free()
-	dock = null
+	GodotDoctorNotifier.print_debug("Removing _dock from editor...")
+	GodotDoctorPlugin.instance.remove_control_from_docks(_dock)
+	_dock.free()
+	_dock = null
 
 
-# ============================================================================
-# VALIDATION - Editor-triggered validation entry point
-# ============================================================================
-
-
-## Validates the current scene root and any edited resource, then emits validation_complete.
-## NOTE: This should not be used in headless mode; use GodotDoctorCliRunner instead.
+## Validates the current scene root and any edited resource, then emits
+## [GodotDoctorPlugin.validation_complete]
 func validate_scene_root_and_edited_resource() -> void:
 	GodotDoctorNotifier.print_debug("Validating scene root and edited resource...")
 
-	dock.clear_errors()
+	_dock.clear_errors()
 
+	# Grab the current edited scene root and validate it
 	var current_edited_scene_root: Node = EditorInterface.get_edited_scene_root()
 	if current_edited_scene_root != null:
-		validator.validate_scene_root(current_edited_scene_root)
+		_validator.validate_scene_root(current_edited_scene_root)
 	else:
 		GodotDoctorNotifier.print_debug("No current edited scene root. Skipping scene validation.")
 
+	# Grab the current edited resource and validate it if it's a Resource with a script
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
 	if edited_object is Resource:
 		var resource_script: Script = edited_object.get_script()
 		if resource_script != null:
-			validator.validate_resource(edited_object as Resource)
+			_validator.validate_resource(edited_object as Resource)
 		else:
 			GodotDoctorNotifier.print_debug(
 				"Edited resource %s has no script. Skipping resource validation." % edited_object
@@ -70,12 +67,8 @@ func validate_scene_root_and_edited_resource() -> void:
 	GodotDoctorPlugin.instance.validation_complete.emit()
 
 
-# ============================================================================
-# UTILITY - Dock slot mapping
-# ============================================================================
-
-
-## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
+## Converts [param dock_slot] from the [GodotDoctorSettings.DockSlot] enum
+## to the corresponding [EditorPlugin.DockSlot] value.
 #gdlint:disable = max-returns
 func _settings_dock_slot_to_editor_dock_slot(
 	dock_slot: GodotDoctorSettings.DockSlot

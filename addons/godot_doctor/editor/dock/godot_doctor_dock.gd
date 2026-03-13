@@ -24,23 +24,26 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/edito
 @onready var error_holder: VBoxContainer = $ErrorHolder
 
 
+## Connects the validate-now button signal when the dock enters the scene tree.
 func _enter_tree() -> void:
 	validate_now_button.pressed.connect(_on_validate_now_button_pressed)
 
 
+## Disconnects the validate-now button signal when the dock exits the scene tree.
 func _exit_tree() -> void:
 	if validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
 		validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
 
 
+## Triggers validation of the current scene root and edited resource when the button is pressed.
 func _on_validate_now_button_pressed() -> void:
 	GodotDoctorNotifier.print_debug("Validate Now button pressed. Triggering validation.")
 	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
-## Add a node-related warning to the dock.
-## origin_node: The node that caused the warning.
-## error_message: The warning message to display.
+## Adds a node-related warning to the dock for [param origin_node].
+## Displays [param validation_message] with the appropriate severity icon.
+## Clicking the entry selects [param origin_node] in the scene tree.
 func add_node_warning_to_dock(
 	origin_node: Node, validation_message: GodotDoctorValidationMessage
 ) -> void:
@@ -60,9 +63,9 @@ func add_node_warning_to_dock(
 	error_holder.add_child(warning_instance)
 
 
-## Add a resource-related warning to the dock.
-## origin_resource: The resource that caused the warning.
-## error_message: The warning message to display.
+## Adds a resource-related warning to the dock for [param origin_resource].
+## Displays [param validation_message] with the appropriate severity icon.
+## Clicking the entry opens [param origin_resource] in the inspector.
 func add_resource_warning_to_dock(
 	origin_resource: Resource, validation_message: GodotDoctorValidationMessage
 ) -> void:
@@ -90,7 +93,7 @@ func clear_errors() -> void:
 		child.free()
 
 
-## Helper method to get the appropriate scene path for a node warning based on its severity level.
+## Returns the icon asset path corresponding to [param severity_level].
 func _get_warning_icon_path_for_severity(
 	severity_level: ValidationCondition.Severity
 ) -> StringName:

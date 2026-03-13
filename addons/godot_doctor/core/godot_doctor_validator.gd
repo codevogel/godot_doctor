@@ -10,69 +10,84 @@ const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
 var _reporter: GodotDoctorValidationReporter
 
 
+## Initializes the validator with [param reporter] as the active [GodotDoctorValidationReporter].
 func _init(reporter: GodotDoctorValidationReporter) -> void:
 	_reporter = reporter
 
 
-# ============================================================================
-# PUBLIC API - Validation entry points
-# ============================================================================
+#region PUBLIC API - Entry points for validating scenes and resources
 
 
-## Validates all eligible nodes in a scene and reports results via the active reporter.
-## [param scene_root] - The root node of the scene to validate.
+## Validates all eligible nodes in [param scene_root] and reports results via the active reporter.
 ## In editor mode, the scene must be currently open in the editor.
 ## In headless mode, any instantiated scene root can be passed directly.
 func validate_scene_root(scene_root: Node) -> void:
 	GodotDoctorNotifier.print_debug("Validating scene root: %s" % scene_root.name)
 
+	# Grab all nodes that should be validated in the scene tree
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
 	GodotDoctorNotifier.print_debug("Found %d nodes to validate." % nodes_to_validate.size())
 
+	# Validate each node and report results
 	for node: Node in nodes_to_validate:
 		var messages: Array[GodotDoctorValidationMessage] = _collect_node_messages(node)
 		_reporter.report_node_messages(node, messages)
 
 
-## Validates a resource and reports results via the active reporter.
-## [param resource] - The resource to validate.
+## Validates [param resource] and reports results via the active reporter.
 func validate_resource(resource: Resource) -> void:
 	GodotDoctorNotifier.print_debug(
 		"Resource validation requested for resource: %s" % resource.resource_path
 	)
 
+	# Check if the resource's script is in the ignore list before validating
 	var script: Script = resource.get_script()
 	if script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list:
 		return
 
+	# Validate the resource and report results
 	var messages: Array[GodotDoctorValidationMessage] = _collect_resource_messages(resource)
 	_reporter.report_resource_messages(resource, messages)
 
 
-# ============================================================================
-# MESSAGE COLLECTION - Gathering ValidationMessages from nodes and resources
-# ============================================================================
+#endregion
+
+#region Message Collection - Evaluating validation conditions and generating messages
 
 
-## Collects all validation messages for a node by evaluating its conditions.
+## Collects all validation messages for [param node] by evaluating its conditions.
 ## Handles both @tool and non-@tool scripts transparently.
 func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug("Collecting messages for node: %s" % node.name)
-	var validation_target: Object = _make_instance_from_placeholder(node)
 
+	# The target is either the original node (for @tool scripts)
+	# or a temporary instance (for non-@tool scripts).
+	var validation_target: Object = _make_instance_from_potential_placeholder_node(node)
+
+	# Declare an array to hold all validation conditions that will be evaluated for this node.
 	var conditions: Array[ValidationCondition] = []
 
+	# If default validations are enabled, generate conditions based on exported properties.
 	if GodotDoctorPlugin.instance.settings.use_default_validations:
-		conditions.append_array(_get_default_validation_conditions(validation_target))
+		conditions.append_array(
+			ValidationCondition.get_default_validation_conditions(validation_target)
+		)
 
+	# If the node implements the validating method, call it and append its conditions.
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
 		GodotDoctorNotifier.print_debug(
 			"Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target]
 		)
+		# We expect the method to return an array of ValidationCondition objects.
 		var generated: Array[ValidationCondition] = validation_target.call(VALIDATING_METHOD_NAME)
 		GodotDoctorNotifier.print_debug("Generated validation conditions: %s" % [generated])
+		# Append the generated conditions to the list of conditions to evaluate.
 		conditions.append_array(generated)
-	elif not GodotDoctorPlugin.instance.settings.use_default_validations:
+	else:
+		# This shouldn't happen since we only collect nodes that have the method
+		# in _find_nodes_to_validate_in_tree: Nodes that don't have the method
+		# should be filtered out when use_default_validations is disabled.
+		# Report this just in case of mis-use or unexpected edge cases.
 		push_error(
 			(
 				"_collect_node_messages called on %s, but it has no validation method (%s)."
@@ -80,40 +95,46 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 			)
 		)
 
+	# Actual evaluation takes place in the creation of the GodotDoctorValidationResult.
+	# We collect the resulting messages here to report back to the user.
 	var messages: Array[GodotDoctorValidationMessage] = (
 		GodotDoctorValidationResult.new(conditions).messages
 	)
 
+	# Free the temporary instance if we created one for validation.
 	if validation_target != node and is_instance_valid(validation_target):
 		validation_target.free()
 
 	return messages
 
 
-## Collects all validation messages for a resource by evaluating its conditions.
+## Collects all validation messages for [param resource] by evaluating its conditions.
 func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug("Collecting messages for resource: %s" % resource.resource_path)
 	var conditions: Array[ValidationCondition] = []
 
+	# If default validations are enabled, generate conditions based on exported properties.
 	if GodotDoctorPlugin.instance.settings.use_default_validations:
-		conditions.append_array(_get_default_validation_conditions(resource))
+		conditions.append_array(ValidationCondition.get_default_validation_conditions(resource))
 
+	# If the resource implements the validating method, call it and append its conditions.
 	if resource.has_method(VALIDATING_METHOD_NAME):
 		var generated: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
 		conditions.append_array(generated)
 
+	# Actual evaluation takes place in the creation of the GodotDoctorValidationResult,
+	# we collect the resulting messages here to report back to the user.
 	return GodotDoctorValidationResult.new(conditions).messages
 
 
-# ============================================================================
-# HELPER METHODS - Node finding and property inspection
-# ============================================================================
+#endregion
+
+#region Helper Methods
 
 
-## Recursively finds all nodes in the scene tree that should be validated.
-## Returns nodes that have a script attached.
-## Returns all nodes that have a script when default validations are enabled,
-## or only nodes that implement the VALIDATING_METHOD_NAME method.
+## Recursively finds all nodes in [param node]'s subtree that should be validated.
+## Returns all nodes with a script when default validations are enabled,
+## or only nodes that implement [constant VALIDATING_METHOD_NAME].
 func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Array:
 	if not recursing:
 		GodotDoctorNotifier.print_debug("Finding nodes to validate at root: %s" % node.name)
@@ -135,67 +156,13 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 	return nodes_to_validate
 
 
-## Generates default validation conditions for an object by inspecting its exported properties.
-## Creates validation conditions for:
-## - Object properties: checks if they are valid instances.
-## - String properties: checks if they are non-empty after stripping whitespace.
-func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
-	GodotDoctorNotifier.print_debug(
-		"Generating default validation conditions for: %s" % validation_target
-	)
-	var export_props: Array[Dictionary] = _get_export_props(validation_target)
-	var validation_conditions: Array[ValidationCondition] = []
-
-	for export_prop in export_props:
-		var prop_name: String = export_prop["name"]
-		var prop_value: Variant = validation_target.get(prop_name)
-		var prop_type: Variant.Type = export_prop["type"]
-		match prop_type:
-			TYPE_OBJECT:
-				validation_conditions.append(
-					ValidationCondition.is_instance_valid(prop_value, prop_name)
-				)
-			TYPE_STRING:
-				validation_conditions.append(
-					ValidationCondition.stripped_string_not_empty(prop_value, prop_name)
-				)
-			_:
-				continue
-	return validation_conditions
+#region Placeholder Instance Creation
 
 
-## Retrieves all exported properties from an object's script.
-## Only includes properties that are both script variables and marked for editor visibility.
-func _get_export_props(object: Object) -> Array[Dictionary]:
-	GodotDoctorNotifier.print_debug("Getting export properties for object: %s" % object)
-	if object == null:
-		return []
-
-	var script: Script = object.get_script()
-	if script == null:
-		return []
-
-	var export_props: Array[Dictionary] = []
-
-	for prop in script.get_script_property_list():
-		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE):
-			continue
-		if not (prop.usage & PROPERTY_USAGE_EDITOR):
-			continue
-		export_props.append(prop)
-
-	return export_props
-
-
-# ============================================================================
-# INSTANCE MANAGEMENT - Creating and copying node properties
-# ============================================================================
-
-
-## Creates a temporary instance of a non-@tool script for validation purposes.
+## Creates a temporary instance of [param original_node]'s script for validation purposes.
 ## For non-@tool scripts, creates a new instance and copies properties and children.
-## For @tool scripts or nodes without a script, returns the original node unchanged.
-func _make_instance_from_placeholder(original_node: Node) -> Object:
+## For @tool scripts or nodes without a script, returns [param original_node] unchanged.
+func _make_instance_from_potential_placeholder_node(original_node: Node) -> Object:
 	GodotDoctorNotifier.print_debug(
 		"Making instance from placeholder for node: %s" % original_node.name
 	)
@@ -214,8 +181,8 @@ func _make_instance_from_placeholder(original_node: Node) -> Object:
 	return new_instance
 
 
-## Copies all editor-visible properties from one node to another.
-## Used to transfer state from the editor node to a temporary validation instance.
+## Copies all editor-visible properties from [param from_node] to [param to_node].
+## Used to transfer state from an editor node to a temporary validation instance.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
 	GodotDoctorNotifier.print_debug(
 		"Copying properties from %s to placeholder instance" % [from_node.name]
@@ -223,3 +190,5 @@ func _copy_properties(from_node: Node, to_node: Node) -> void:
 	for prop in from_node.get_property_list():
 		if prop.usage & PROPERTY_USAGE_EDITOR:
 			to_node.set(prop.name, from_node.get(prop.name))
+
+#endregion

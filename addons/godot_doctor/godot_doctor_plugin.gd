@@ -45,9 +45,7 @@ var _editor_runner: GodotDoctorEditorRunner
 ## Handles all CLI validation flow (headless mode only).
 var _cli_runner: GodotDoctorCliRunner
 
-# ============================================================================
-# LIFECYCLE METHODS - Plugin initialization and cleanup
-# ============================================================================
+#region Plugin Lifecycle
 
 
 ## Called when the plugin enters the scene tree.
@@ -105,9 +103,9 @@ func _exit_tree():
 	_instance = null
 
 
-# ============================================================================
-# SIGNAL MANAGEMENT - Connection and disconnection of signals
-# ============================================================================
+#endregion
+
+#region Signal Management
 
 
 ## Connects all necessary signals for the plugin to function.
@@ -116,7 +114,7 @@ func _connect_signals():
 	scene_saved.connect(_on_scene_saved)
 
 	var active_reporter: GodotDoctorValidationReporter = (
-		_cli_runner.reporter if _cli_runner else _editor_runner.reporter
+		_cli_runner.reporter if _cli_runner else _editor_runner._reporter
 	)
 	validation_complete.connect(active_reporter.on_validation_complete)
 
@@ -128,15 +126,41 @@ func _disconnect_signals():
 		scene_saved.disconnect(_on_scene_saved)
 
 	var active_reporter: GodotDoctorValidationReporter = (
-		_cli_runner.reporter if _cli_runner else _editor_runner.reporter if _editor_runner else null
+		_cli_runner.reporter
+		if _cli_runner
+		else _editor_runner._reporter if _editor_runner else null
 	)
 	if active_reporter and validation_complete.is_connected(active_reporter.on_validation_complete):
 		validation_complete.disconnect(active_reporter.on_validation_complete)
 
 
-# ============================================================================
-# UI - Welcome dialog
-# ============================================================================
+#endregion
+
+#region Event Handlers
+
+
+## Called when a scene is saved by the user; triggers validation if
+## [member GodotDoctorSettings.validate_on_save] is enabled.
+func _on_scene_saved(file_path: String) -> void:
+	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path)
+	if settings.validate_on_save:
+		validate_scene_root_and_edited_resource()
+
+
+#endregion
+
+
+## Validation entry point for both the current scene root and edited resource.
+## Useful when you want to validate from some external trigger like an [EditorScript]
+## NOTE: This should only be used in editor mode, as it relies on the editor runner.
+func validate_scene_root_and_edited_resource() -> void:
+	if _editor_runner == null:
+		push_error("validate_scene_root_and_edited_resource called outside of editor mode.")
+		return
+	_editor_runner.validate_scene_root_and_edited_resource()
+
+
+#region UI
 
 
 ## Shows the welcome dialog on first plugin enable.
@@ -159,23 +183,4 @@ func _show_welcome_dialog() -> void:
 	dialog.exclusive = false
 	dialog.popup_centered()
 
-
-# ============================================================================
-# EVENT HANDLERS - Signal callbacks for scene saves and validation requests (editor mode only)
-# ============================================================================
-
-
-## Called when a scene is saved by the user.
-func _on_scene_saved(file_path: String) -> void:
-	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path)
-	if settings.validate_on_save:
-		validate_scene_root_and_edited_resource()
-
-
-## Validation entry point for both the current scene root and edited resource.
-## NOTE: This should not be used in headless mode; use GodotDoctorCliRunner instead.
-func validate_scene_root_and_edited_resource() -> void:
-	if _editor_runner == null:
-		push_error("validate_scene_root_and_edited_resource called outside of editor mode.")
-		return
-	_editor_runner.validate_scene_root_and_edited_resource()
+#endregion

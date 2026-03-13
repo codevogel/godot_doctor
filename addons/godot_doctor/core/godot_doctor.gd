@@ -4,8 +4,9 @@
 class_name GodotDoctor
 
 
-## Evaluates a list of ValidationConditions
-## and returns a PackedStringArray of error messages for those that fail.
+## Evaluates [param conditions] and returns an array of [GodotDoctorValidationMessage]
+## for all conditions that fail.
+## TODO: Check if we can move this
 static func evaluate_conditions(
 	conditions: Array[ValidationCondition]
 ) -> Array[GodotDoctorValidationMessage]:
@@ -47,7 +48,7 @@ static func evaluate_conditions(
 	return errors
 
 
-## Compares two floating-point numbers for
-## approximate equality within a specified epsilon tolerance.
+## Returns [code]true[/code] if [param a] and [param b] differ by at most [param epsilon].
+## TODO: Check if we can move this
 static func is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
 	return abs(a - b) <= epsilon

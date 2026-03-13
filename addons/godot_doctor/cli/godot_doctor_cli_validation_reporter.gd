@@ -34,14 +34,6 @@ var current_scene_resource_path: String
 ## A mapping of suite resource paths to their collected [GodotDoctorSuiteReport]s.
 var _suite_reports: Dictionary = {}
 
-## The [SceneTree] instance used to control process exit on validation completion.
-var _scene_tree: SceneTree
-
-
-## Initializes the reporter with [param scene_tree] for process control on validation completion.
-func _init(scene_tree: SceneTree) -> void:
-	_scene_tree = scene_tree
-
 
 ## Returns an indentation string repeated [param level] times.
 func _indent(level: int) -> String:
@@ -117,9 +109,9 @@ func on_validation_complete() -> void:
 	_print_validation_results(summary)
 
 	if summary.total_error_count == 0:
-		_scene_tree.quit(0)
+		GodotDoctorPlugin.instance.quit_with_code(0)
 	else:
-		_scene_tree.quit(1)
+		GodotDoctorPlugin.instance.quit_with_code(1)
 
 
 ## Orchestrates printing of the full validation report: header, suite reports, and summary.

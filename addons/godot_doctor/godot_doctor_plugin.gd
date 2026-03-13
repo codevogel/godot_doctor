@@ -8,6 +8,8 @@ class_name GodotDoctorPlugin
 extends EditorPlugin
 
 ## Emitted when validation is complete.
+## In Headless mode, this signals the CLI reporter to exit the process.
+## In Editor mode, this can be used to trigger any post-validation actions.
 signal validation_complete
 
 #gdlint: disable=max-line-length
@@ -19,6 +21,8 @@ const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor
 
 ## Singleton instance of the plugin for global access if needed.
 ## Avoid using this directly in most cases.
+## This can, however, be useful for starting validation from external scripts
+## such as the Dock's 'Validate Now' button.
 static var instance: GodotDoctorPlugin:
 	get:
 		assert(_instance != null, "GodotDoctorPlugin instance is not initialized yet.")
@@ -35,18 +39,31 @@ var settings: GodotDoctorSettings:
 			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
-## Handles all editor-mode setup, dock management, and validation.
+## Handles all editor-mode setup, dock management, and validation (editor mode only).
 var _editor_runner: GodotDoctorEditorRunner
+
+## Handles all CLI validation flow (headless mode only).
+var _cli_runner: GodotDoctorCliRunner
 
 #region Plugin Lifecycle
 
 
 ## Called when the plugin enters the scene tree.
-## Initializes the plugin by connecting signals and adding the dock to the editor.
+## Initializes the plugin by connecting signals and adding the dock to the editor,
+## or running in CLI mode when headless.
 func _enter_tree():
 	_instance = self
 	GodotDoctorNotifier.print_debug("Set plugin singleton")
 	GodotDoctorNotifier.print_debug("Entering tree...")
+
+	if (
+		DisplayServer.get_name() == "headless"
+		and OS.get_cmdline_user_args().has("--run-godot-doctor")
+	):
+		_cli_runner = GodotDoctorCliRunner.new(get_tree())
+		_connect_signals()
+		_cli_runner.run()
+		return
 
 	_editor_runner = GodotDoctorEditorRunner.new()
 	_connect_signals()
@@ -95,7 +112,11 @@ func _exit_tree():
 func _connect_signals():
 	GodotDoctorNotifier.print_debug("Connecting signals...")
 	scene_saved.connect(_on_scene_saved)
-	validation_complete.connect(_editor_runner.reporter.on_validation_complete)
+
+	var active_reporter: GodotDoctorValidationReporter = (
+		_cli_runner.reporter if _cli_runner else _editor_runner.reporter
+	)
+	validation_complete.connect(active_reporter.on_validation_complete)
 
 
 ## Disconnects all connected signals to avoid dangling connections.
@@ -104,8 +125,11 @@ func _disconnect_signals():
 	if scene_saved.is_connected(_on_scene_saved):
 		scene_saved.disconnect(_on_scene_saved)
 
-	if _editor_runner and validation_complete.is_connected(_editor_runner.reporter.on_validation_complete):
-		validation_complete.disconnect(_editor_runner.reporter.on_validation_complete)
+	var active_reporter: GodotDoctorValidationReporter = (
+		_cli_runner.reporter if _cli_runner else _editor_runner.reporter if _editor_runner else null
+	)
+	if active_reporter and validation_complete.is_connected(active_reporter.on_validation_complete):
+		validation_complete.disconnect(active_reporter.on_validation_complete)
 
 
 #endregion
@@ -125,6 +149,8 @@ func _on_scene_saved(file_path: String) -> void:
 
 
 ## Validation entry point for both the current scene root and edited resource.
+## Useful when you want to validate from some external trigger like an [EditorScript]
+## NOTE: This should only be used in editor mode, as it relies on the editor runner.
 func validate_scene_root_and_edited_resource() -> void:
 	if _editor_runner == null:
 		push_error("validate_scene_root_and_edited_resource called outside of editor mode.")

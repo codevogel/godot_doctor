@@ -14,8 +14,11 @@ static func print_debug(message: String) -> void:
 
 
 ## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
+## Only meaningful in editor mode; no-ops in CLI mode.
 ## [param severity] controls the toast type: 0 for info (default), 1 for warning, 2 for error.
 static func push_toast(message: String, severity: int = 0) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
 	if GodotDoctorPlugin.instance.settings.show_toasts:
 		EditorInterface.get_editor_toaster().push_toast(_prefix_message(message), severity)
 

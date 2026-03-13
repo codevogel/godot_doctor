@@ -35,6 +35,8 @@ enum DockSlot {
 
 @export_group("Validation settings")
 ## Whether to treat warnings as errors in validation results.
+## (Has no effect on the CLI; see
+## [member GodotDoctorValidationSuite.treat_warnings_as_errors] instead).
 @export var treat_warnings_as_errors: bool = false
 ## Use default validations on [code]@export[/code] variables
 ## (instance validity and non-empty strings).

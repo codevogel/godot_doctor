@@ -1,7 +1,7 @@
 ## A base class for validation warning UI components.
-## Contains common UI elements like icon, label, and button.
-## Subclasses should implement the _select_origin method to
-## define behavior when the button is pressed.
+## Contains common UI elements like [member icon], [member label], and [member button].
+## Subclasses should implement [method _select_origin] to define behaviour
+## when [member button] is pressed.
 ## Used by GodotDoctor to display validation warnings for nodes and resources.
 @abstract
 @tool
@@ -16,20 +16,20 @@ extends MarginContainer
 @export var button: Button
 
 
-## Connect signals when the node is ready.
+## Connects the [member button] pressed signal on entering the scene tree.
 func _ready() -> void:
 	_connect_signals()
 
 
-## Connect signals for the button.
+## Connects the [member button] pressed signal to [method _on_button_pressed].
 func _connect_signals() -> void:
 	button.pressed.connect(_on_button_pressed)
 
 
-## Handle button press to select the origin of the warning.
+## Called when [member button] is pressed; delegates to [method _select_origin].
 func _on_button_pressed() -> void:
 	_select_origin()
 
 
-## Abstract method to select the origin of the warning.
+## Selects or navigates to the warning's origin in the editor.
 @abstract func _select_origin() -> void

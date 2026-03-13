@@ -7,7 +7,7 @@ extends Node
 @export var my_resource: MyResource
 
 
-## Get `ValidationCondition`s for exported variables.
+## Returns [ValidationCondition]s that delegate to [member my_resource]'s own conditions.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
 		# We rely on the default validaiton conditions here to see

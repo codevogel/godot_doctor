@@ -31,9 +31,9 @@ Here’s the validation logic for one of the scripts, attached to
 `NodeWithChildCount`:
 
 ```gdscript
-## Get `ValidationCondition`s for exported variables.
+## Returns a [ValidationCondition] that fails if this node does not have exactly 3 children.
 func _get_validation_conditions() -> Array[ValidationCondition]:
- return [ValidationCondition.has_child_count(self, 3, name)]
+   return [ValidationCondition.has_child_count(self, 3, name)]
 ```
 
 It checks that the node has exactly 3 children. Similar scripts are attached to

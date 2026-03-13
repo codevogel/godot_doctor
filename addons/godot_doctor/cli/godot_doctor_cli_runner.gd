@@ -4,7 +4,7 @@
 class_name GodotDoctorCliRunner
 
 var reporter: GodotDoctorCLIValidationReporter
-var validator: GodotDoctorValidator
+var _validator: GodotDoctorValidator
 
 var _scene_tree: SceneTree
 
@@ -13,7 +13,7 @@ var _scene_tree: SceneTree
 func _init(scene_tree: SceneTree) -> void:
 	_scene_tree = scene_tree
 	reporter = GodotDoctorCLIValidationReporter.new(scene_tree)
-	validator = GodotDoctorValidator.new(reporter)
+	_validator = GodotDoctorValidator.new(reporter)
 
 
 ## Main entry point for CLI validation.
@@ -59,7 +59,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 
 		## Instantiate the scene to validate the root node
 		var scene_root := packed_scene.instantiate()
-		validator.validate_scene_root(scene_root)
+		_validator.validate_scene_root(scene_root)
 		## Free the instantiated scene to avoid memory leaks
 		## since we're not adding it to the active scene tree.
 		scene_root.free()
@@ -68,7 +68,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	for resource_path: String in validation_suite.get_resources():
 		# Load the resource and validate it.
 		var resource := load(resource_path) as Resource
-		validator.validate_resource(resource)
+		_validator.validate_resource(resource)
 		# Free the resource to avoid memory leaks since we're not keeping a reference to it.
 		resource.free()
 

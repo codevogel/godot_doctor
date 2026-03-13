@@ -22,6 +22,7 @@ extends Node
 @export var some_script_that_we_refer_to: SomeScriptThatWeReferTo
 
 
+## Calls [method _call_something_on_the_other_script] after the node is ready.
 func _ready() -> void:
 	_call_something_on_the_other_script()
 

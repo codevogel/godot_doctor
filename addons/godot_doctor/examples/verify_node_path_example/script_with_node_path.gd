@@ -11,7 +11,8 @@ extends Node
 @onready var my_deeper_node_path_node: Node = $MyNodePathNode/MyDeeperNodePathNode
 
 
-## Get `ValidationCondition`s for exported variables.
+## Returns [ValidationCondition]s that verify [member my_node_path_node] and
+## [member my_deeper_node_path_node] exist.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.simple(has_node("MyNodePathNode"), "MyNodePathNode was not found."),

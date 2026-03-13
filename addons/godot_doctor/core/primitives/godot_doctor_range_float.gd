@@ -3,6 +3,7 @@
 class_name GodotDoctorRangeFloat
 extends RefCounted
 
+## The default tolerance for floating-point comparisons.
 const EPSILON_DEFAULT: float = 0.00001
 
 ## The start of the range.
@@ -16,14 +17,14 @@ var inclusive: bool = false
 var epsilon: float = EPSILON_DEFAULT
 
 
-## Initializes the RangeFloat with the given parameters.
-## `start` is the start of the range. `end` is the end of the range.
-## `inclusive` determines if the range contains `end`.
-## `epsilon` is the tolerance for floating-point comparisons.
+## Initializes the [GodotDoctorRangeFloat] with the given parameters.
+## [param start] is the start of the range. [param end] is the end of the range.
+## [param inclusive_end] determines whether [param end] is included in the range.
+## [param epsilon] is the tolerance for floating-point comparisons.
 ## By default, the range is exclusive.
 ## e.g.
-## RangeFloat(1.0, 10.0) will contain [1 ... (10 - epsilon) +/- epsilon].
-## RangeFloat(1.0, 10.0, true) will contain [1 ... 10 +/- epsilon].
+## [code]GodotDoctorRangeFloat(1.0, 10.0)[/code] contains [1 ... (10 - epsilon) +/- epsilon].
+## [code]GodotDoctorRangeFloat(1.0, 10.0, true)[/code] contains [1 ... 10 +/- epsilon].
 func _init(
 	start: float = 0.0,
 	end: float = 0.0,
@@ -39,14 +40,16 @@ func _init(
 	self.epsilon = epsilon
 
 
-## Returns true if the value is within the range, false otherwise.
+## Returns [code]true[/code] if [param value] is within this range,
+## [code]false[/code] otherwise.
 func contains(value: float) -> bool:
 	if inclusive:
 		return value >= start and (value <= end or _is_equal_approx(value, end, epsilon))
 	return value >= start and (value < end or _is_equal_approx(value, end, epsilon))
 
 
-## Returns true if the other RangeFloat is completely within this range, false otherwise.
+## Returns [code]true[/code] if [param other] is completely within this range,
+## [code]false[/code] otherwise.
 func contains_range(other: GodotDoctorRangeFloat) -> bool:
 	if other.start < start and not _is_equal_approx(other.start, start, epsilon):
 		return false
@@ -57,7 +60,6 @@ func contains_range(other: GodotDoctorRangeFloat) -> bool:
 	return true
 
 
-## Compares two floating-point numbers for
-## approximate equality within a specified epsilon tolerance.
+## Returns [code]true[/code] if [param a] and [param b] differ by at most [param epsilon].
 static func _is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
 	return abs(a - b) <= epsilon

@@ -190,8 +190,8 @@ var condition = ValidationCondition.simple(
 
 There's also a bunch of often-used validation conditions available as static
 methods on the `ValidationCondition` class, such as `is_scene_of_type`,
-`is_instance_valid`, `string_not_empty`, and more, which saves you time writing
-common validation logic.
+`is_instance_valid`, `is_string_not_empty`, and more, which saves you time
+writing common validation logic.
 
 You can find them all in
 [the `ValidationCondition` class](/addons/godot_doctor/primitives/validation_condition.gd)

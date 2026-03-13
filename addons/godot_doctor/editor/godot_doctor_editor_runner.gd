@@ -7,6 +7,12 @@ class_name GodotDoctorEditorRunner
 const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/editor/dock/godot_doctor_dock.tscn"
 #gdlint: enable=max-line-length
 
+## Public getter for the [GodotDoctorValidationReporter] for this runner.
+var reporter: GodotDoctorEditorValidationReporter:
+	get:
+		assert(_reporter != null, "GodotDoctorEditorValidationReporter is not initialized yet.")
+		return _reporter
+
 ## The dock instance added to the editor for displaying validation results.
 var _dock: GodotDoctorDock
 ## The reporter responsible for receiving validation messages and updating the _dock UI accordingly.

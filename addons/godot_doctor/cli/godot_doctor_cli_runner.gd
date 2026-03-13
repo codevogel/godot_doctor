@@ -3,7 +3,13 @@
 ## for all suites configured in [GodotDoctorSettings].
 class_name GodotDoctorCliRunner
 
-var reporter: GodotDoctorCLIValidationReporter
+## Public getter for the [GodotDoctorValidationReporter] for this runner.
+var reporter: GodotDoctorCLIValidationReporter:
+	get:
+		assert(_reporter != null, "GodotDoctorCLIValidationReporter is not initialized yet.")
+		return _reporter
+
+var _reporter: GodotDoctorCLIValidationReporter
 var _validator: GodotDoctorValidator
 
 var _scene_tree: SceneTree
@@ -12,8 +18,8 @@ var _scene_tree: SceneTree
 ## Initializes the CLI runner with [param scene_tree] as the active [SceneTree].
 func _init(scene_tree: SceneTree) -> void:
 	_scene_tree = scene_tree
-	reporter = GodotDoctorCLIValidationReporter.new(scene_tree)
-	_validator = GodotDoctorValidator.new(reporter)
+	_reporter = GodotDoctorCLIValidationReporter.new(scene_tree)
+	_validator = GodotDoctorValidator.new(_reporter)
 
 
 ## Main entry point for CLI validation.
@@ -42,13 +48,13 @@ func run() -> void:
 ## Runs validation for all scenes and resources listed in [param validation_suite].
 func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
-	reporter.current_suite = validation_suite
+	_reporter.current_suite = validation_suite
 
 	# For each scene path in the suite,
 	for scene_path: String in validation_suite.get_scenes():
 		# Resolve the scene path from a uid:// string to a filesystem path if needed,
 		var uid_resolved_path: String = _resolve_uid_path(scene_path)
-		reporter.current_scene_resource_path = uid_resolved_path
+		_reporter.current_scene_resource_path = uid_resolved_path
 		GodotDoctorNotifier.print_debug("Validating scene: %s" % uid_resolved_path)
 
 		# Load the scene as a PackedScene and validate its root node.

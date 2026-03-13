@@ -83,10 +83,20 @@ static func is_instance_valid(
 	)
 
 
+## DEPRECATED: Use [method is_string_not_empty] instead.
+static func string_not_empty(
+	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
+) -> ValidationCondition:
+	push_warning(
+		"[ValidationCondition.string_not_empty] is deprecated. Please use [ValidationCondition.is_string_not_empty] instead. (string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	)
+	return is_string_not_empty(value, variable_name, severity_level)
+
+
 ## Creates a [ValidationCondition] that checks whether [param value] is not empty.
 ## [param variable_name] is the display name used in the error message, defaulting to "String".
 ## This is a convenience method for checking string emptiness with a default error message.
-static func string_not_empty(
+static func is_string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
 	return ValidationCondition.new(
@@ -94,14 +104,24 @@ static func string_not_empty(
 	)
 
 
+## DEPRECATED: Use [method is_stripped_string_not_empty] instead.
+static func stripped_string_not_empty(
+	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
+) -> ValidationCondition:
+	push_warning(
+		"[ValidationCondition.stripped_string_not_empty] is deprecated. Please use [ValidationCondition.is_stripped_string_not_empty] instead. (stripped_string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	)
+	return is_stripped_string_not_empty(value, variable_name, severity_level)
+
+
 ## Creates a [ValidationCondition] that checks whether [param value], after stripping
 ## leading and trailing whitespace, is not empty.
 ## [param variable_name] is the display name used in the error message, defaulting to "String".
 ## This is a convenience method for checking stripped string emptiness with a default error message.
-static func stripped_string_not_empty(
+static func is_stripped_string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
-	return string_not_empty(value.strip_edges(), variable_name, severity_level)
+	return is_string_not_empty(value.strip_edges(), variable_name, severity_level)
 
 
 ## Creates a [ValidationCondition] that checks whether [param value] falls within [param range].
@@ -370,7 +390,7 @@ static func get_default_validation_conditions(
 				)
 			TYPE_STRING:
 				validation_conditions.append(
-					ValidationCondition.stripped_string_not_empty(prop_value, prop_name)
+					ValidationCondition.is_stripped_string_not_empty(prop_value, prop_name)
 				)
 			_:
 				continue

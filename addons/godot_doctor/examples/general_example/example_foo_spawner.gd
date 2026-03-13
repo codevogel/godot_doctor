@@ -11,7 +11,7 @@ extends Node
 ## Returns a [ValidationCondition] that ensures [member packed_scene_of_foo_type] is of type [Foo].
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
-		ValidationCondition.scene_is_of_type(
+		ValidationCondition.is_scene_of_type(
 			packed_scene_of_foo_type, Foo, "packed_scene_of_foo_type"
 		)
 	]

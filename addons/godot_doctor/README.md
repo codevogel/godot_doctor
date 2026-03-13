@@ -108,7 +108,7 @@ type), before you even run the game.
 ```gdscript
 ## Example: A validation condition that checks whether the `PackedScene`
 ##          variable `scene_of_foo_type` is of type `Foo`.
-ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo)
+ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo)
 ```
 
 ### Automatic Scene Validation
@@ -189,7 +189,7 @@ var condition = ValidationCondition.simple(
 ### Predefined Common Validation Conditions
 
 There's also a bunch of often-used validation conditions available as static
-methods on the `ValidationCondition` class, such as `scene_is_of_type`,
+methods on the `ValidationCondition` class, such as `is_scene_of_type`,
 `is_instance_valid`, `string_not_empty`, and more, which saves you time writing
 common validation logic.
 

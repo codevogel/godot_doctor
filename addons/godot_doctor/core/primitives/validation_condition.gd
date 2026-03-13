@@ -218,10 +218,23 @@ static func has_node_path(
 	)
 
 
+## DEPRECATED: Use [method is_scene_of_type] instead.
+static func scene_is_of_type(
+	packed_scene: PackedScene,
+	expected_type: Variant,
+	variable_name: String = "Packed Scene",
+	severity_level: Severity = Severity.ERROR
+) -> ValidationCondition:
+	push_warning(
+		"ValidationCondition.scene_is_of_type is deprecated. Please use [ValidationCondition.is_scene_of_type] instead. (scene_is_of_type will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	)
+	return is_scene_of_type(packed_scene, expected_type, variable_name, severity_level)
+
+
 ## Creates a [ValidationCondition] that checks whether [param packed_scene] has a root node of [param expected_type].
 ## [param variable_name] is the display name used in the error message, defaulting to "Packed Scene".
 ## Returns nested [ValidationCondition]s describing any type mismatch in detail.
-static func scene_is_of_type(
+static func is_scene_of_type(
 	packed_scene: PackedScene,
 	expected_type: Variant,
 	variable_name: String = "Packed Scene",

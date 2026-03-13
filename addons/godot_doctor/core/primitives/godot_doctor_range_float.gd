@@ -44,17 +44,22 @@ func _init(
 ## [code]false[/code] otherwise.
 func contains(value: float) -> bool:
 	if inclusive:
-		return value >= start and (value <= end or GodotDoctor.is_equal_approx(value, end, epsilon))
-	return value >= start and (value < end or GodotDoctor.is_equal_approx(value, end, epsilon))
+		return value >= start and (value <= end or _is_equal_approx(value, end, epsilon))
+	return value >= start and (value < end or _is_equal_approx(value, end, epsilon))
 
 
 ## Returns [code]true[/code] if [param other] is completely within this range,
 ## [code]false[/code] otherwise.
 func contains_range(other: GodotDoctorRangeFloat) -> bool:
-	if other.start < start and not GodotDoctor.is_equal_approx(other.start, start, epsilon):
+	if other.start < start and not _is_equal_approx(other.start, start, epsilon):
 		return false
-	if other.end > end and not GodotDoctor.is_equal_approx(other.end, end, epsilon):
+	if other.end > end and not _is_equal_approx(other.end, end, epsilon):
 		return false
-	if GodotDoctor.is_equal_approx(other.end, end, epsilon) and not inclusive and other.inclusive:
+	if _is_equal_approx(other.end, end, epsilon) and not inclusive and other.inclusive:
 		return false
 	return true
+
+
+## Returns [code]true[/code] if [param a] and [param b] differ by at most [param epsilon].
+static func _is_equal_approx(a: float, b: float, epsilon: float = 0.0001) -> bool:
+	return abs(a - b) <= epsilon

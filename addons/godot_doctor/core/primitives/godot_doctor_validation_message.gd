@@ -1,4 +1,4 @@
-class_name ValidationMessage
+class_name GodotDoctorValidationMessage
 extends RefCounted
 
 var message: String

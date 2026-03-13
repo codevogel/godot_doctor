@@ -5,7 +5,7 @@
 ## Used by GodotDoctor to display validation warnings for nodes and resources.
 @abstract
 @tool
-class_name ValidationWarning
+class_name GodotDoctorValidationWarning
 extends MarginContainer
 
 ## The icon displayed in the warning.

@@ -55,5 +55,12 @@ Doctor as a superior alternative to native `_get_configuration_warnings()` for
 **@tool scripts**, offering cleaner syntax, automatic updates, and better
 separation of logic.
 
+### [validation_suite_example](./validation_suite_example/README.md)
+
+**Core Concept:** **Validation Suite Setup (Manual + Generated)** Demonstrates
+how to configure `GodotDoctorValidationSuite` resources for CLI/headless
+validation, both by manually listing scenes/resources and by generating suite
+contents from directory filters.
+
 To get started, simply open any of the scenes inside the respective sub-folders
 and run the Godot Doctor validation check.

@@ -7,7 +7,7 @@ extends Node
 @export var scene_of_foo_type: PackedScene
 
 
-## Get `ValidationCondition`s for exported variables.
+## Returns a [ValidationCondition] that checks [member scene_of_foo_type] is of type [Foo].
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
 		ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo, "scene_of_foo_type")

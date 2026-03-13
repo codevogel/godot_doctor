@@ -169,7 +169,7 @@ func _print_suite_reports() -> void:
 func _print_scene_tree(
 	scene_report: GodotDoctorSceneReport, treat_warnings_as_errors: bool
 ) -> void:
-	var failed: bool = _scene_has_errors(scene_report, treat_warnings_as_errors)
+	var failed: bool = scene_report.has_errors(treat_warnings_as_errors)
 
 	var icon: String = "✔"
 	var color: Color = ReportColors.PASSED
@@ -225,7 +225,7 @@ func _print_resource_reports_tree(
 		if resource_report.messages.is_empty():
 			continue
 
-		var failed: bool = _resource_has_errors(resource_report, treat_warnings_as_errors)
+		var failed: bool = resource_report.has_errors(treat_warnings_as_errors)
 
 		var icon: String = "✔"
 		var color: Color = ReportColors.PASSED
@@ -284,45 +284,6 @@ func _severity_color(label: String) -> Color:
 		"ERROR", "WARNING→ERROR":
 			return ReportColors.ERROR
 	return ReportColors.INFO
-
-
-## Returns [code]true[/code] if [param scene_report] contains any message that counts as an error.
-## [param treat_warnings_as_errors] controls whether warnings count as errors.
-## TODO: should be able to determine this from the suite report's totals here.
-func _scene_has_errors(
-	scene_report: GodotDoctorSceneReport, treat_warnings_as_errors: bool
-) -> bool:
-	return (
-		(
-			(
-				scene_report.get_warning_messages_count()
-				+ scene_report.get_hard_error_messages_count()
-			)
-			> 0
-		)
-		if (treat_warnings_as_errors)
-		else scene_report.get_hard_error_messages_count() > 0
-	)
-
-
-## Returns [code]true[/code] if [param resource_report] contains any message
-## that counts as an error.
-## [param treat_warnings_as_errors] controls whether warnings count as errors.
-## TODO: should be able to determine this from the suite report's totals here.
-func _resource_has_errors(
-	resource_report: GodotDoctorResourceReport, treat_warnings_as_errors: bool
-) -> bool:
-	return (
-		(
-			(
-				resource_report.get_warning_messages_count()
-				+ resource_report.get_hard_error_messages_count()
-			)
-			> 0
-		)
-		if (treat_warnings_as_errors)
-		else resource_report.get_hard_error_messages_count() > 0
-	)
 
 
 ## Prints a summary of totals across all suites to stdout.

@@ -45,3 +45,10 @@ func get_hard_error_messages_count() -> int:
 			return acc + nr.get_hard_error_messages_count(),
 		0
 	)
+
+
+func has_errors(treat_warnings_as_errors: bool) -> bool:
+	var total_errors = get_hard_error_messages_count()
+	if treat_warnings_as_errors:
+		total_errors += get_warning_messages_count()
+	return total_errors > 0

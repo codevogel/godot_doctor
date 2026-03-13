@@ -157,6 +157,13 @@ func quit_with_code(exit_code: int) -> void:
 	get_tree().quit(exit_code)
 
 
+func quit_with_fail_early_if_headless() -> void:
+	if not DisplayServer.get_name() == "headless":
+		return
+	push_error("Validation failed. Exiting with code 1.")
+	quit_with_code(1)
+
+
 #endregion
 
 #region External Validation Entry Point

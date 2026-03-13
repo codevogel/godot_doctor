@@ -94,6 +94,7 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 				% [validation_target.name, VALIDATING_METHOD_NAME]
 			)
 		)
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 
 	# Actual evaluation takes place in the creation of the GodotDoctorValidationResult.
 	# We collect the resulting messages here to report back to the user.
@@ -227,6 +228,8 @@ static func evaluate_conditions(
 						push_error(
 							"Nested ValidationCondition array contained a different type than ValidationCondition"
 						)
+						GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
+						continue
 					nested_conditions.append(expected_condition as ValidationCondition)
 
 				var nested_errors: Array[GodotDoctorValidationMessage] = evaluate_conditions(
@@ -237,5 +240,6 @@ static func evaluate_conditions(
 				push_error(
 					"An unexpected type was returned during evaluation of a ValidationCondition."
 				)
+				GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 	return errors
 #endregion

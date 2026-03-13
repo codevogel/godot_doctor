@@ -50,12 +50,14 @@ func evaluate(args: Array = []) -> Variant:
 				push_error(
 					"ValidationCondition Callable returned an array, but not all items are ValidationCondition instances."
 				)
+				GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 				#gd-lint: enable = max-line-length
 				return false
 		return result as Array[ValidationCondition]
 	push_error(
 		"ValidationCondition Callable did not return a boolean or an array of ValidationConditions."
 	)
+	GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 	return null
 
 

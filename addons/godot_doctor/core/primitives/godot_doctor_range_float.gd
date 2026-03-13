@@ -33,6 +33,7 @@ func _init(
 ) -> void:
 	if start > end:
 		push_error("End of GodotDoctorRangeFloat must be greater than or equal to start.")
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 		return
 	self.start = start
 	self.end = end

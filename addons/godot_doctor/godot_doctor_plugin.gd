@@ -48,19 +48,19 @@ var _cli_runner: GodotDoctorCliRunner
 #region Plugin Lifecycle
 
 
-## Called when the plugin enters the scene tree.
+## Called when the plugin enters the scene scene_tree.
 ## Initializes the plugin by connecting signals and adding the dock to the editor,
 ## or running in CLI mode when headless.
 func _enter_tree():
 	_instance = self
 	GodotDoctorNotifier.print_debug("Set plugin singleton")
-	GodotDoctorNotifier.print_debug("Entering tree...")
+	GodotDoctorNotifier.print_debug("Entering scene_tree...")
 
 	if (
 		DisplayServer.get_name() == "headless"
 		and OS.get_cmdline_user_args().has("--run-godot-doctor")
 	):
-		_cli_runner = GodotDoctorCliRunner.new(get_tree())
+		_cli_runner = GodotDoctorCliRunner.new()
 		_connect_signals()
 		_cli_runner.run()
 		return
@@ -68,7 +68,7 @@ func _enter_tree():
 	_editor_runner = GodotDoctorEditorRunner.new()
 	_connect_signals()
 	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)
-	GodotDoctorNotifier.print_debug("Entered tree")
+	GodotDoctorNotifier.print_debug("Entered scene_tree")
 
 
 ## Called when the plugin is enabled by the user through Project Settings > Plugins.
@@ -87,17 +87,17 @@ func _disable_plugin() -> void:
 	GodotDoctorNotifier.print_debug("Plugin disabled")
 
 
-## Called when the plugin exits the scene tree.
+## Called when the plugin exits the scene scene_tree.
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
-	GodotDoctorNotifier.print_debug("Exiting tree...")
+	GodotDoctorNotifier.print_debug("Exiting scene_tree...")
 	_disconnect_signals()
 
 	if _editor_runner != null:
 		_editor_runner.teardown()
 		_editor_runner = null
 	GodotDoctorNotifier.push_toast("Plugin unloaded.", 0)
-	GodotDoctorNotifier.print_debug("Exited tree")
+	GodotDoctorNotifier.print_debug("Exited scene_tree")
 
 	GodotDoctorNotifier.print_debug("Clearing plugin singleton")
 	_instance = null
@@ -143,6 +143,18 @@ func _on_scene_saved(file_path: String) -> void:
 	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path)
 	if settings.validate_on_save:
 		validate_scene_root_and_edited_resource()
+
+
+#endregion
+
+#region Process Management
+
+
+func quit_with_code(exit_code: int) -> void:
+	if not DisplayServer.get_name() == "headless":
+		push_error("quit_with_code called outside of headless mode.")
+		return
+	get_tree().quit(exit_code)
 
 
 #endregion

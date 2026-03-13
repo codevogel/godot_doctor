@@ -12,13 +12,9 @@ var reporter: GodotDoctorCLIValidationReporter:
 var _reporter: GodotDoctorCLIValidationReporter
 var _validator: GodotDoctorValidator
 
-var _scene_tree: SceneTree
 
-
-## Initializes the CLI runner with [param scene_tree] as the active [SceneTree].
-func _init(scene_tree: SceneTree) -> void:
-	_scene_tree = scene_tree
-	_reporter = GodotDoctorCLIValidationReporter.new(scene_tree)
+func _init() -> void:
+	_reporter = GodotDoctorCLIValidationReporter.new()
 	_validator = GodotDoctorValidator.new(_reporter)
 
 
@@ -36,7 +32,7 @@ func run() -> void:
 
 	# Await delay to allow the editor to
 	## finish any pending operations before we start loading scenes and resources.
-	await _scene_tree.create_timer(settings.delay_before_running_cli).timeout
+	await GodotDoctorPlugin.instance.create_timer(settings.delay_before_running_cli).timeout
 
 	for validation_suite: GodotDoctorValidationSuite in settings.validation_suites:
 		_run_for_suite(validation_suite)

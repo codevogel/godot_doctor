@@ -31,7 +31,7 @@ Ideally, we would catch this configuration error in the editor before hitting
 ## The Solution
 
 Godot Doctor provides a specialized utility function,
-`ValidationCondition.scene_is_of_type()`, to solve this exact problem by
+`ValidationCondition.is_scene_of_type()`, to solve this exact problem by
 checking the `PackedScene`'s root script _class name_.
 
 This function checks:
@@ -48,7 +48,7 @@ like this:
 
 ```gdscript
 ## Returns a validation condition that checks whether the `packed_scene` is of `expected_type`.
-ValidationCondition.scene_is_of_type(
+ValidationCondition.is_scene_of_type(
     packed_scene: PackedScene,
     expected_type: Variant,
     variable_name: String = "Packed Scene"
@@ -68,7 +68,7 @@ The validation is set up in the script like this:
 ## Get `ValidationCondition`s for exported variables.
 func _get_validation_conditions() -> Array[ValidationCondition]:
     var conditions: Array[ValidationCondition] = [
-        ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo, "scene_of_foo_type")
+        ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo, "scene_of_foo_type")
     ]
     return conditions
 ```

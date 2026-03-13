@@ -32,7 +32,13 @@ func run() -> void:
 
 	# Await delay to allow the editor to
 	## finish any pending operations before we start loading scenes and resources.
-	await GodotDoctorPlugin.instance.create_timer(settings.delay_before_running_cli).timeout
+	await (
+		GodotDoctorPlugin
+		. instance
+		. get_tree()
+		. create_timer(settings.delay_before_running_cli)
+		. timeout
+	)
 
 	for validation_suite: GodotDoctorValidationSuite in settings.validation_suites:
 		_run_for_suite(validation_suite)
@@ -57,6 +63,7 @@ func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 		var packed_scene := load(uid_resolved_path) as PackedScene
 		if packed_scene == null:
 			push_error("Failed to load scene: %s" % uid_resolved_path)
+			GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 			continue
 
 		## Instantiate the scene to validate the root node

@@ -23,6 +23,7 @@ var inclusive: bool = false
 func _init(start: int = 0, end: int = 0, inclusive_end: bool = false) -> void:
 	if start > end:
 		push_error("end of GodotDoctorRangeInt must be greater than start.")
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 		return
 	self.start = start
 	self.end = end

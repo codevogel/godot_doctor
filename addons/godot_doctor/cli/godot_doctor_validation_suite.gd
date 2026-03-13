@@ -102,7 +102,8 @@ func _collect_files_recursive(
 		return
 	var dir: DirAccess = DirAccess.open(dir_path)
 	if dir == null:
-		push_warning("GodotDoctorValidationSuite: Could not open directory: %s" % dir_path)
+		push_error("GodotDoctorValidationSuite: Could not open directory: %s" % dir_path)
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
 		return
 	dir.list_dir_begin()
 	var file_name: String = dir.get_next()

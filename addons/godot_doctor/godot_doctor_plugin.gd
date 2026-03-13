@@ -159,6 +159,8 @@ func quit_with_code(exit_code: int) -> void:
 
 #endregion
 
+#region External Validation Entry Point
+
 
 ## Validation entry point for both the current scene root and edited resource.
 ## Useful when you want to validate from some external trigger like an [EditorScript]
@@ -169,6 +171,8 @@ func validate_scene_root_and_edited_resource() -> void:
 		return
 	_editor_runner.validate_scene_root_and_edited_resource()
 
+
+#endregion
 
 #region UI
 

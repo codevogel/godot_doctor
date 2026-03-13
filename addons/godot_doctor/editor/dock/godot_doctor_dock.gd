@@ -21,6 +21,24 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/edito
 
 ## The container that holds the error/warning instances.
 @onready var error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
+@export var validate_now_button: Button
+
+
+## Connects the validate-now button signal when the dock enters the scene tree.
+func _enter_tree() -> void:
+	validate_now_button.pressed.connect(_on_validate_now_button_pressed)
+
+
+## Disconnects the validate-now button signal when the dock exits the scene tree.
+func _exit_tree() -> void:
+	if validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
+		validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
+
+
+## Triggers validation of the current scene root and edited resource when the button is pressed.
+func _on_validate_now_button_pressed() -> void:
+	GodotDoctorNotifier.print_debug("Validate Now button pressed. Triggering validation.")
+	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
 ## Adds a node-related warning to the dock for [param origin_node].

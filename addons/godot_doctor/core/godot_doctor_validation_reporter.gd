@@ -13,3 +13,18 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 
 ## Called after all validation is complete
 @abstract func on_validation_complete() -> void
+
+
+## Returns a copy of [param validation_messages] with all WARNING severity levels promoted to ERROR.
+func _apply_warnings_as_errors(
+	validation_messages: Array[GodotDoctorValidationMessage],
+) -> Array[GodotDoctorValidationMessage]:
+	return validation_messages.map(
+		func(msg: GodotDoctorValidationMessage) -> GodotDoctorValidationMessage:
+			msg.severity_level = (
+				msg.severity_level
+				if msg.severity_level == ValidationCondition.Severity.ERROR
+				else ValidationCondition.Severity.ERROR
+			)
+			return msg
+	)

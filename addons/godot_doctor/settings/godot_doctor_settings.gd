@@ -41,3 +41,10 @@ enum DockSlot {
 @export var use_default_validations: bool = true
 ## A list of scripts that should be ignored by Godot Doctor's default validations.
 @export var default_validation_ignore_list: Array[Script] = []
+
+@export_group("CLI settings")
+## The delay (in seconds) before running the CLI.
+## This can help ensure that the editor is fully initialized before the CLI runs.
+@export var delay_before_running_cli: float = 0.5
+## The validation suites that should be run when executing the CLI.
+@export var validation_suites: Array[GodotDoctorValidationSuite] = []

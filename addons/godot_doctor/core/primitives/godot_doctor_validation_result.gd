@@ -18,4 +18,4 @@ var messages: Array[GodotDoctorValidationMessage] = []
 ## Initializes the result by evaluating [param conditions].
 ## Any conditions that fail populate [member messages] with their error messages.
 func _init(conditions: Array[ValidationCondition]) -> void:
-	messages = GodotDoctor.evaluate_conditions(conditions)
+	messages = GodotDoctorValidator.evaluate_conditions(conditions)

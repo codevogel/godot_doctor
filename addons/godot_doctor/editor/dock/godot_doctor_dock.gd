@@ -72,7 +72,7 @@ func clear_errors() -> void:
 	GodotDoctorNotifier.print_debug("Clearing all warnings from the dock.")
 	var children: Array[Node] = error_holder.get_children()
 	for child in children:
-		child.queue_free.call_deferred()
+		child.free()
 
 
 ## Returns the icon asset path corresponding to [param severity_level].

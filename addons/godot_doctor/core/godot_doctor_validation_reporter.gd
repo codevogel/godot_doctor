@@ -28,3 +28,11 @@ func _apply_warnings_as_errors(
 			)
 			return msg
 	)
+
+
+static func promoted_severity_level(
+	treat_warnings_as_errors: bool, severity_level: ValidationCondition.Severity
+) -> ValidationCondition.Severity:
+	if treat_warnings_as_errors and severity_level == ValidationCondition.Severity.WARNING:
+		return ValidationCondition.Severity.ERROR
+	return severity_level

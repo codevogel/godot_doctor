@@ -101,6 +101,8 @@ func _get_warning_icon_path_for_severity(
 		ValidationCondition.Severity.INFO:
 			return SEVERITY_INFO_ICON_PATH
 		ValidationCondition.Severity.WARNING:
+			if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
+				return EVERITY_ERROR_ICON_PATH
 			return SEVERITY_WARNING_ICON_PATH
 		ValidationCondition.Severity.ERROR:
 			return EVERITY_ERROR_ICON_PATH

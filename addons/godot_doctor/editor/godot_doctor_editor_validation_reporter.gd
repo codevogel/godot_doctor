@@ -18,22 +18,21 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 	if messages.is_empty():
 		return
 
-	var effective_messages := messages
-	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
-		effective_messages = _apply_warnings_as_errors(messages)
+	var num_messages: int = messages.size()
 
-	var severity_level: int = (
-		effective_messages
-		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
-		. max()
+	var promoted_severity_levels: Array = messages.map(
+		func(msg: GodotDoctorValidationMessage) -> int:
+			return promoted_severity_level(
+				GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, msg.severity_level
+			)
 	)
+	var toast_severity_level: int = promoted_severity_levels.max()
 
 	GodotDoctorNotifier.push_toast(
-		"Found %s configuration warning(s) in %s." % [effective_messages.size(), node.name],
-		severity_level
+		"Found %s validation message(s) in %s." % [num_messages, node.name], toast_severity_level
 	)
 
-	for msg in effective_messages:
+	for msg in messages:
 		_dock.add_node_warning_to_dock(node, msg)
 
 
@@ -45,25 +44,22 @@ func report_resource_messages(
 	if messages.is_empty():
 		return
 
-	var effective_messages := messages
-	if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
-		effective_messages = _apply_warnings_as_errors(messages)
+	var num_messages: int = messages.size()
 
-	var severity_level: int = (
-		effective_messages
-		. map(func(msg: GodotDoctorValidationMessage) -> int: return msg.severity_level)
-		. max()
+	var promoted_severity_levels: Array = messages.map(
+		func(msg: GodotDoctorValidationMessage) -> int:
+			return promoted_severity_level(
+				GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, msg.severity_level
+			)
 	)
+	var toast_severity_level: int = promoted_severity_levels.max()
 
 	GodotDoctorNotifier.push_toast(
-		(
-			"Found %s configuration warning(s) in %s."
-			% [effective_messages.size(), resource.resource_path]
-		),
-		severity_level
+		"Found %s validation message(s) in %s." % [num_messages, resource.resource_path],
+		toast_severity_level
 	)
 
-	for msg in effective_messages:
+	for msg in messages:
 		_dock.add_resource_warning_to_dock(resource, msg)
 
 

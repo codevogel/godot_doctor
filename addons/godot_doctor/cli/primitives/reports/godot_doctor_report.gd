@@ -22,9 +22,7 @@ var _messages: Array[GodotDoctorValidationMessage]
 
 ## Gets all [GodotDoctorValidationMessage]s contained in this report.
 func get_messages() -> Array[GodotDoctorValidationMessage]:
-	if _messages == null:
-		_messages = _collect_messages()
-	return _messages
+	return _collect_messages()
 
 
 ## Releases owned references to support deterministic teardown in CLI mode.

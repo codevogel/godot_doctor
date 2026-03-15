@@ -5,6 +5,12 @@ extends GodotDoctorReport
 @abstract func get_child_reports() -> Array[GodotDoctorReport]
 
 
+func _collect_child_reports_from(reports: Array) -> Array[GodotDoctorReport]:
+	var child_reports: Array[GodotDoctorReport] = []
+	child_reports.assign(reports)
+	return child_reports
+
+
 func teardown() -> void:
 	for child_report: GodotDoctorReport in get_child_reports():
 		child_report.teardown()

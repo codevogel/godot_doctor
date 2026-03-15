@@ -18,10 +18,7 @@ func _init(scene_path: String, node_reports: Array[GodotDoctorNodeReport]) -> vo
 
 
 func get_child_reports() -> Array[GodotDoctorReport]:
-	var child_reports: Array[GodotDoctorReport] = []
-	for node_report: GodotDoctorNodeReport in _node_reports:
-		child_reports.append(node_report)
-	return child_reports
+	return _collect_child_reports_from(_node_reports)
 
 
 #endregion

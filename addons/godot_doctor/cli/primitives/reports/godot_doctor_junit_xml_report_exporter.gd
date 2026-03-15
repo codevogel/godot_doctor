@@ -3,6 +3,16 @@ class_name GodotDoctorJUnitXmlReportExporter
 extends RefCounted
 
 const _DEFAULT_XML_REPORT_FILENAME: String = "godot_doctor_report.xml"
+const _INDENT_SIZE: int = 2
+const _INDENT_LEVEL_TESTSUITE: int = 1
+const _INDENT_LEVEL_TESTCASE: int = 2
+const _INDENT_LEVEL_TEST_ITEM: int = 3
+const _INDENT_LEVEL_MESSAGE: int = 4
+const _RESOURCE_TESTS_COUNT: int = 1
+
+
+func _indent(level: int) -> String:
+	return " ".repeat(_INDENT_SIZE).repeat(level)
 
 
 ## Exports a JUnit-style XML report if enabled in [param settings].
@@ -60,11 +70,18 @@ func _build_junit_xml_report(summary: GodotDoctorReportSummary) -> String:
 		lines
 		. append(
 			(
-				'<testsuites disabled="0" errors="%d" failures="%d" name="GodotDoctor" tests="%d">'
+				(
+					'<testsuites tests="%d" messages="%d" failures="%d" harderrors="%d" '
+					+ 'warnings="%d" infos="%d" timestamp="%s">'
+				)
 				% [
+					summary.get_validated_items_count(),
+					summary.get_messages().size(),
+					summary.get_effective_error_count(),
 					summary.get_hard_error_messages_count(),
-					summary.get_warnings_treated_as_errors_count(),
-					_get_total_testcase_count(summary),
+					summary.get_warning_messages_count(),
+					summary.get_info_messages_count(),
+					_xml_escape(timestamp),
 				]
 			)
 		)
@@ -72,149 +89,227 @@ func _build_junit_xml_report(summary: GodotDoctorReportSummary) -> String:
 
 	var suite_reports: Array[GodotDoctorSuiteReport] = summary.get_suite_reports()
 	for i: int in range(suite_reports.size()):
-		lines.append(_build_testsuite_xml(suite_reports[i], i, timestamp))
+		lines.append(_build_testsuite_xml(suite_reports[i]))
 
 	lines.append("</testsuites>")
 	return "\n".join(lines)
 
 
-func _build_testsuite_xml(
-	suite_report: GodotDoctorSuiteReport, suite_id: int, timestamp: String
-) -> String:
-	var suite_name: String = _xml_escape(_resolve_uid_path(suite_report.get_suite().resource_path))
-	var test_count: int = _get_suite_testcase_count(suite_report)
-	var errors_count: int = suite_report.get_hard_error_messages_count()
-	var failures_count: int = suite_report.get_warnings_treated_as_errors_count()
+func _build_testsuite_xml(suite_report: GodotDoctorSuiteReport) -> String:
+	var suite_path: String = _resolve_uid_path(suite_report.get_suite().resource_path)
+	var suite_name: String = _xml_escape(_basename(suite_path))
+	var suite_path_escaped: String = _xml_escape(suite_path)
 	var lines: Array[String] = []
 
 	(
 		lines
 		. append(
 			(
-				'  <testsuite name="%s" tests="%d" disabled="0" errors="%d" failures="%d" hostname="localhost" id="%d" skipped="0" timestamp="%s">'
+				(
+					'%s<testsuite name="%s" path="%s" tests="%d" messages="%d" '
+					+ 'failures="%d" harderrors="%d" warnings="%d" infos="%d">'
+				)
 				% [
+					_indent(_INDENT_LEVEL_TESTSUITE),
 					suite_name,
-					test_count,
-					errors_count,
-					failures_count,
-					suite_id,
-					_xml_escape(timestamp)
+					suite_path_escaped,
+					suite_report.get_validated_items_count(),
+					suite_report.get_messages().size(),
+					suite_report.get_effective_error_count(),
+					suite_report.get_hard_error_messages_count(),
+					suite_report.get_warning_messages_count(),
+					suite_report.get_info_messages_count(),
 				]
 			)
 		)
 	)
 
 	for scene_report: GodotDoctorSceneReport in suite_report.get_scene_reports():
-		for node_report: GodotDoctorNodeReport in scene_report.get_node_reports():
-			lines.append(
-				_build_testcase_xml(
-					node_report.get_node_ancestor_path(),
-					suite_name,
-					node_report.get_messages(),
-					suite_report.get_suite().treat_warnings_as_errors
-				)
-			)
+		lines.append(_build_scene_testcase_xml(scene_report, suite_report))
 
 	for resource_report: GodotDoctorResourceReport in suite_report.get_resource_reports():
-		lines.append(
-			_build_testcase_xml(
-				_resolve_uid_path(resource_report.get_resource().resource_path),
-				suite_name,
-				resource_report.get_messages(),
-				suite_report.get_suite().treat_warnings_as_errors
-			)
-		)
+		lines.append(_build_resource_testcase_xml(resource_report, suite_report))
 
-	lines.append("  </testsuite>")
+	lines.append("%s</testsuite>" % _indent(_INDENT_LEVEL_TESTSUITE))
 	return "\n".join(lines)
 
 
-func _build_testcase_xml(
-	test_name: String,
-	class_name_value: String,
-	messages: Array[GodotDoctorValidationMessage],
-	treat_warnings_as_errors: bool
+func _build_scene_testcase_xml(
+	scene_report: GodotDoctorSceneReport, suite_report: GodotDoctorSuiteReport
 ) -> String:
-	var safe_test_name: String = _xml_escape(test_name)
-	var safe_class_name: String = _xml_escape(class_name_value)
-	var test_case_open: String = (
-		'    <testcase name="%s" classname="%s">' % [safe_test_name, safe_class_name]
-	)
+	var scene_path: String = scene_report.get_scene_path()
+	var testcase_name: String = _xml_escape(_basename(scene_path))
+	var testcase_path: String = _xml_escape(scene_path)
+	var treat_warnings_as_errors: bool = suite_report.get_suite().treat_warnings_as_errors
+	var node_reports: Array[GodotDoctorNodeReport] = scene_report.get_node_reports()
+	var lines: Array[String] = []
 
-	var hard_errors: Array[GodotDoctorValidationMessage] = _filter_messages_by_severity(
-		messages, ValidationCondition.Severity.ERROR
-	)
-	if not hard_errors.is_empty():
-		var combined_error_text: String = _combine_message_texts(hard_errors)
-		return (
-			"\n"
-			. join(
-				[
-					test_case_open,
-					(
-						'      <error message="%s" type="ValidationError">%s</error>'
-						% [_xml_escape(combined_error_text), _xml_escape(combined_error_text)]
-					),
-					"    </testcase>",
+	(
+		lines
+		. append(
+			(
+				(
+					'%s<testcase name="%s" path="%s" type="scene" tests="%d" '
+					+ 'messages="%d" failures="%d" harderrors="%d" warnings="%d" infos="%d">'
+				)
+				% [
+					_indent(_INDENT_LEVEL_TESTCASE),
+					testcase_name,
+					testcase_path,
+					scene_report.get_node_reports().size(),
+					scene_report.get_messages().size(),
+					scene_report.get_effective_error_count(),
+					scene_report.get_hard_error_messages_count(),
+					scene_report.get_warning_messages_count(),
+					scene_report.get_info_messages_count(),
 				]
 			)
 		)
+	)
 
-	if treat_warnings_as_errors:
-		var warnings: Array[GodotDoctorValidationMessage] = _filter_messages_by_severity(
-			messages, ValidationCondition.Severity.WARNING
-		)
-		if not warnings.is_empty():
-			var combined_warning_text: String = _combine_message_texts(warnings)
-			return (
-				"\n"
-				. join(
-					[
-						test_case_open,
-						(
-							'      <failure message="%s" type="WarningPromotedToError">%s</failure>'
-							% [
-								_xml_escape(combined_warning_text),
-								_xml_escape(combined_warning_text)
-							]
-						),
-						"    </testcase>",
-					]
+	for node_report: GodotDoctorNodeReport in node_reports:
+		if node_report.get_messages().is_empty():
+			continue
+		lines.append(_build_node_xml(node_report, treat_warnings_as_errors))
+
+	lines.append("%s</testcase>" % _indent(_INDENT_LEVEL_TESTCASE))
+	return "\n".join(lines)
+
+
+func _build_resource_testcase_xml(
+	resource_report: GodotDoctorResourceReport, suite_report: GodotDoctorSuiteReport
+) -> String:
+	var resource_path: String = _resolve_uid_path(resource_report.get_resource().resource_path)
+	var testcase_name: String = _xml_escape(_basename(resource_path))
+	var testcase_path: String = _xml_escape(resource_path)
+	var treat_warnings_as_errors: bool = suite_report.get_suite().treat_warnings_as_errors
+	var lines: Array[String] = []
+
+	(
+		lines
+		. append(
+			(
+				(
+					'%s<testcase name="%s" path="%s" type="resource" tests="%d" '
+					+ 'messages="%d" failures="%d" harderrors="%d" warnings="%d" infos="%d">'
 				)
+				% [
+					_indent(_INDENT_LEVEL_TESTCASE),
+					testcase_name,
+					testcase_path,
+					_RESOURCE_TESTS_COUNT,
+					resource_report.get_messages().size(),
+					resource_report.get_effective_error_count(),
+					resource_report.get_hard_error_messages_count(),
+					resource_report.get_warning_messages_count(),
+					resource_report.get_info_messages_count(),
+				]
 			)
-
-	return '    <testcase name="%s" classname="%s"/>' % [safe_test_name, safe_class_name]
-
-
-func _filter_messages_by_severity(
-	messages: Array[GodotDoctorValidationMessage], severity: ValidationCondition.Severity
-) -> Array[GodotDoctorValidationMessage]:
-	return messages.filter(
-		func(msg: GodotDoctorValidationMessage) -> bool: return msg.severity_level == severity
+		)
 	)
 
+	lines.append(_build_resource_xml(resource_report, treat_warnings_as_errors, resource_path))
 
-func _combine_message_texts(messages: Array[GodotDoctorValidationMessage]) -> String:
-	var message_texts: Array[String] = []
-	for message: GodotDoctorValidationMessage in messages:
-		message_texts.append(message.message)
-	return "\n".join(message_texts)
+	lines.append("%s</testcase>" % _indent(_INDENT_LEVEL_TESTCASE))
+	return "\n".join(lines)
 
 
-func _get_total_testcase_count(summary: GodotDoctorReportSummary) -> int:
-	return summary.get_suite_reports().reduce(
-		func(sum: int, suite_report: GodotDoctorSuiteReport):
-			return sum + _get_suite_testcase_count(suite_report),
-		0
+func _build_node_xml(node_report: GodotDoctorNodeReport, treat_warnings_as_errors: bool) -> String:
+	var node_name: String = _xml_escape(node_report.get_node_name())
+	var node_path: String = _xml_escape(node_report.get_node_ancestor_path())
+	var lines: Array[String] = []
+
+	(
+		lines
+		. append(
+			(
+				(
+					'%s<node name="%s" path="%s" messages="%d" failures="%d" '
+					+ 'harderrors="%d" warnings="%d" infos="%d">'
+				)
+				% [
+					_indent(_INDENT_LEVEL_TEST_ITEM),
+					node_name,
+					node_path,
+					node_report.get_messages().size(),
+					node_report.get_effective_error_count(),
+					node_report.get_hard_error_messages_count(),
+					node_report.get_warning_messages_count(),
+					node_report.get_info_messages_count(),
+				]
+			)
+		)
 	)
 
+	for message: GodotDoctorValidationMessage in node_report.get_messages():
+		lines.append(_build_message_xml(message, treat_warnings_as_errors))
 
-func _get_suite_testcase_count(suite_report: GodotDoctorSuiteReport) -> int:
-	var node_count: int = 0
-	for scene_report: GodotDoctorSceneReport in suite_report.get_scene_reports():
-		node_count += scene_report.get_node_reports().size()
+	lines.append("%s</node>" % _indent(_INDENT_LEVEL_TEST_ITEM))
+	return "\n".join(lines)
 
-	return node_count + suite_report.get_resource_reports().size()
+
+func _build_resource_xml(
+	resource_report: GodotDoctorResourceReport,
+	treat_warnings_as_errors: bool,
+	resource_path: String
+) -> String:
+	var resource_name: String = _xml_escape(_basename(resource_path))
+	var resource_path_escaped: String = _xml_escape(resource_path)
+	var lines: Array[String] = []
+
+	(
+		lines
+		. append(
+			(
+				(
+					'%s<resource name="%s" path="%s" messages="%d" failures="%d" '
+					+ 'harderrors="%d" warnings="%d" infos="%d">'
+				)
+				% [
+					_indent(_INDENT_LEVEL_TEST_ITEM),
+					resource_name,
+					resource_path_escaped,
+					resource_report.get_messages().size(),
+					resource_report.get_effective_error_count(),
+					resource_report.get_hard_error_messages_count(),
+					resource_report.get_warning_messages_count(),
+					resource_report.get_info_messages_count(),
+				]
+			)
+		)
+	)
+
+	for message: GodotDoctorValidationMessage in resource_report.get_messages():
+		lines.append(_build_message_xml(message, treat_warnings_as_errors))
+
+	lines.append("%s</resource>" % _indent(_INDENT_LEVEL_TEST_ITEM))
+	return "\n".join(lines)
+
+
+func _build_message_xml(
+	message: GodotDoctorValidationMessage, treat_warnings_as_errors: bool
+) -> String:
+	var safe_message: String = _xml_escape(message.message)
+
+	match message.severity_level:
+		ValidationCondition.Severity.ERROR:
+			return "%s<harderror>%s</harderror>" % [_indent(_INDENT_LEVEL_MESSAGE), safe_message]
+		ValidationCondition.Severity.WARNING:
+			var promoted_attribute: String = (
+				' type="promoted_to_error"' if treat_warnings_as_errors else ""
+			)
+			return (
+				"%s<warning%s>%s</warning>"
+				% [_indent(_INDENT_LEVEL_MESSAGE), promoted_attribute, safe_message]
+			)
+		ValidationCondition.Severity.INFO:
+			return "%s<info>%s</info>" % [_indent(_INDENT_LEVEL_MESSAGE), safe_message]
+
+	return "%s<info>%s</info>" % [_indent(_INDENT_LEVEL_MESSAGE), safe_message]
+
+
+func _basename(path: String) -> String:
+	return path.get_file()
 
 
 func _xml_escape(value: String) -> String:

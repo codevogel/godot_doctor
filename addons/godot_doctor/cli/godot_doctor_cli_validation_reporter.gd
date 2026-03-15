@@ -19,7 +19,16 @@ class ReportColors:
 
 
 ## Defines the number of spaces to use for each indentation level in the report.
-const INDENT_SIZE: int = 3
+const _INDENT_SIZE: int = 3
+
+const _DIVIDER_GLYPH: String = "═"
+const _DIVIDER_SIZE: int = 52
+
+const _PASSED_GLYPH: String = "✔"
+const _FAILED_GLYPH: String = "✘"
+const _ANCESTOR_SEPRATOR_GLYPH: String = " -> "
+const _BRANCH_MIDDLE_GLYPH: String = "├─"
+const _BRANCH_LAST_GLYPH: String = "└─"
 
 ## The currently active validation suite.
 ## This is set externally by the [GodotDoctorCliRunner] before validating each suite,
@@ -37,34 +46,14 @@ var _suite_reports: Dictionary = {}
 
 ## Returns an indentation string repeated [param level] times.
 func _indent(level: int) -> String:
-	return " ".repeat(INDENT_SIZE).repeat(level)
+	return " ".repeat(_INDENT_SIZE).repeat(level)
 
 
 ## Records the validation [param messages] for [param node]
 ## into the current suite report under the current scene.
 func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessage]) -> void:
-	# If there is no report for the current suite yet,
-	if not _suite_reports.has(current_suite):
-		# create one to hold the node report we're about to add.
-		var suite_report_new: GodotDoctorSuiteReport = GodotDoctorSuiteReport.new(
-			current_suite, [], []
-		)
-		_suite_reports[current_suite] = suite_report_new
-
-	# Get the suite report for the current suite, which we know exists because of the check above.
-	var suite_report: GodotDoctorSuiteReport = _suite_reports[current_suite]
-
-	# Find the scene report for the current scene in the suite report,
-	var scene_report: GodotDoctorSceneReport = null
-	for report: GodotDoctorSceneReport in suite_report.get_scene_reports():
-		if report.get_scene_path() == current_scene_resource_path:
-			scene_report = report
-			break
-
-	#or create one if it doesn't exist yet.
-	if scene_report == null:
-		scene_report = GodotDoctorSceneReport.new(current_scene_resource_path, [])
-		suite_report.add_scene_report(scene_report)
+	var suite_report: GodotDoctorSuiteReport = _get_or_create_current_suite_report()
+	var scene_report: GodotDoctorSceneReport = _get_or_create_scene_report(suite_report)
 
 	# Create a node report for the current node and add it to the scene report.
 	var node_report: GodotDoctorNodeReport = GodotDoctorNodeReport.new(
@@ -77,22 +66,37 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 func report_resource_messages(
 	resource: Resource, messages: Array[GodotDoctorValidationMessage]
 ) -> void:
-	# If there is no report for the current suite yet,
-	if not _suite_reports.has(current_suite):
-		# create one to hold the resource report we're about to add.
-		var suite_report_new: GodotDoctorSuiteReport = GodotDoctorSuiteReport.new(
-			current_suite, [], []
-		)
-		_suite_reports[current_suite] = suite_report_new
-
-	# Get the suite report for the current suite, which we know exists because of the check above.
-	var suite_report: GodotDoctorSuiteReport = _suite_reports[current_suite]
+	var suite_report: GodotDoctorSuiteReport = _get_or_create_current_suite_report()
 
 	# Create a resource report for the current resource and add it to the suite report.
 	var resource_report: GodotDoctorResourceReport = GodotDoctorResourceReport.new(
 		suite_report, resource, messages
 	)
 	suite_report.add_resource_report(resource_report)
+
+
+## Returns the report for [member current_suite], creating and storing it if needed.
+func _get_or_create_current_suite_report() -> GodotDoctorSuiteReport:
+	if _suite_reports.has(current_suite):
+		return _suite_reports[current_suite]
+
+	var suite_report: GodotDoctorSuiteReport = GodotDoctorSuiteReport.new(current_suite, [], [])
+	_suite_reports[current_suite] = suite_report
+	return suite_report
+
+
+## Returns the scene report for [member current_scene_resource_path] inside [param suite_report],
+## creating and registering it when absent.
+func _get_or_create_scene_report(suite_report: GodotDoctorSuiteReport) -> GodotDoctorSceneReport:
+	for scene_report: GodotDoctorSceneReport in suite_report.get_scene_reports():
+		if scene_report.get_scene_path() == current_scene_resource_path:
+			return scene_report
+
+	var scene_report_new: GodotDoctorSceneReport = GodotDoctorSceneReport.new(
+		current_scene_resource_path, []
+	)
+	suite_report.add_scene_report(scene_report_new)
+	return scene_report_new
 
 
 ## Prints all collected validation results to stdout and exits the process.
@@ -132,7 +136,7 @@ func _print_validation_results(summary: GodotDoctorReportSummary) -> void:
 
 ## Prints the decorative report header to stdout.
 func _print_report_header() -> void:
-	var divider: String = "═".repeat(52)
+	var divider: String = _DIVIDER_GLYPH.repeat(_DIVIDER_SIZE)
 
 	_print_rich_text(divider, ReportColors.HEADER)
 	_print_rich_text(" GODOT DOCTOR VALIDATION REPORT", ReportColors.HEADER)
@@ -143,14 +147,8 @@ func _print_report_header() -> void:
 func _print_suite_reports() -> void:
 	for suite_report: GodotDoctorSuiteReport in _suite_reports.values():
 		var suite: GodotDoctorValidationSuite = suite_report.get_suite()
-
-		var passed: bool = suite_report.passed()
-
-		var icon: String = _get_state_icon(passed)
-		var color: Color = _get_state_color(passed)
-
-		_print_rich_text("\n%s Suite" % icon, color)
-		_print_rich_text("└─ %s" % _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
+		_print_state_heading(0, "Suite", suite_report.passed())
+		_print_tree_item(0, _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
 
 		if suite.treat_warnings_as_errors:
 			_print_rich_text(
@@ -171,20 +169,17 @@ func _print_scene_tree(
 	scene_report: GodotDoctorSceneReport, treat_warnings_as_errors: bool
 ) -> void:
 	var passed: bool = scene_report.passed()
-
-	var icon: String = _get_state_icon(passed)
-	var color: Color = _get_state_color(passed)
-
-	_print_rich_text("\n%s%s Scene" % [_indent(1), icon], color)
-
-	_print_rich_text("%s└─ %s" % [_indent(1), scene_report.get_scene_path()], ReportColors.SCENE)
+	_print_state_heading(1, "Scene", passed)
+	_print_tree_item(1, scene_report.get_scene_path(), ReportColors.SCENE)
 
 	var node_count: int = scene_report.get_node_reports().size()
 
-	_print_rich_text("%snodes validated: %d" % [_indent(2), node_count], ReportColors.NODE)
+	_print_count_line(2, "nodes validated", node_count, ReportColors.NODE)
 
 	if passed and scene_report.get_node_reports().is_empty():
-		_print_rich_text("%s✔ no issues found" % _indent(2), ReportColors.PASSED)
+		_print_rich_text(
+			"%s%s no issues found" % [_indent(2), _get_state_icon(passed)], ReportColors.PASSED
+		)
 		return
 
 	_print_node_reports_tree(scene_report.get_node_reports(), treat_warnings_as_errors)
@@ -198,25 +193,9 @@ func _print_node_reports_tree(
 	for node_report: GodotDoctorNodeReport in node_reports:
 		if node_report.get_messages().is_empty():
 			continue
+		_print_state_heading(3, node_report.get_node_ancestor_path(), node_report.passed())
 
-		var passed: bool = node_report.passed()
-		var icon: String = _get_state_icon(passed)
-		var color: Color = _get_state_color(passed)
-
-		_print_rich_text(
-			"\n%s%s %s" % [_indent(3), icon, node_report.get_node_ancestor_path()], color
-		)
-
-		var msg_count: int = node_report.get_messages().size()
-
-		for i: int in range(msg_count):
-			var msg: GodotDoctorValidationMessage = node_report.get_messages()[i]
-
-			var branch: String = "├─"
-			if i == msg_count - 1:
-				branch = "└─"
-
-			_print_message_tree(msg, branch, treat_warnings_as_errors)
+		_print_messages_tree(node_report.get_messages(), treat_warnings_as_errors)
 
 
 ## Prints the tree of [param resource_reports] to stdout.
@@ -227,27 +206,25 @@ func _print_resource_reports_tree(
 	for resource_report: GodotDoctorResourceReport in resource_reports:
 		if resource_report.get_messages().is_empty():
 			continue
-
-		var passed: bool = resource_report.passed()
-
-		var icon: String = _get_state_icon(passed)
-		var color: Color = _get_state_color(passed)
-
 		var path: String = _resolve_uid_path(resource_report.get_resource().resource_path)
+		_print_state_heading(1, "Resource", resource_report.passed())
+		_print_tree_item(1, path, ReportColors.SCENE)
 
-		_print_rich_text("\n%s%s Resource" % [_indent(1), icon], color)
-		_print_rich_text("%s└─ %s" % [_indent(1), path], ReportColors.SCENE)
+		_print_messages_tree(resource_report.get_messages(), treat_warnings_as_errors)
 
-		var msg_count: int = resource_report.get_messages().size()
 
-		for i: int in range(msg_count):
-			var msg: GodotDoctorValidationMessage = resource_report.get_messages()[i]
+## Prints [param messages] as a branch list, selecting the last branch glyph for the final item.
+func _print_messages_tree(
+	messages: Array[GodotDoctorValidationMessage], treat_warnings_as_errors: bool
+) -> void:
+	var msg_count: int = messages.size()
 
-			var branch: String = "├─"
-			if i == msg_count - 1:
-				branch = "└─"
+	for i: int in range(msg_count):
+		var branch: String = _BRANCH_MIDDLE_GLYPH
+		if i == msg_count - 1:
+			branch = _BRANCH_LAST_GLYPH
 
-			_print_message_tree(msg, branch, treat_warnings_as_errors)
+		_print_message_tree(messages[i], branch, treat_warnings_as_errors)
 
 
 ## Prints a single [param msg] using [param branch] as the tree connector character.
@@ -287,7 +264,7 @@ func _severity_color(label: String) -> Color:
 
 ## Prints a summary of totals across all suites to stdout.
 func _print_summary(summary: GodotDoctorReportSummary) -> void:
-	var divider: String = "═".repeat(52)
+	var divider: String = _DIVIDER_GLYPH.repeat(_DIVIDER_SIZE)
 
 	# Print the summary header with a divider line.
 	_print_rich_text("\n" + divider, ReportColors.HEADER)
@@ -296,27 +273,14 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 
 	# Print the totals section of the summary.
 	_print_rich_text("\nValidated", ReportColors.TOTALS)
-	_print_rich_text(
-		"%sSuites     %d" % [_indent(1), summary.get_suite_ran_count()], ReportColors.TOTALS
-	)
-	_print_rich_text(
-		"%sScenes     %d" % [_indent(1), summary.get_scenes_validated_count()], ReportColors.TOTALS
-	)
-	_print_rich_text(
-		"%sNodes      %d" % [_indent(1), summary.get_nodes_validated_count()], ReportColors.TOTALS
-	)
+	_print_count_line(1, "Suites", summary.get_suite_ran_count(), ReportColors.TOTALS)
+	_print_count_line(1, "Scenes", summary.get_scenes_validated_count(), ReportColors.TOTALS)
+	_print_count_line(1, "Nodes", summary.get_nodes_validated_count(), ReportColors.TOTALS)
 
 	_print_rich_text("\nMessages", ReportColors.TOTALS)
-	_print_rich_text(
-		"%sInfo       %d" % [_indent(1), summary.get_info_messages_count()], ReportColors.INFO
-	)
-	_print_rich_text(
-		"%sWarnings   %d" % [_indent(1), summary.get_warning_messages_count()], ReportColors.WARNING
-	)
-	_print_rich_text(
-		"%sErrors     %d" % [_indent(1), summary.get_hard_error_messages_count()],
-		ReportColors.ERROR
-	)
+	_print_count_line(1, "Info", summary.get_info_messages_count(), ReportColors.INFO)
+	_print_count_line(1, "Warnings", summary.get_warning_messages_count(), ReportColors.WARNING)
+	_print_count_line(1, "Errors", summary.get_hard_error_messages_count(), ReportColors.ERROR)
 
 	print("")
 
@@ -324,10 +288,7 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 
 	var passed: bool = summary.passed()
 
-	if passed:
-		_print_rich_text("Total Errors: %d" % effective_errors_count, ReportColors.PASSED)
-	else:
-		_print_rich_text("Total Errors: %d" % effective_errors_count, ReportColors.ERROR)
+	_print_rich_text("Total Errors: %d" % effective_errors_count, _get_state_color(passed))
 
 	_print_rich_text(
 		"Warnings treated as errors: %d" % summary.get_warnings_treated_as_errors_count(),
@@ -338,13 +299,32 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 
 	# Print the final validation result: PASSED if there are no errors,
 	# or FAILED if there are one or more errors.
-	if passed:
-		_print_rich_text("✔ VALIDATION PASSED", ReportColors.PASSED)
-	else:
-		_print_rich_text("✘ VALIDATION FAILED", ReportColors.FAILED)
+	_print_rich_text(
+		"%s VALIDATION %s" % [_get_state_icon(passed), "PASSED" if passed else "FAILED"],
+		_get_state_color(passed)
+	)
 
 	# Print a closing divider line.
 	_print_rich_text(divider, ReportColors.HEADER)
+
+
+## Prints a pass/fail heading line at [param indent_level] with [param label]
+## and an icon representing [param passed].
+func _print_state_heading(indent_level: int, label: String, passed: bool) -> void:
+	_print_rich_text(
+		"\n%s%s %s" % [_indent(indent_level), _get_state_icon(passed), label],
+		_get_state_color(passed)
+	)
+
+
+## Prints a tree item line at [param indent_level] with [param text] and a branch glyph.
+func _print_tree_item(indent_level: int, text: String, color: Color) -> void:
+	_print_rich_text("%s%s %s" % [_indent(indent_level), _BRANCH_LAST_GLYPH, text], color)
+
+
+## Prints an aligned [code]label: count[/code] line at the given indentation level.
+func _print_count_line(indent_level: int, label: String, count: int, color: Color) -> void:
+	_print_rich_text("%s%-10s %d" % [_indent(indent_level), label, count], color)
 
 
 ## Returns a human-readable path string for [param node] by walking up its ancestor chain.
@@ -360,7 +340,7 @@ static func _get_node_ancestor_path(node: Node) -> String:
 
 		current = current.get_parent()
 
-	return " -> ".join(names)
+	return _ANCESTOR_SEPRATOR_GLYPH.join(names)
 
 
 ## Resolves [param path] from a [code]uid://[/code] string to a filesystem path.
@@ -379,7 +359,7 @@ func _print_rich_text(text: String, color: Color) -> void:
 ## Returns a checkmark icon if [param passed] is [code]true[/code],
 ## or a cross icon if [param passed] is [code]false[/code].
 func _get_state_icon(passed: bool) -> String:
-	return "✔" if passed else "✘"
+	return _PASSED_GLYPH if passed else _FAILED_GLYPH
 
 
 ## Returns a display color for the pass/fail state represented by [param passed].

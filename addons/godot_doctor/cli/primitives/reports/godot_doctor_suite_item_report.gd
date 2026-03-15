@@ -1,7 +1,8 @@
 ## Abstract base class for reports that belong to a [GodotDoctorSuiteReport].
 ## Concrete subclasses, such as [GodotDoctorNodeReport] and [GodotDoctorResourceReport],
 ## represent individual items validated within a [GodotDoctorValidationSuite].
-## Delegates error-counting behaviour to the suite's [member GodotDoctorValidationSuite.treat_warnings_as_errors] flag.
+## Delegates error-counting behaviour to the suite's
+## [member GodotDoctorValidationSuite.treat_warnings_as_errors] flag.
 @abstract class_name GodotDoctorSuiteItemReport
 extends GodotDoctorReport
 
@@ -20,6 +21,7 @@ func _init(
 ## Returns the [GodotDoctorSuiteReport] this item report belongs to.
 func get_suite_report() -> GodotDoctorSuiteReport:
 	return _suite_report
+
 
 func teardown() -> void:
 	super.teardown()
@@ -40,8 +42,4 @@ func get_effective_error_count() -> int:
 func get_warnings_treated_as_errors_count() -> int:
 	return _get_warnings_treated_as_errors_count(_suite_report.get_suite().treat_warnings_as_errors)
 
-
 #endregion
-
-
-

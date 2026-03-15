@@ -55,6 +55,25 @@ func get_resource_reports() -> Array[GodotDoctorResourceReport]:
 	return _resource_reports
 
 
+## Gets the total number of node reports validated in this suite.
+func get_nodes_validated_count() -> int:
+	return _scene_reports.reduce(
+		func(sum: int, scene_report: GodotDoctorSceneReport):
+			return sum + scene_report.get_node_reports().size(),
+		0
+	)
+
+
+## Gets the total number of resource reports validated in this suite.
+func get_resources_validated_count() -> int:
+	return _resource_reports.size()
+
+
+## Gets the total number of validated items (nodes + resources) in this suite.
+func get_validated_items_count() -> int:
+	return get_nodes_validated_count() + get_resources_validated_count()
+
+
 func teardown() -> void:
 	super.teardown()
 	_scene_reports.clear()

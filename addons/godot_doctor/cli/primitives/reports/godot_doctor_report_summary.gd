@@ -41,8 +41,22 @@ func get_scenes_validated_count() -> int:
 
 ## Gets the total number of nodes that were validated during the CLI validation run.
 func get_nodes_validated_count() -> int:
-	var node_reports: Array[GodotDoctorNodeReport] = []
-	for suite_report: GodotDoctorSuiteReport in _suite_reports:
-		for scene_report: GodotDoctorSceneReport in suite_report.get_scene_reports():
-			node_reports += scene_report.get_node_reports()
-	return node_reports.size()
+	return _suite_reports.reduce(
+		func(sum: int, suite_report: GodotDoctorSuiteReport):
+			return sum + suite_report.get_nodes_validated_count(),
+		0
+	)
+
+
+## Gets the total number of resources that were validated during the CLI validation run.
+func get_resources_validated_count() -> int:
+	return _suite_reports.reduce(
+		func(sum: int, suite_report: GodotDoctorSuiteReport):
+			return sum + suite_report.get_resources_validated_count(),
+		0
+	)
+
+
+## Gets the total number of validated items (nodes + resources) in this run.
+func get_validated_items_count() -> int:
+	return get_nodes_validated_count() + get_resources_validated_count()

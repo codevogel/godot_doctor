@@ -260,6 +260,8 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 	_print_count_line(1, "Suites", summary.get_suite_ran_count(), ReportColors.TOTALS)
 	_print_count_line(1, "Scenes", summary.get_scenes_validated_count(), ReportColors.TOTALS)
 	_print_count_line(1, "Nodes", summary.get_nodes_validated_count(), ReportColors.TOTALS)
+	_print_count_line(1, "Resources", summary.get_resources_validated_count(), ReportColors.TOTALS)
+	_print_count_line(1, "Items", summary.get_validated_items_count(), ReportColors.TOTALS)
 
 	_print_rich_text("\nMessages", ReportColors.TOTALS)
 	_print_count_line(1, "Info", summary.get_info_messages_count(), ReportColors.INFO)

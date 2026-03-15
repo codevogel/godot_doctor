@@ -14,19 +14,18 @@ func _init(suite_reports: Array[GodotDoctorSuiteReport]) -> void:
 
 
 func get_child_reports() -> Array[GodotDoctorReport]:
-	var child_reports: Array[GodotDoctorReport] = []
-	for suite_report: GodotDoctorSuiteReport in _suite_reports:
-		child_reports.append(suite_report)
-	return child_reports
+	return _collect_child_reports_from(_suite_reports)
 
 
 #endregion
 
 
+## Gets the total number of validation suites that were run during the CLI validation run.
 func get_suite_ran_count() -> int:
 	return _suite_reports.size()
 
 
+## Gets the total number of scenes that were validated during the CLI validation run.
 func get_scenes_validated_count() -> int:
 	return _suite_reports.reduce(
 		func(sum: int, suite_report: GodotDoctorSuiteReport):
@@ -35,6 +34,7 @@ func get_scenes_validated_count() -> int:
 	)
 
 
+## Gets the total number of nodes that were validated during the CLI validation run.
 func get_nodes_validated_count() -> int:
 	var node_reports: Array[GodotDoctorNodeReport] = []
 	for suite_report: GodotDoctorSuiteReport in _suite_reports:

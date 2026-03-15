@@ -30,12 +30,10 @@ func get_suite() -> GodotDoctorValidationSuite:
 
 
 func get_child_reports() -> Array[GodotDoctorReport]:
-	var child_reports: Array[GodotDoctorReport] = []
-	for scene_report: GodotDoctorSceneReport in _scene_reports:
-		child_reports.append(scene_report)
-	for resource_report: GodotDoctorResourceReport in _resource_reports:
-		child_reports.append(resource_report)
-	return child_reports
+	var combined: Array = []
+	combined.append_array(_scene_reports)
+	combined.append_array(_resource_reports)
+	return _collect_child_reports_from(combined)
 
 
 #endregion

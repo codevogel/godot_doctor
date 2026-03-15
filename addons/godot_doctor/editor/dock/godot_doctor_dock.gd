@@ -108,6 +108,9 @@ func _get_warning_icon_path_for_severity(
 			return EVERITY_ERROR_ICON_PATH
 		_:
 			push_error(
-				"No scene defined for node warning with severity level: " + str(severity_level)
+				(
+					"No scene defined for node warning with severity level: "
+					+ ValidationCondition.Severity.keys()[severity_level]
+				)
 			)
 			return ""

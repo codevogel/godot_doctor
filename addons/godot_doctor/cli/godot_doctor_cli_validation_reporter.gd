@@ -278,7 +278,7 @@ func _severity_label(msg: GodotDoctorValidationMessage, treat_warnings_as_errors
 	if treat_warnings_as_errors and msg.severity_level == ValidationCondition.Severity.WARNING:
 		return "WARNING→ERROR"
 
-	return str(msg.severity_level)
+	return ValidationCondition.Severity.keys()[msg.severity_level]
 
 
 ## Returns the display [Color] associated with [param label].

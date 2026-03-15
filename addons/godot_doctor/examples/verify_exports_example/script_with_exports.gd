@@ -11,14 +11,14 @@ extends Node
 @export var my_node: Node
 
 
-## Get `ValidationCondition`s for exported variables.
+## Returns [ValidationCondition]s for [member my_int] and [member my_node].
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	return [
 		# The string not empty check is handled by the default validation conditions
 		# and thus does not need a validation condition here.
 		# An example is shown here in case you turned default validation off in Godot Doctor's settings.
 		#
-		# A helper method for the condition below is ValidationCondition.stripped_string_not_empty,
+		# A helper method for the condition below is ValidationCondition.is_stripped_string_not_empty,
 		# which does the exact same thing, but standardizes the error message.
 		# ValidationCondition.simple(
 		# 	not my_string.strip_edges().is_empty(), "my_string must not be empty"

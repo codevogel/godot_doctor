@@ -6,17 +6,17 @@ extends Resource
 
 ## A string that must not be empty.
 @export var my_string: String
-## An integer that must be between `my_min_int` and `my_max_int`.
+## An integer that must be between [member my_min_int] and [member my_max_int].
 @export var my_int: int = -1
-## The maximum allowed value for `my_int`.
+## The maximum allowed value for [member my_int].
 @export var my_max_int: int = 10
-## The minimum allowed value for `my_int`.
+## The minimum allowed value for [member my_int].
 @export var my_min_int: int = 0
 
 
-## Get `ValidationCondition`s for exported variables.
-## The signature is _get_validation_conditions(),
-## so the validator can report incorrect values when inspecting this resource in the inspector.
+## Returns [ValidationCondition]s for all exported properties.
+## Uses the [method _get_validation_conditions] signature so GodotDoctor
+## can report incorrect values when inspecting this resource in the inspector.
 func _get_validation_conditions() -> Array[ValidationCondition]:
 	var conditions: Array[ValidationCondition] = [
 		# A helper method for the condition below is ValidationCondition.is_in_range_int,
@@ -36,8 +36,7 @@ func _get_validation_conditions() -> Array[ValidationCondition]:
 	return conditions
 
 
-## We can expose it publicly as well,
-## so we can call it from other Nodes during scene validation,
-## and return a nested array of `ValidationCondition`s
+## Public accessor exposing the validation conditions so other nodes can call them
+## during scene validation and return a nested array of [ValidationCondition]s.
 func get_validation_conditions() -> Array[ValidationCondition]:
 	return _get_validation_conditions()

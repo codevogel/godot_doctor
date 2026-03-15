@@ -15,8 +15,3 @@ var severity_level: ValidationCondition.Severity
 func _init(message: String, severity_level: ValidationCondition.Severity) -> void:
 	self.message = message
 	self.severity_level = severity_level
-
-
-## Returns a human-readable string in the form "[severity]: [message]".
-func to_string() -> String:
-	return "%s: %s" % [str(severity_level), message]

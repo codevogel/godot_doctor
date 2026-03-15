@@ -50,3 +50,11 @@ enum DockSlot {
 @export var delay_before_running_cli: float = 0.5
 ## The validation suites that should be run when executing the CLI.
 @export var validation_suites: Array[GodotDoctorValidationSuite] = []
+
+@export_group("XML Report")
+## Whether to export a JUnit-style XML report after CLI validation completes.
+@export var export_xml_report: bool = false
+## The output filename used for the XML report.
+@export var xml_report_filename: String = "godot_doctor_report.xml"
+## The directory where the XML report is written.
+@export_dir var xml_report_output_dir: String = "res://tests/reports/"

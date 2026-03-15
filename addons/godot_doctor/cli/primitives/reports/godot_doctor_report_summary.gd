@@ -20,6 +20,11 @@ func get_child_reports() -> Array[GodotDoctorReport]:
 #endregion
 
 
+## Gets all suite reports included in this summary.
+func get_suite_reports() -> Array[GodotDoctorSuiteReport]:
+	return _suite_reports
+
+
 ## Gets the total number of validation suites that were run during the CLI validation run.
 func get_suite_ran_count() -> int:
 	return _suite_reports.size()

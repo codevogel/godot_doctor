@@ -118,6 +118,8 @@ func on_validation_complete() -> void:
 	var summary: GodotDoctorReportSummary = GodotDoctorReportSummary.new(suite_reports_array)
 
 	_print_validation_results(summary)
+	if GodotDoctorPlugin.instance.settings.export_xml_report:
+		GodotDoctorJUnitXmlReportExporter.new().export_report(summary)
 	var exit_code: int = 0 if summary.passed() else 1
 
 	_teardown()

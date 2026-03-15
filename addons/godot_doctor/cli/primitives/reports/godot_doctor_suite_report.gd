@@ -1,13 +1,14 @@
 ## Holds all [GodotDoctorSceneReport] and [GodotDoctorResourceReport] collected for
-## a single validation suite during a CLI validation run.
+## a single validation _suite during a CLI validation run.
 class_name GodotDoctorSuiteReport
+extends GodotDoctorReportWithChildReports
 
 ## The [GodotDoctorValidationSuite] this report belongs to.
-var suite: GodotDoctorValidationSuite
-## The [GodotDoctorSceneReport]s collected during validation of this suite.
-var scene_reports: Array[GodotDoctorSceneReport]
-## The [GodotDoctorResourceReport]s collected during validation of this suite.
-var resource_reports: Array[GodotDoctorResourceReport]
+var _suite: GodotDoctorValidationSuite
+## The [GodotDoctorSceneReport]s collected during validation of this _suite.
+var _scene_reports: Array[GodotDoctorSceneReport]
+## The [GodotDoctorResourceReport]s collected during validation of this _suite.
+var _resource_reports: Array[GodotDoctorResourceReport]
 
 
 ## Initializes the report with [param suite], [param scene_reports], and [param resource_reports].
@@ -16,85 +17,48 @@ func _init(
 	scene_reports: Array[GodotDoctorSceneReport],
 	resource_reports: Array[GodotDoctorResourceReport]
 ) -> void:
-	self.suite = suite
-	self.scene_reports = scene_reports
-	self.resource_reports = resource_reports
+	self._suite = suite
+	self._scene_reports = scene_reports
+	self._resource_reports = resource_reports
 
 
-## Returns the number of scenes validated in this suite.
-func get_scenes_validated_count() -> int:
-	return scene_reports.size()
+func get_suite() -> GodotDoctorValidationSuite:
+	return _suite
 
 
-## Returns the total number of nodes validated across all scenes in this suite.
-func get_nodes_validated_count() -> int:
-	return scene_reports.reduce(
-		func(acc: int, sr: GodotDoctorSceneReport) -> int:
-			return acc + sr.get_nodes_validated_count(),
-		0
-	)
+#region Abstract Method Implementations
 
 
-## Returns the total number of messages with severity level
-## [constant ValidationCondition.Severity.INFO]
-## across all scenes and resources in this suite.
-func get_info_messages_count() -> int:
-	return (
-		scene_reports.reduce(
-			func(acc: int, sr: GodotDoctorSceneReport) -> int:
-				return acc + sr.get_info_messages_count(),
-			0
-		)
-		+ resource_reports.reduce(
-			func(acc: int, rr: GodotDoctorResourceReport) -> int:
-				return acc + rr.get_info_messages_count(),
-			0
-		)
-	)
+func get_child_reports() -> Array[GodotDoctorReport]:
+	var child_reports: Array[GodotDoctorReport] = []
+	for scene_report: GodotDoctorSceneReport in _scene_reports:
+		child_reports.append(scene_report)
+	for resource_report: GodotDoctorResourceReport in _resource_reports:
+		child_reports.append(resource_report)
+	return child_reports
 
 
-## Returns the total number of messages with severity level
-## [constant ValidationCondition.Severity.WARNING]
-## across all scenes and resources in this suite.
-func get_warning_messages_count() -> int:
-	return (
-		scene_reports.reduce(
-			func(acc: int, sr: GodotDoctorSceneReport) -> int:
-				return acc + sr.get_warning_messages_count(),
-			0
-		)
-		+ resource_reports.reduce(
-			func(acc: int, rr: GodotDoctorResourceReport) -> int:
-				return acc + rr.get_warning_messages_count(),
-			0
-		)
-	)
+#endregion
 
 
-## Returns the total number of messages with severity level
-## [constant ValidationCondition.Severity.ERROR]
-## across all scenes and resources in this suite.
-func get_hard_error_messages_count() -> int:
-	return (
-		scene_reports.reduce(
-			func(acc: int, sr: GodotDoctorSceneReport) -> int:
-				return acc + sr.get_hard_error_messages_count(),
-			0
-		)
-		+ resource_reports.reduce(
-			func(acc: int, rr: GodotDoctorResourceReport) -> int:
-				return acc + rr.get_hard_error_messages_count(),
-			0
-		)
-	)
+func add_scene_report(scene_report: GodotDoctorSceneReport) -> void:
+	_scene_reports.append(scene_report)
 
 
-## Returns the number of warnings that count as errors because
-## [member GodotDoctorValidationSuite.treat_warnings_as_errors] is enabled.
-func get_warning_messages_as_errors_count() -> int:
-	return get_warning_messages_count() if suite.treat_warnings_as_errors else 0
+func add_resource_report(resource_report: GodotDoctorResourceReport) -> void:
+	_resource_reports.append(resource_report)
 
 
-## Returns the total error count for this suite, including warnings promoted to errors.
-func get_error_count() -> int:
-	return get_hard_error_messages_count() + get_warning_messages_as_errors_count()
+func get_scene_reports() -> Array[GodotDoctorSceneReport]:
+	return _scene_reports
+
+
+func get_resource_reports() -> Array[GodotDoctorResourceReport]:
+	return _resource_reports
+
+
+func teardown() -> void:
+	super.teardown()
+	_scene_reports.clear()
+	_resource_reports.clear()
+	_suite = null

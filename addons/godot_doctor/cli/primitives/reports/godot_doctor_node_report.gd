@@ -1,43 +1,61 @@
-## Holds the validation messages collected for a single node during a CLI validation run.
+## Holds the validation _messages collected for a single node during a CLI validation run.
 class_name GodotDoctorNodeReport
+extends GodotDoctorReport
 
-## A human-readable path string identifying the validated node.
-var node_ancestor_path: String
-## The [GodotDoctorValidationMessage]s produced for this node.
-var messages: Array[GodotDoctorValidationMessage]
+## The [GodotDoctorValidationSuite] this report belongs to.
+var _suite_report: GodotDoctorSuiteReport
 
-
-## Initializes the report with [param node_ancestor_path] and [param messages].
-func _init(node_ancestor_path: String, messages: Array[GodotDoctorValidationMessage]) -> void:
-	self.node_ancestor_path = node_ancestor_path
-	self.messages = messages
-
-
-## Returns the number of messages with severity level [constant ValidationCondition.Severity.INFO]
-## for this node.
-func get_info_messages_count() -> int:
-	var info_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.INFO
-	)
-	return info_messages.size()
+## The name of the node this report belongs to.
+var _node_name: String
+## The ancestor path of the node this report belongs to,
+## e.g. "Node2D/Node3D/Node" for a node named "Node" with parent "Node3D" and grandparent "Node2D".
+var _node_ancestor_path: String
 
 
-## Returns the number of messages with severity level
-## [constant ValidationCondition.Severity.WARNING] for this node.
-func get_warning_messages_count() -> int:
-	var warning_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.WARNING
-	)
-	return warning_messages.size()
+## Initializes the report with [param _node_ancestor_path] and [param _messages].
+func _init(
+	suite_report: GodotDoctorSuiteReport,
+	messages: Array[GodotDoctorValidationMessage],
+	node_name: String,
+	node_ancestor_path: String,
+) -> void:
+	_suite_report = suite_report
+	_messages = messages
+	_node_name = node_name
+	_node_ancestor_path = node_ancestor_path
 
 
-## Returns the number of messages with severity level [constant ValidationCondition.Severity.ERROR]
-## for this node.
-func get_hard_error_messages_count() -> int:
-	var hard_error_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.ERROR
-	)
-	return hard_error_messages.size()
+#region Abstract Method Implementations
+
+
+func _collect_messages() -> Array[GodotDoctorValidationMessage]:
+	return _messages
+
+
+func get_effective_error_count() -> int:
+	return _get_effective_error_count(_suite_report.get_suite().treat_warnings_as_errors)
+
+
+func get_warnings_treated_as_errors_count() -> int:
+	return _get_warnings_treated_as_errors_count(_suite_report.get_suite().treat_warnings_as_errors)
+
+
+#endregion
+
+
+## Getter for the node name this report belongs to.
+func get_node_name() -> String:
+	return _node_name
+
+
+## Getter for the ancestor path of the node this report belongs to.
+## e.g. "Node2D/Node3D/Node" for a node named "Node" with parent "Node3D" and grandparent "Node2D".
+func get_node_ancestor_path() -> String:
+	return _node_ancestor_path
+
+
+func teardown() -> void:
+	super.teardown()
+	_suite_report = null
+	_node_name = ""
+	_node_ancestor_path = ""

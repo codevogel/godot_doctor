@@ -1,50 +1,51 @@
-## Holds the validation messages collected for a single resource during a CLI validation run.
+## Holds the validation _messages collected for a single _resource during a CLI validation run.
 class_name GodotDoctorResourceReport
+extends GodotDoctorReport
 
+## The [GodotDoctorSuiteReport] this report belongs to.
+var _suite_report: GodotDoctorSuiteReport
 ## The validated [Resource].
-var resource: Resource
-## The [GodotDoctorValidationMessage]s produced for this resource.
-var messages: Array[GodotDoctorValidationMessage]
+var _resource: Resource
 
 
-## Initializes the report with [param resource] and [param messages].
-func _init(resource: Resource, messages: Array[GodotDoctorValidationMessage]) -> void:
-	self.resource = resource
-	self.messages = messages
+## Initializes the report with [param _resource] and [param _messages].
+func _init(
+	suite_report: GodotDoctorSuiteReport,
+	resource: Resource,
+	messages: Array[GodotDoctorValidationMessage]
+) -> void:
+	_suite_report = suite_report
+	_resource = resource
+	_messages = messages
 
 
-## Returns the number of messages with severity level [constant ValidationCondition.Severity.INFO]
-## for this resource.
-func get_info_messages_count() -> int:
-	var info_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.INFO
-	)
-	return info_messages.size()
+#region Abstract Method Implementations
 
 
-## Returns the number of messages with severity level
-## [constant ValidationCondition.Severity.WARNING] for this resource.
-func get_warning_messages_count() -> int:
-	var warning_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.WARNING
-	)
-	return warning_messages.size()
+func _collect_messages() -> Array[GodotDoctorValidationMessage]:
+	return _messages
 
 
-## Returns the number of messages with severity level [constant ValidationCondition.Severity.ERROR]
-## for this resource.
-func get_hard_error_messages_count() -> int:
-	var hard_error_messages = messages.filter(
-		func(m: GodotDoctorValidationMessage) -> bool:
-			return m.severity_level == ValidationCondition.Severity.ERROR
-	)
-	return hard_error_messages.size()
+func get_effective_error_count() -> int:
+	return _get_effective_error_count(_suite_report.get_suite().treat_warnings_as_errors)
 
 
-func has_errors(treat_warnings_as_errors: bool) -> bool:
-	var total_errors = get_hard_error_messages_count()
-	if treat_warnings_as_errors:
-		total_errors += get_warning_messages_count()
-	return total_errors > 0
+func get_warnings_treated_as_errors_count() -> int:
+	return _get_warnings_treated_as_errors_count(_suite_report.get_suite().treat_warnings_as_errors)
+
+
+#endregion
+
+
+func get_suite_report() -> GodotDoctorSuiteReport:
+	return _suite_report
+
+
+func get_resource() -> Resource:
+	return _resource
+
+
+func teardown() -> void:
+	super.teardown()
+	_suite_report = null
+	_resource = null

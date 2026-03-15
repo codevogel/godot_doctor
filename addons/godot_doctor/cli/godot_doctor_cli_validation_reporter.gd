@@ -146,14 +146,10 @@ func _print_suite_reports() -> void:
 
 		var passed: bool = suite_report.passed()
 
-		var icon: String = "✘"
-		var color: Color = ReportColors.FAILED
+		var icon: String = _get_state_icon(passed)
+		var color: Color = _get_state_color(passed)
 
-		if passed:
-			icon = "✔"
-			color = ReportColors.PASSED
-
-		_print_rich_text("\nSuite %s" % icon, color)
+		_print_rich_text("\n%s Suite" % icon, color)
 		_print_rich_text("└─ %s" % _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
 
 		if suite.treat_warnings_as_errors:
@@ -176,14 +172,10 @@ func _print_scene_tree(
 ) -> void:
 	var passed: bool = scene_report.passed()
 
-	var icon: String = "✘"
-	var color: Color = ReportColors.FAILED
+	var icon: String = _get_state_icon(passed)
+	var color: Color = _get_state_color(passed)
 
-	if passed:
-		icon = "✔"
-		color = ReportColors.PASSED
-
-	_print_rich_text("\n%sScene %s" % [_indent(1), icon], color)
+	_print_rich_text("\n%s%s Scene" % [_indent(1), icon], color)
 
 	_print_rich_text("%s└─ %s" % [_indent(1), scene_report.get_scene_path()], ReportColors.SCENE)
 
@@ -207,8 +199,12 @@ func _print_node_reports_tree(
 		if node_report.get_messages().is_empty():
 			continue
 
+		var passed: bool = node_report.passed()
+		var icon: String = _get_state_icon(passed)
+		var color: Color = _get_state_color(passed)
+
 		_print_rich_text(
-			"\n%s%s" % [_indent(2), node_report.get_node_ancestor_path()], ReportColors.NODE
+			"\n%s%s %s" % [_indent(3), icon, node_report.get_node_ancestor_path()], color
 		)
 
 		var msg_count: int = node_report.get_messages().size()
@@ -234,16 +230,12 @@ func _print_resource_reports_tree(
 
 		var passed: bool = resource_report.passed()
 
-		var icon: String = "✘"
-		var color: Color = ReportColors.FAILED
-
-		if passed:
-			icon = "✔"
-			color = ReportColors.PASSED
+		var icon: String = _get_state_icon(passed)
+		var color: Color = _get_state_color(passed)
 
 		var path: String = _resolve_uid_path(resource_report.get_resource().resource_path)
 
-		_print_rich_text("\n%sResource %s" % [_indent(1), icon], color)
+		_print_rich_text("\n%s%s Resource" % [_indent(1), icon], color)
 		_print_rich_text("%s└─ %s" % [_indent(1), path], ReportColors.SCENE)
 
 		var msg_count: int = resource_report.get_messages().size()
@@ -382,3 +374,14 @@ func _resolve_uid_path(path: String) -> String:
 ## Prints [param text] to stdout using [param color] as the rich-text foreground color.
 func _print_rich_text(text: String, color: Color) -> void:
 	print_rich("[color=%s]%s[/color]" % [color.to_html(), text])
+
+
+## Returns a checkmark icon if [param passed] is [code]true[/code],
+## or a cross icon if [param passed] is [code]false[/code].
+func _get_state_icon(passed: bool) -> String:
+	return "✔" if passed else "✘"
+
+
+## Returns a display color for the pass/fail state represented by [param passed].
+func _get_state_color(passed: bool) -> Color:
+	return ReportColors.PASSED if passed else ReportColors.FAILED

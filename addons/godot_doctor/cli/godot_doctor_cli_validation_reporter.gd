@@ -27,6 +27,7 @@ const _DIVIDER_SIZE: int = 52
 const _PASSED_GLYPH: String = "✔"
 const _FAILED_GLYPH: String = "✘"
 const _ANCESTOR_SEPRATOR_GLYPH: String = " -> "
+const _BRANCH_EXTEND_GLYPH: String = "│ "
 const _BRANCH_MIDDLE_GLYPH: String = "├─"
 const _BRANCH_LAST_GLYPH: String = "└─"
 
@@ -255,29 +256,79 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 	_print_rich_text(" SUMMARY", ReportColors.HEADER)
 	_print_rich_text(divider, ReportColors.HEADER)
 
-	# Print the totals section of the summary.
-	_print_rich_text("\nValidated", ReportColors.TOTALS)
-	_print_count_line(1, "Suites", summary.get_suite_ran_count(), ReportColors.TOTALS)
-	_print_count_line(1, "Scenes", summary.get_scenes_validated_count(), ReportColors.TOTALS)
-	_print_count_line(1, "Nodes", summary.get_nodes_validated_count(), ReportColors.TOTALS)
-	_print_count_line(1, "Resources", summary.get_resources_validated_count(), ReportColors.TOTALS)
-	_print_count_line(1, "Items", summary.get_validated_items_count(), ReportColors.TOTALS)
+	# Print the validated items tree.
+	# Numbers are right-aligned at column 25.
+	# Plain counts:         prefix padded to 24 chars, digit at col 25.
+	# Parenthesized counts: prefix padded to 23 chars, "(N)" so digit lands at col 25.
+	_print_rich_text(
+		"\n%-24s%d" % ["Items Validated:", summary.get_validated_items_count()], ReportColors.TOTALS
+	)
+	_print_rich_text(_BRANCH_EXTEND_GLYPH, ReportColors.TOTALS)
+	_print_rich_text(
+		"%-23s(%d)" % ["%s Suites:" % _BRANCH_LAST_GLYPH, summary.get_suite_ran_count()],
+		ReportColors.TOTALS
+	)
+	_print_rich_text(
+		(
+			"%-23s(%d)"
+			% ["   %s Scenes:" % _BRANCH_MIDDLE_GLYPH, summary.get_scenes_validated_count()]
+		),
+		ReportColors.TOTALS
+	)
+	_print_rich_text(
+		(
+			"%-24s%d"
+			% [
+				"   %s  %s Nodes:" % [_BRANCH_EXTEND_GLYPH, _BRANCH_LAST_GLYPH],
+				summary.get_nodes_validated_count()
+			]
+		),
+		ReportColors.TOTALS
+	)
+	_print_rich_text(
+		(
+			"%-24s%d"
+			% ["   %s Resources:" % _BRANCH_LAST_GLYPH, summary.get_resources_validated_count()]
+		),
+		ReportColors.TOTALS
+	)
 
-	_print_rich_text("\nMessages", ReportColors.TOTALS)
-	_print_count_line(1, "Info", summary.get_info_messages_count(), ReportColors.INFO)
-	_print_count_line(1, "Warnings", summary.get_warning_messages_count(), ReportColors.WARNING)
-	_print_count_line(1, "Errors", summary.get_hard_error_messages_count(), ReportColors.ERROR)
+	# Print the messages tree.
+	var total_messages: int = (
+		summary.get_info_messages_count()
+		+ summary.get_warning_messages_count()
+		+ summary.get_hard_error_messages_count()
+	)
+	_print_rich_text("\n%-24s%d" % ["Messages reported:", total_messages], ReportColors.TOTALS)
+	_print_rich_text(_BRANCH_EXTEND_GLYPH, ReportColors.TOTALS)
+	_print_summary_tree_line(
+		_BRANCH_MIDDLE_GLYPH, "Info:", summary.get_info_messages_count(), ReportColors.INFO
+	)
+	_print_summary_tree_line(
+		_BRANCH_MIDDLE_GLYPH,
+		"Warnings:",
+		summary.get_warning_messages_count(),
+		ReportColors.WARNING
+	)
+	_print_summary_tree_line(
+		_BRANCH_LAST_GLYPH,
+		"Hard Errors:",
+		summary.get_hard_error_messages_count(),
+		ReportColors.ERROR
+	)
 
-	print("")
-
+	# Print the errors section.
 	var effective_errors_count: int = summary.get_effective_error_count()
-
 	var passed: bool = summary.passed()
 
-	_print_rich_text("Total Errors: %d" % effective_errors_count, _get_state_color(passed))
-
 	_print_rich_text(
-		"Warnings treated as errors: %d" % summary.get_warnings_treated_as_errors_count(),
+		"\n%-24s%d" % ["Total Errors:", effective_errors_count], _get_state_color(passed)
+	)
+	_print_rich_text("│", ReportColors.TOTALS)
+	_print_summary_tree_line(
+		_BRANCH_LAST_GLYPH,
+		"Warning as errors:",
+		summary.get_warnings_treated_as_errors_count(),
 		ReportColors.WARNING
 	)
 
@@ -417,6 +468,20 @@ func _print_count_line(indent_level: int, label: String, count: int, color: Colo
 ## Prints [param text] to stdout using [param color] as the rich-text foreground color.
 func _print_rich_text(text: String, color: Color) -> void:
 	print_rich("[color=%s]%s[/color]" % [color.to_html(), text])
+
+
+## Prints a summary tree entry with [param branch] in [constant ReportColors.TOTALS] and
+## [param label] + [param count] right-aligned at column 25 in [param content_color].
+func _print_summary_tree_line(
+	branch: String, label: String, count: int, content_color: Color
+) -> void:
+	var content: String = "%-21s%d" % [label, count]
+	print_rich(
+		(
+			"[color=%s]%s [/color][color=%s]%s[/color]"
+			% [ReportColors.TOTALS.to_html(), branch, content_color.to_html(), content]
+		)
+	)
 
 
 ## Returns a checkmark icon if [param passed] is [code]true[/code],

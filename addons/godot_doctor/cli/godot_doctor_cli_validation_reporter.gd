@@ -56,21 +56,21 @@ func report_node_messages(node: Node, messages: Array[GodotDoctorValidationMessa
 
 	# Find the scene report for the current scene in the suite report,
 	var scene_report: GodotDoctorSceneReport = null
-	for report: GodotDoctorSceneReport in suite_report.scene_reports:
-		if report.scene_path == current_scene_resource_path:
+	for report: GodotDoctorSceneReport in suite_report.get_scene_reports():
+		if report.get_scene_path() == current_scene_resource_path:
 			scene_report = report
 			break
 
 	#or create one if it doesn't exist yet.
 	if scene_report == null:
 		scene_report = GodotDoctorSceneReport.new(current_scene_resource_path, [])
-		suite_report.scene_reports.append(scene_report)
+		suite_report.add_scene_report(scene_report)
 
 	# Create a node report for the current node and add it to the scene report.
 	var node_report: GodotDoctorNodeReport = GodotDoctorNodeReport.new(
-		_node_path_string(node), messages
+		suite_report, messages, node.name, _get_node_ancestor_path(node)
 	)
-	scene_report.node_reports.append(node_report)
+	scene_report.add_node_report(node_report)
 
 
 ## Records the validation [param messages] for [param resource] into the current suite report.
@@ -90,9 +90,9 @@ func report_resource_messages(
 
 	# Create a resource report for the current resource and add it to the suite report.
 	var resource_report: GodotDoctorResourceReport = GodotDoctorResourceReport.new(
-		resource, messages
+		suite_report, resource, messages
 	)
-	suite_report.resource_reports.append(resource_report)
+	suite_report.add_resource_report(resource_report)
 
 
 ## Prints all collected validation results to stdout and exits the process.
@@ -107,11 +107,20 @@ func on_validation_complete() -> void:
 	var summary: GodotDoctorReportSummary = GodotDoctorReportSummary.new(suite_reports_array)
 
 	_print_validation_results(summary)
+	var exit_code: int = 0 if summary.passed() else 1
 
-	if summary.total_error_count == 0:
-		GodotDoctorPlugin.instance.quit_with_code(0)
-	else:
-		GodotDoctorPlugin.instance.quit_with_code(1)
+	_teardown()
+
+	GodotDoctorPlugin.instance.quit_with_code(exit_code)
+
+
+## Cleans up all collected reports and resets state, preventing memory leaks
+func _teardown() -> void:
+	for suite_report: GodotDoctorSuiteReport in _suite_reports.values():
+		suite_report.teardown()
+	_suite_reports.clear()
+	current_suite = null
+	current_scene_resource_path = ""
 
 
 ## Orchestrates printing of the full validation report: header, suite reports, and summary.
@@ -133,16 +142,16 @@ func _print_report_header() -> void:
 ## Prints each collected suite report to stdout.
 func _print_suite_reports() -> void:
 	for suite_report: GodotDoctorSuiteReport in _suite_reports.values():
-		var suite: GodotDoctorValidationSuite = suite_report.suite
+		var suite: GodotDoctorValidationSuite = suite_report.get_suite()
 
-		var failed: bool = suite_report.get_error_count() > 0
+		var passed: bool = suite_report.passed()
 
-		var icon: String = "✔"
-		var color: Color = ReportColors.PASSED
+		var icon: String = "✘"
+		var color: Color = ReportColors.FAILED
 
-		if failed:
-			icon = "✘"
-			color = ReportColors.FAILED
+		if passed:
+			icon = "✔"
+			color = ReportColors.PASSED
 
 		_print_rich_text("\nSuite %s" % icon, color)
 		_print_rich_text("└─ %s" % _resolve_uid_path(suite.resource_path), ReportColors.HEADER)
@@ -152,10 +161,12 @@ func _print_suite_reports() -> void:
 				"%s⚠ warnings are treated as errors" % _indent(1), ReportColors.WARNING
 			)
 
-		for scene_report: GodotDoctorSceneReport in suite_report.scene_reports:
+		for scene_report: GodotDoctorSceneReport in suite_report.get_scene_reports():
 			_print_scene_tree(scene_report, suite.treat_warnings_as_errors)
 
-		_print_resource_reports_tree(suite_report.resource_reports, suite.treat_warnings_as_errors)
+		_print_resource_reports_tree(
+			suite_report.get_resource_reports(), suite.treat_warnings_as_errors
+		)
 
 
 ## Prints the tree of node reports contained in [param scene_report] to stdout.
@@ -163,28 +174,28 @@ func _print_suite_reports() -> void:
 func _print_scene_tree(
 	scene_report: GodotDoctorSceneReport, treat_warnings_as_errors: bool
 ) -> void:
-	var failed: bool = scene_report.has_errors(treat_warnings_as_errors)
+	var passed: bool = scene_report.passed()
 
-	var icon: String = "✔"
-	var color: Color = ReportColors.PASSED
+	var icon: String = "✘"
+	var color: Color = ReportColors.FAILED
 
-	if failed:
-		icon = "✘"
-		color = ReportColors.FAILED
+	if passed:
+		icon = "✔"
+		color = ReportColors.PASSED
 
 	_print_rich_text("\n%sScene %s" % [_indent(1), icon], color)
 
-	_print_rich_text("%s└─ %s" % [_indent(1), scene_report.scene_path], ReportColors.SCENE)
+	_print_rich_text("%s└─ %s" % [_indent(1), scene_report.get_scene_path()], ReportColors.SCENE)
 
-	var node_count: int = scene_report.get_nodes_validated_count()
+	var node_count: int = scene_report.get_node_reports().size()
 
 	_print_rich_text("%snodes validated: %d" % [_indent(2), node_count], ReportColors.NODE)
 
-	if not failed and scene_report.node_reports.is_empty():
+	if passed and scene_report.get_node_reports().is_empty():
 		_print_rich_text("%s✔ no issues found" % _indent(2), ReportColors.PASSED)
 		return
 
-	_print_node_reports_tree(scene_report.node_reports, treat_warnings_as_errors)
+	_print_node_reports_tree(scene_report.get_node_reports(), treat_warnings_as_errors)
 
 
 ## Prints the tree of [param node_reports] to stdout.
@@ -193,15 +204,17 @@ func _print_node_reports_tree(
 	node_reports: Array[GodotDoctorNodeReport], treat_warnings_as_errors: bool
 ) -> void:
 	for node_report: GodotDoctorNodeReport in node_reports:
-		if node_report.messages.is_empty():
+		if node_report.get_messages().is_empty():
 			continue
 
-		_print_rich_text("\n%s%s" % [_indent(2), node_report.node_ancestor_path], ReportColors.NODE)
+		_print_rich_text(
+			"\n%s%s" % [_indent(2), node_report.get_node_ancestor_path()], ReportColors.NODE
+		)
 
-		var msg_count: int = node_report.messages.size()
+		var msg_count: int = node_report.get_messages().size()
 
 		for i: int in range(msg_count):
-			var msg: GodotDoctorValidationMessage = node_report.messages[i]
+			var msg: GodotDoctorValidationMessage = node_report.get_messages()[i]
 
 			var branch: String = "├─"
 			if i == msg_count - 1:
@@ -216,27 +229,27 @@ func _print_resource_reports_tree(
 	resource_reports: Array[GodotDoctorResourceReport], treat_warnings_as_errors: bool
 ) -> void:
 	for resource_report: GodotDoctorResourceReport in resource_reports:
-		if resource_report.messages.is_empty():
+		if resource_report.get_messages().is_empty():
 			continue
 
-		var failed: bool = resource_report.has_errors(treat_warnings_as_errors)
+		var passed: bool = resource_report.passed()
 
-		var icon: String = "✔"
-		var color: Color = ReportColors.PASSED
+		var icon: String = "✘"
+		var color: Color = ReportColors.FAILED
 
-		if failed:
-			icon = "✘"
-			color = ReportColors.FAILED
+		if passed:
+			icon = "✔"
+			color = ReportColors.PASSED
 
-		var path: String = _resolve_uid_path(resource_report.resource.resource_path)
+		var path: String = _resolve_uid_path(resource_report.get_resource().resource_path)
 
 		_print_rich_text("\n%sResource %s" % [_indent(1), icon], color)
 		_print_rich_text("%s└─ %s" % [_indent(1), path], ReportColors.SCENE)
 
-		var msg_count: int = resource_report.messages.size()
+		var msg_count: int = resource_report.get_messages().size()
 
 		for i: int in range(msg_count):
-			var msg: GodotDoctorValidationMessage = resource_report.messages[i]
+			var msg: GodotDoctorValidationMessage = resource_report.get_messages()[i]
 
 			var branch: String = "├─"
 			if i == msg_count - 1:
@@ -282,8 +295,6 @@ func _severity_color(label: String) -> Color:
 
 ## Prints a summary of totals across all suites to stdout.
 func _print_summary(summary: GodotDoctorReportSummary) -> void:
-	# Determine whether validation passed (no errors) or failed (one or more errors).
-	var passed: bool = summary.total_error_count == 0
 	var divider: String = "═".repeat(52)
 
 	# Print the summary header with a divider line.
@@ -294,40 +305,40 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 	# Print the totals section of the summary.
 	_print_rich_text("\nValidated", ReportColors.TOTALS)
 	_print_rich_text(
-		"%sSuites     %d" % [_indent(1), summary.total_suite_count], ReportColors.TOTALS
+		"%sSuites     %d" % [_indent(1), summary.get_suite_ran_count()], ReportColors.TOTALS
 	)
 	_print_rich_text(
-		"%sScenes     %d" % [_indent(1), summary.total_scenes_validated_count], ReportColors.TOTALS
+		"%sScenes     %d" % [_indent(1), summary.get_scenes_validated_count()], ReportColors.TOTALS
 	)
 	_print_rich_text(
-		"%sNodes      %d" % [_indent(1), summary.total_nodes_validated_count], ReportColors.TOTALS
+		"%sNodes      %d" % [_indent(1), summary.get_nodes_validated_count()], ReportColors.TOTALS
 	)
 
 	_print_rich_text("\nMessages", ReportColors.TOTALS)
 	_print_rich_text(
-		"%sInfo       %d" % [_indent(1), summary.total_info_messages_reported_count],
-		ReportColors.INFO
+		"%sInfo       %d" % [_indent(1), summary.get_info_messages_count()], ReportColors.INFO
 	)
 	_print_rich_text(
-		"%sWarnings   %d" % [_indent(1), summary.total_warning_messages_reported_count],
-		ReportColors.WARNING
+		"%sWarnings   %d" % [_indent(1), summary.get_warning_messages_count()], ReportColors.WARNING
 	)
 	_print_rich_text(
-		"%sErrors     %d" % [_indent(1), summary.total_hard_error_messages_reported_count],
+		"%sErrors     %d" % [_indent(1), summary.get_hard_error_messages_count()],
 		ReportColors.ERROR
 	)
 
 	print("")
 
-	var total_errors: int = summary.total_error_count
+	var effective_errors_count: int = summary.get_effective_error_count()
+
+	var passed: bool = summary.passed()
 
 	if passed:
-		_print_rich_text("Total Errors: %d" % total_errors, ReportColors.PASSED)
+		_print_rich_text("Total Errors: %d" % effective_errors_count, ReportColors.PASSED)
 	else:
-		_print_rich_text("Total Errors: %d" % total_errors, ReportColors.ERROR)
+		_print_rich_text("Total Errors: %d" % effective_errors_count, ReportColors.ERROR)
 
 	_print_rich_text(
-		"Warnings treated as errors: %d" % summary.total_warning_messages_reported_as_errors_count,
+		"Warnings treated as errors: %d" % summary.get_warnings_treated_as_errors_count(),
 		ReportColors.WARNING
 	)
 
@@ -345,7 +356,7 @@ func _print_summary(summary: GodotDoctorReportSummary) -> void:
 
 
 ## Returns a human-readable path string for [param node] by walking up its ancestor chain.
-static func _node_path_string(node: Node) -> String:
+static func _get_node_ancestor_path(node: Node) -> String:
 	var names: Array[String] = []
 	var current: Node = node
 

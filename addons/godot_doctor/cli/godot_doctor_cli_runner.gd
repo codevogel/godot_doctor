@@ -14,7 +14,9 @@ var _validator: GodotDoctorValidator
 
 
 func _init() -> void:
+	GodotDoctorNotifier.print_debug("Creating GodotDoctorCLIValidationReporter")
 	_reporter = GodotDoctorCLIValidationReporter.new()
+	GodotDoctorNotifier.print_debug("Creating GodotDoctorValidator")
 	_validator = GodotDoctorValidator.new(_reporter)
 
 
@@ -40,6 +42,11 @@ func run() -> void:
 		. timeout
 	)
 
+	GodotDoctorNotifier.print_debug(
+		"Delay awaited (%d). Starting vailidation now." % settings.delay_before_running_cli
+	)
+
+	GodotDoctorNotifier.print_debug("Found %d suites to run." % settings.validation_suites.size())
 	for validation_suite: GodotDoctorValidationSuite in settings.validation_suites:
 		_run_for_suite(validation_suite)
 

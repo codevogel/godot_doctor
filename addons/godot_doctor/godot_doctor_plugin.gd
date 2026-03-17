@@ -62,11 +62,13 @@ func _enter_tree():
 				"Skipping validation as --run-godot-doctor was not provided"
 			)
 			return
+		GodotDoctorNotifier.print_debug("Creating CLI Runner")
 		_cli_runner = GodotDoctorCliRunner.new()
 		_connect_signals()
 		_cli_runner.run()
 		return
 
+	GodotDoctorNotifier.print_debug("Creating Editor Runner")
 	_editor_runner = GodotDoctorEditorRunner.new()
 	_connect_signals()
 	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)

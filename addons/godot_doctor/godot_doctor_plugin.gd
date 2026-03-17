@@ -56,10 +56,12 @@ func _enter_tree():
 	GodotDoctorNotifier.print_debug("Set plugin singleton")
 	GodotDoctorNotifier.print_debug("Entering scene_tree...")
 
-	if (
-		DisplayServer.get_name() == "headless"
-		and OS.get_cmdline_user_args().has("--run-godot-doctor")
-	):
+	if DisplayServer.get_name() == "headless":
+		if not OS.get_cmdline_user_args().has("--run-godot-doctor"):
+			GodotDoctorNotifier.print_debug(
+				"Skipping validation as --run-godot-doctor was not provided"
+			)
+			return
 		_cli_runner = GodotDoctorCliRunner.new()
 		_connect_signals()
 		_cli_runner.run()

@@ -20,7 +20,7 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/dock/
 #gdlint: enable=max-line-length
 
 ## The container that holds the error/warning instances.
-@onready var error_holder: VBoxContainer = $ErrorHolder
+@onready var error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
 
 
 ## Add a node-related warning to the dock.

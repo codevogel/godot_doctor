@@ -12,7 +12,11 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_0jykx")
 
-[node name="ErrorHolder" type="VBoxContainer" parent="." unique_id=78114644]
+[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1430512297]
 layout_mode = 2
-size_flags_vertical = 0
-theme_override_constants/separation = 10
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ErrorHolder" type="VBoxContainer" parent="ScrollContainer" unique_id=22819456]
+layout_mode = 2
+size_flags_horizontal = 3

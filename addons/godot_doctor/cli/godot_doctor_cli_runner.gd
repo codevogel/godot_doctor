@@ -1,96 +1,125 @@
-## Handles the CLI (headless) validation flow.
-## Creates a [GodotDoctorCLIValidationReporter] and [GodotDoctorValidator], then runs validation
-## for all suites configured in [GodotDoctorSettings].
-class_name GodotDoctorCliRunner
+## A [GodotDoctorRunner] for headless / CLI mode.
+## Iterates over all [GodotDoctorValidationSuite] instances defined in
+## [member GodotDoctorSettings.validation_suites] and validates their scenes and resources.
+class_name GodotDoctorCLIRunner
+extends GodotDoctorRunner
 
-## Public getter for the [GodotDoctorValidationReporter] for this runner.
-var reporter: GodotDoctorCLIValidationReporter:
-	get:
-		assert(_reporter != null, "GodotDoctorCLIValidationReporter is not initialized yet.")
-		return _reporter
+## Emitted when starting collection of results across all validation suites.
+signal started_validation_suite_collection
+## Emitted when finishing collection of results across all validation suites.
+signal finished_validation_suite_collection
 
-var _reporter: GodotDoctorCLIValidationReporter
-var _validator: GodotDoctorValidator
+## Emitted when starting validation for [param suite].
+signal started_run_for_validation_suite(suite: GodotDoctorValidationSuite)
+## Emitted when finishing validation for [param suite].
+signal finished_run_for_validation_suite(suite: GodotDoctorValidationSuite)
 
-
-func _init() -> void:
-	GodotDoctorNotifier.print_debug("Creating GodotDoctorCLIValidationReporter")
-	_reporter = GodotDoctorCLIValidationReporter.new()
-	GodotDoctorNotifier.print_debug("Creating GodotDoctorValidator")
-	_validator = GodotDoctorValidator.new(_reporter)
+## Semaphore that the runner waits on until the editor signals it is ready.
+var _editor_ready_semaphore: Semaphore
 
 
-## Main entry point for CLI validation.
-## Awaits the configured delay, validates all suites, then emits
-## [GodotDoctorPlugin.validation_complete].
-func run() -> void:
+## Initializes the runner with [param validator] and [param editor_ready_semaphore].
+func _init(validator: GodotDoctorValidator, editor_ready_semaphore: Semaphore) -> void:
+	super._init(validator)
+	_editor_ready_semaphore = editor_ready_semaphore
+
+
+## Waits for the editor to signal readiness, then runs all validation suites.
+func _run() -> void:
+	_editor_ready_semaphore.wait()
+	_run_for_suites()
+
+
+## Iterates over all configured validation suites and runs each one.
+func _run_for_suites() -> void:
 	var settings: GodotDoctorSettings = GodotDoctorPlugin.instance.settings
-	GodotDoctorNotifier.print_debug(
-		(
-			"Running in CLI mode. Starting validation after configured delay (%s seconds)..."
-			% settings.delay_before_running_cli
-		)
-	)
+	var suites_to_validate: Array[GodotDoctorValidationSuite] = settings.validation_suites
 
-	# Await delay to allow the editor to
-	## finish any pending operations before we start loading scenes and resources.
-	await (
-		GodotDoctorPlugin
-		. instance
-		. get_tree()
-		. create_timer(settings.delay_before_running_cli)
-		. timeout
-	)
-
-	GodotDoctorNotifier.print_debug(
-		"Delay awaited (%d). Starting vailidation now." % settings.delay_before_running_cli
-	)
-
-	GodotDoctorNotifier.print_debug("Found %d suites to run." % settings.validation_suites.size())
-	for validation_suite: GodotDoctorValidationSuite in settings.validation_suites:
+	GodotDoctorNotifier.print_debug("Found %d suites to run." % suites_to_validate.size(), self)
+	started_validation_suite_collection.emit()
+	for validation_suite: GodotDoctorValidationSuite in suites_to_validate:
 		_run_for_suite(validation_suite)
-
-	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
-	GodotDoctorPlugin.instance.validation_complete.emit()
+	finished_validation_suite_collection.emit()
+	GodotDoctorNotifier.print_debug("Ran all suites.", self)
 
 
 ## Runs validation for all scenes and resources listed in [param validation_suite].
 func _run_for_suite(validation_suite: GodotDoctorValidationSuite) -> void:
-	GodotDoctorNotifier.print_debug("Running validation suite: %s" % validation_suite.resource_path)
-	_reporter.current_suite = validation_suite
+	GodotDoctorNotifier.print_debug(
+		"Running validation suite: %s" % validation_suite.resource_path, self
+	)
+	started_run_for_validation_suite.emit(validation_suite)
 
-	# For each scene path in the suite,
+	started_scene_collection.emit()
+	_run_for_scenes_in_suite(validation_suite)
+	finished_scene_collection.emit()
+	started_resource_collection.emit()
+	_run_for_resources_in_suite(validation_suite)
+	finished_resource_collection.emit()
+
+	finished_run_for_validation_suite.emit(validation_suite)
+
+
+## Runs validation for all scenes listed in [param validation_suite].
+func _run_for_scenes_in_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	for scene_path: String in validation_suite.get_scenes():
-		# Resolve the scene path from a uid:// string to a filesystem path if needed,
-		var uid_resolved_path: String = _resolve_uid_path(scene_path)
-		_reporter.current_scene_resource_path = uid_resolved_path
-		GodotDoctorNotifier.print_debug("Validating scene: %s" % uid_resolved_path)
+		_run_for_scene_path(scene_path)
 
-		# Load the scene as a PackedScene and validate its root node.
-		var packed_scene := load(uid_resolved_path) as PackedScene
-		if packed_scene == null:
-			push_error("Failed to load scene: %s" % uid_resolved_path)
-			GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
-			continue
 
-		## Instantiate the scene to validate the root node
-		var scene_root := packed_scene.instantiate()
-		_validator.validate_scene_root(scene_root)
-		## Free the instantiated scene to avoid memory leaks
-		## since we're not adding it to the active scene tree.
-		scene_root.free()
+## Runs validation for the scene at [param res_or_uid_scene_path].
+func _run_for_scene_path(res_or_uid_scene_path: String) -> void:
+	GodotDoctorNotifier.print_debug("Attempting to load scene: %s" % res_or_uid_scene_path, self)
+	# Load the scene as a PackedScene and validate its root node.
+	var packed_scene := load(res_or_uid_scene_path) as PackedScene
+	if packed_scene == null:
+		push_error("Failed to load scene: %s" % res_or_uid_scene_path)
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
+		return
+	GodotDoctorNotifier.print_debug("Successfully loaded scene: %s" % res_or_uid_scene_path, self)
 
-	# For each resource path in the suite,
+	## Instantiate it so we can run for the root node of the scene.
+	var scene_root: Node = packed_scene.instantiate()
+
+	var scene_res_path: String = GodotDoctorResourceHelper.to_res_path(scene_root.scene_file_path)
+
+	# Now that the scene is Successfully loaded, we can emit the started signal.
+	started_run_for_scene_res_path.emit(scene_res_path)
+
+	started_node_collection.emit()
+
+	_validator.validate_scene_root(scene_root)
+
+	finished_node_collection.emit()
+	## Free the instantiated scene to avoid memory leaks
+	## since we're not adding it to the active scene tree.
+	scene_root.free()
+
+	finished_run_for_scene_res_path.emit(scene_res_path)
+
+
+## Runs validation for all resources listed in [param validation_suite].
+func _run_for_resources_in_suite(validation_suite: GodotDoctorValidationSuite) -> void:
 	for resource_path: String in validation_suite.get_resources():
-		# Load the resource and validate it.
-		var resource := load(resource_path) as Resource
-		_validator.validate_resource(resource)
-		# Don't need to free the resource since it's RefCounted
+		_run_for_resource_path(resource_path)
 
 
-## Resolves [param path] from a [code]uid://[/code] string to a filesystem path.
-## Returns [param path] unchanged if it is already a filesystem path.
-func _resolve_uid_path(path: String) -> String:
-	if path.begins_with("uid://"):
-		return ResourceUID.get_id_path(ResourceUID.text_to_id(path))
-	return path
+## Runs validation for the resource at [param resource_res_or_uid_path].
+func _run_for_resource_path(resource_res_or_uid_path: String) -> void:
+	# Load the resource and validate it.
+	var resource := load(resource_res_or_uid_path) as Resource
+	if resource == null:
+		push_error("Failed to load resource: %s" % resource_res_or_uid_path)
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
+		return
+	GodotDoctorNotifier.print_debug(
+		"Successfully loaded resource: %s" % resource_res_or_uid_path, self
+	)
+
+	# Now that the resource is Successfully loaded, we can emit the started signal.
+	var resource_res_path: String = GodotDoctorResourceHelper.to_res_path(resource_res_or_uid_path)
+	started_run_for_resource.emit(resource)
+
+	_validator.validate_resource(resource)
+	# Don't need to free the resource since it's RefCounted
+
+	finished_run_for_resource.emit(resource)

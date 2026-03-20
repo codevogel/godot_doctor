@@ -1,19 +1,16 @@
-## Handles all validation logic for GodotDoctor.
-## Validates scene roots and resources by collecting and evaluating ValidationConditions,
-## then reporting results via the active GodotDoctorValidationReporter.
-## Settings are accessed via the GodotDoctorPlugin singleton.
+## Handles all validation logic for Godot Doctor.
+## Validates scene roots and resources by collecting and evaluating [ValidationCondition]s,
+## then emitting results for the active [GodotDoctorValidationCollector] to capture.
+## Settings are accessed via the [GodotDoctorPlugin] singleton.
 class_name GodotDoctorValidator
 
-## The method name that nodes and resources should implement to provide validation conditions.
+## Emitted when [param node] has been validated with the resulting [param messages].
+signal validated_node(node: Node, messages: Array[GodotDoctorValidationMessage])
+## Emitted when [param resource] has been validated with the resulting [param messages].
+signal validated_resource(resource: Resource, messages: Array[GodotDoctorValidationMessage])
+
+## The name of the method that nodes and resources should implement to supply validation conditions.
 const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
-
-var _reporter: GodotDoctorValidationReporter
-
-
-## Initializes the validator with [param reporter] as the active [GodotDoctorValidationReporter].
-func _init(reporter: GodotDoctorValidationReporter) -> void:
-	_reporter = reporter
-
 
 #region PUBLIC API - Entry points for validating scenes and resources
 
@@ -22,22 +19,22 @@ func _init(reporter: GodotDoctorValidationReporter) -> void:
 ## In editor mode, the scene must be currently open in the editor.
 ## In headless mode, any instantiated scene root can be passed directly.
 func validate_scene_root(scene_root: Node) -> void:
-	GodotDoctorNotifier.print_debug("Validating scene root: %s" % scene_root.name)
+	GodotDoctorNotifier.print_debug("Validating scene root: %s" % scene_root.name, self)
 
 	# Grab all nodes that should be validated in the scene tree
 	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
-	GodotDoctorNotifier.print_debug("Found %d nodes to validate." % nodes_to_validate.size())
+	GodotDoctorNotifier.print_debug("Found %d nodes to validate." % nodes_to_validate.size(), self)
 
 	# Validate each node and report results
 	for node: Node in nodes_to_validate:
 		var messages: Array[GodotDoctorValidationMessage] = _collect_node_messages(node)
-		_reporter.report_node_messages(node, messages)
+		validated_node.emit(node, messages)
 
 
 ## Validates [param resource] and reports results via the active reporter.
 func validate_resource(resource: Resource) -> void:
 	GodotDoctorNotifier.print_debug(
-		"Resource validation requested for resource: %s" % resource.resource_path
+		"Resource validation requested for resource: %s" % resource.resource_path, self
 	)
 
 	# Check if the resource's script is in the ignore list before validating
@@ -47,7 +44,7 @@ func validate_resource(resource: Resource) -> void:
 
 	# Validate the resource and report results
 	var messages: Array[GodotDoctorValidationMessage] = _collect_resource_messages(resource)
-	_reporter.report_resource_messages(resource, messages)
+	validated_resource.emit(resource, messages)
 
 
 #endregion
@@ -58,7 +55,7 @@ func validate_resource(resource: Resource) -> void:
 ## Collects all validation messages for [param node] by evaluating its conditions.
 ## Handles both @tool and non-@tool scripts transparently.
 func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
-	GodotDoctorNotifier.print_debug("Collecting messages for node: %s" % node.name)
+	GodotDoctorNotifier.print_debug("Collecting messages for node: %s" % node.name, self)
 
 	# The target is either the original node (for @tool scripts)
 	# or a temporary instance (for non-@tool scripts).
@@ -76,11 +73,11 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	# If the node implements the validating method, call it and append its conditions.
 	if validation_target.has_method(VALIDATING_METHOD_NAME):
 		GodotDoctorNotifier.print_debug(
-			"Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target]
+			"Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target], self
 		)
 		# We expect the method to return an array of ValidationCondition objects.
 		var generated: Array[ValidationCondition] = validation_target.call(VALIDATING_METHOD_NAME)
-		GodotDoctorNotifier.print_debug("Generated validation conditions: %s" % [generated])
+		GodotDoctorNotifier.print_debug("Generated validation conditions: %s" % [generated], self)
 		# Append the generated conditions to the list of conditions to evaluate.
 		conditions.append_array(generated)
 	elif not GodotDoctorPlugin.instance.settings.use_default_validations:
@@ -111,7 +108,9 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 
 ## Collects all validation messages for [param resource] by evaluating its conditions.
 func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidationMessage]:
-	GodotDoctorNotifier.print_debug("Collecting messages for resource: %s" % resource.resource_path)
+	GodotDoctorNotifier.print_debug(
+		"Collecting messages for resource: %s" % resource.resource_path, self
+	)
 	var conditions: Array[ValidationCondition] = []
 
 	# If default validations are enabled, generate conditions based on exported properties.
@@ -138,7 +137,7 @@ func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidati
 ## or only nodes that implement [constant VALIDATING_METHOD_NAME].
 func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Array:
 	if not recursing:
-		GodotDoctorNotifier.print_debug("Finding nodes to validate at root: %s" % node.name)
+		GodotDoctorNotifier.print_debug("Finding nodes to validate at root: %s" % node.name, self)
 	var nodes_to_validate: Array = []
 
 	var script: Script = node.get_script()
@@ -165,7 +164,7 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 ## For @tool scripts or nodes without a script, returns [param original_node] unchanged.
 func _make_instance_from_potential_placeholder_node(original_node: Node) -> Object:
 	GodotDoctorNotifier.print_debug(
-		"Making instance from placeholder for node: %s" % original_node.name
+		"Making instance from placeholder for node: %s" % original_node.name, self
 	)
 	var script: Script = original_node.get_script()
 	var is_tool_script: bool = script and script.is_tool()
@@ -186,7 +185,7 @@ func _make_instance_from_potential_placeholder_node(original_node: Node) -> Obje
 ## Used to transfer state from an editor node to a temporary validation instance.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
 	GodotDoctorNotifier.print_debug(
-		"Copying properties from %s to placeholder instance" % [from_node.name]
+		"Copying properties from %s to placeholder instance" % [from_node.name], self
 	)
 	for prop in from_node.get_property_list():
 		if prop.usage & PROPERTY_USAGE_EDITOR:

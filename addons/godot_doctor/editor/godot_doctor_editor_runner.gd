@@ -1,101 +1,93 @@
-## Handles all editor-mode setup, _dock management, and editor-triggered validation.
-## Creates an GodotDoctorEditorValidationReporter and GodotDoctorValidator.
-## Accesses settings and editor API via the GodotDoctorPlugin singleton.
+## A [GodotDoctorRunner] that validates the currently open scene and inspected resource
+## in the Godot editor. Triggered automatically on save (if configured) or manually.
 class_name GodotDoctorEditorRunner
+extends GodotDoctorRunner
 
-#gdlint: disable=max-line-length
-const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/editor/dock/godot_doctor_dock.tscn"
-#gdlint: enable=max-line-length
+## Emitted when a validation run starts for [param scene_root] in the editor.
+signal started_run_for_edited_scene_root(scene_root: Node)
+## Emitted when a validation run finishes for [param scene_root] in the editor.
+signal finished_run_for_edited_scene_root(scene_root: Node)
 
-## Public getter for the [GodotDoctorValidationReporter] for this runner.
-var reporter: GodotDoctorEditorValidationReporter:
-	get:
-		assert(_reporter != null, "GodotDoctorEditorValidationReporter is not initialized yet.")
-		return _reporter
+## Emitted when a validation run starts for the resource open in the inspector.
+signal started_run_for_edited_resource
+## Emitted when a validation run finishes for the resource open in the inspector.
+signal finished_run_for_edited_resource
 
-## The dock instance added to the editor for displaying validation results.
-var _dock: GodotDoctorDock
-## The reporter responsible for receiving validation messages and updating the _dock UI accordingly.
-var _reporter: GodotDoctorEditorValidationReporter
-## The validator responsible for performing validation on scenes
-## and resources and reporting results via the _reporter.
-var _validator: GodotDoctorValidator
+signal run_for_edited_scene_root_requested
 
 
-## Adds the _dock to the editor and creates the _reporter and _validator.
-func _init() -> void:
-	GodotDoctorNotifier.print_debug("Adding _dock to editor...")
-	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	GodotDoctorPlugin.instance.add_control_to_dock(
-		_settings_dock_slot_to_editor_dock_slot(
-			GodotDoctorPlugin.instance.settings.default_dock_position
-		),
-		_dock
-	)
-	_reporter = GodotDoctorEditorValidationReporter.new(_dock)
-	_validator = GodotDoctorValidator.new(_reporter)
+## Runs validation for the currently open scene root and the resource open in the inspector.
+func _run() -> void:
+	_run_for_edited_scene_root()
+	_run_for_edited_resource()
 
 
-## Removes the _dock from the editor and frees it.
-func teardown() -> void:
-	GodotDoctorNotifier.print_debug("Removing _dock from editor...")
-	GodotDoctorPlugin.instance.remove_control_from_docks(_dock)
-	_dock.free()
-	_dock = null
-
-
-## Validates the current scene root and any edited resource, then emits
-## [GodotDoctorPlugin.validation_complete]
-func validate_scene_root_and_edited_resource() -> void:
-	GodotDoctorNotifier.print_debug("Validating scene root and edited resource...")
-
-	_dock.clear_errors()
-
-	# Grab the current edited scene root and validate it
+## Validates the scene root currently open in the editor.
+## Emits scene collection signals around the validation run.
+func _run_for_edited_scene_root() -> void:
+	run_for_edited_scene_root_requested.emit()
 	var current_edited_scene_root: Node = EditorInterface.get_edited_scene_root()
-	if current_edited_scene_root != null:
-		_validator.validate_scene_root(current_edited_scene_root)
-	else:
-		GodotDoctorNotifier.print_debug("No current edited scene root. Skipping scene validation.")
+	if current_edited_scene_root == null:
+		GodotDoctorNotifier.print_debug(
+			"No current edited scene root. Skipping scene validation.", self
+		)
+		return
 
-	# Grab the current edited resource and validate it if it's a Resource with a script
+	started_run_for_edited_scene_root.emit(current_edited_scene_root)
+
+	started_scene_collection.emit()
+
+	var current_edited_scene_res_path: String = GodotDoctorResourceHelper.to_res_path(
+		current_edited_scene_root.scene_file_path
+	)
+	started_run_for_scene_res_path.emit(current_edited_scene_res_path)
+
+	started_node_collection.emit()
+
+	_validator.validate_scene_root(current_edited_scene_root)
+
+	finished_node_collection.emit()
+
+	finished_run_for_scene_res_path.emit(current_edited_scene_res_path)
+
+	finished_scene_collection.emit()
+
+	finished_run_for_edited_scene_root.emit(current_edited_scene_root)
+
+
+## Validates the resource currently open in the inspector, if it has a script.
+## Emits resource collection signals around the validation run.
+func _run_for_edited_resource() -> void:
 	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
-	if edited_object is Resource:
-		var resource_script: Script = edited_object.get_script()
-		if resource_script != null:
-			_validator.validate_resource(edited_object as Resource)
-		else:
-			GodotDoctorNotifier.print_debug(
-				"Edited resource %s has no script. Skipping resource validation." % edited_object
-			)
+	if not edited_object is Resource:
+		GodotDoctorNotifier.print_debug(
+			"Edited object %s is not a Resource. Skipping resource validation." % edited_object,
+			self
+		)
+		return
+	var edited_resource: Resource = edited_object as Resource
+	var edited_resource_script: Script = edited_resource.get_script()
+	if edited_resource_script == null:
+		GodotDoctorNotifier.print_debug(
+			"Edited resource %s has no script. Skipping resource validation." % edited_resource,
+			self
+		)
+		return
 
-	GodotDoctorNotifier.print_debug("Emitting validation complete signal...")
-	GodotDoctorPlugin.instance.validation_complete.emit()
+	started_run_for_edited_resource.emit()
 
+	started_run_for_resource.emit(edited_resource)
 
-## Converts [param dock_slot] from the [GodotDoctorSettings.DockSlot] enum
-## to the corresponding [EditorPlugin.DockSlot] value.
-#gdlint:disable = max-returns
-func _settings_dock_slot_to_editor_dock_slot(
-	dock_slot: GodotDoctorSettings.DockSlot
-) -> EditorPlugin.DockSlot:
-	match dock_slot:
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UL:
-			return EditorPlugin.DockSlot.DOCK_SLOT_LEFT_UL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BL:
-			return EditorPlugin.DockSlot.DOCK_SLOT_LEFT_BL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UR:
-			return EditorPlugin.DockSlot.DOCK_SLOT_LEFT_UR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BR:
-			return EditorPlugin.DockSlot.DOCK_SLOT_LEFT_BR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UL:
-			return EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_UL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BL:
-			return EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_BL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UR:
-			return EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_UR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BR:
-			return EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_BR
-		_:
-			return EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_BL  # Default fallback
-#gdlint:enable = max-returns
+	started_resource_collection.emit()
+
+	started_run_for_resource.emit(edited_resource)
+
+	_validator.validate_resource(edited_resource)
+
+	finished_run_for_resource.emit(edited_resource)
+
+	finished_resource_collection.emit()
+
+	finished_run_for_resource.emit(edited_resource)
+
+	finished_run_for_edited_resource.emit()

@@ -1,6 +1,7 @@
 ## Holds a single validation message produced during a validation run.
 ## Contains a [member message] string and a [member severity_level] indicating its severity.
-## Used by GodotDoctor to convey information, warnings, or errors about validation targets.
+## Used by [GodotDoctorValidator] to convey information, warnings, or errors about
+## validation targets.
 class_name GodotDoctorValidationMessage
 extends RefCounted
 

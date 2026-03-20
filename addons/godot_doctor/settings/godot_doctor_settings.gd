@@ -1,28 +1,13 @@
-## A resource that holds settings for GodotDoctor.
-## Used by GodotDoctor to store user preferences.
+## A resource that holds settings for the [GodotDoctorPlugin].
+## Used by [GodotDoctorPlugin] to store and access user preferences.
 class_name GodotDoctorSettings
 extends Resource
 
-## Enum for dock positions in the Godot editor.
-## These correspond to the dock slots available in the Godot editor.
-## Reference:
-## https://docs.godotengine.org/en/4.5/classes/class_editorplugin.html#enum-editorplugin-dockslot
-enum DockSlot {
-	DOCK_SLOT_LEFT_UL = 0,
-	DOCK_SLOT_LEFT_BL = 1,
-	DOCK_SLOT_LEFT_UR = 2,
-	DOCK_SLOT_LEFT_BR = 3,
-	DOCK_SLOT_RIGHT_UL = 4,
-	DOCK_SLOT_RIGHT_BL = 5,
-	DOCK_SLOT_RIGHT_UR = 6,
-	DOCK_SLOT_RIGHT_BR = 7,
-}
-
 ## The default position of the GodotDoctor dock in the editor.
-@export var default_dock_position: DockSlot = DockSlot.DOCK_SLOT_LEFT_BR
+@export var default_dock_position: EditorPlugin.DockSlot = EditorPlugin.DockSlot.DOCK_SLOT_LEFT_BR
 
 ## Whether to automatically run validations when saving a script.
-## If this is set to [false], users will need to manually trigger validations.
+## If this is set to [code]false[/code], users will need to manually trigger validations.
 @export var validate_on_save: bool = true
 
 @export_group("Notification settings")

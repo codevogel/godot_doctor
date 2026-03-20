@@ -1,5 +1,5 @@
 ## Holds the results for a class name query.
-## Used by GodotDoctor to determine if a script has a class name and what it is
+## Used by [ValidationCondition] to determine if a script has a class name and what it is.
 class_name GodotDoctorClassNameQueryResult
 extends RefCounted
 

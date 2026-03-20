@@ -1,7 +1,7 @@
 ## A warning associated with a [Resource].
 ## Clicking the warning opens [member origin_resource] in the inspector
 ## and navigates to it in the FileSystem dock.
-## Used by GodotDoctor to show validation warnings related to resources.
+## Used by [GodotDoctorDock] to show validation warnings related to resources.
 @tool
 class_name GodotDoctorResourceValidationWarning
 extends GodotDoctorValidationWarning

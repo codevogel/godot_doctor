@@ -2,7 +2,7 @@
 ## Contains common UI elements like [member icon], [member label], and [member button].
 ## Subclasses should implement [method _select_origin] to define behaviour
 ## when [member button] is pressed.
-## Used by GodotDoctor to display validation warnings for nodes and resources.
+## Used by [GodotDoctorDock] to display validation warnings for nodes and resources.
 @abstract
 @tool
 class_name GodotDoctorValidationWarning

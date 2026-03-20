@@ -1,7 +1,7 @@
 ## A class that holds the result of a validation operation.
-## Evaluates a set of ValidationCondition upon initialization,
-## and stores any resulting error messages.
-## Used by GodotDoctor to report validation results.
+## Evaluates a set of [ValidationCondition] instances upon initialization,
+## and stores any resulting validation messages.
+## Used by [GodotDoctorValidator] to report validation results.
 class_name GodotDoctorValidationResult
 extends RefCounted
 
@@ -11,7 +11,7 @@ var ok: bool:
 	get:
 		return messages.size() == 0
 
-## The list of error messages
+## The list of validation messages.
 var messages: Array[GodotDoctorValidationMessage] = []
 
 

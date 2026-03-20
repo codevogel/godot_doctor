@@ -2,16 +2,19 @@
 ## Warnings can be related to nodes or resources.
 ## Clicking on a warning will select the node in the scene tree
 ## or open the resource in the inspector.
-## Used by GodotDoctor to show validation warnings.
+## Used by [GodotDoctorEditorValidationReporter] to show validation warnings.
 @tool
 class_name GodotDoctorDock
 extends Control
 
 #gdlint: disable=max-line-length
 
+## Path to the info severity icon asset.
 const SEVERITY_INFO_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/info.png"
+## Path to the warning severity icon asset.
 const SEVERITY_WARNING_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/warning.png"
-const EVERITY_ERROR_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/error.png"
+## Path to the error severity icon asset.
+const SEVERITY_ERROR_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/error.png"
 
 ## A path to the scene used for node validation warnings.
 const NODE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/node_validation_warning.tscn"
@@ -19,25 +22,30 @@ const NODE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/editor/do
 const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/resource_validation_warning.tscn"
 #gdlint: enable=max-line-length
 
-## The container that holds the error/warning instances.
-@onready var error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
-@export var validate_now_button: Button
+## The "Validate Now" button that triggers manual validation.
+@export var _validate_now_button: Button
+
+## The scene root used as reference when resolving node paths for warnings.
+var scene_root_for_validations: Node = null
+
+## The container that holds all warning instances.
+@onready var _error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
 
 
 ## Connects the validate-now button signal when the dock enters the scene tree.
 func _enter_tree() -> void:
-	validate_now_button.pressed.connect(_on_validate_now_button_pressed)
+	_validate_now_button.pressed.connect(_on_validate_now_button_pressed)
 
 
 ## Disconnects the validate-now button signal when the dock exits the scene tree.
 func _exit_tree() -> void:
-	if validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
-		validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
+	if _validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
+		_validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
 
 
 ## Triggers validation of the current scene root and edited resource when the button is pressed.
 func _on_validate_now_button_pressed() -> void:
-	GodotDoctorNotifier.print_debug("Validate Now button pressed. Triggering validation.")
+	GodotDoctorNotifier.print_debug("Validate Now button pressed. Triggering validation.", self)
 	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
@@ -45,12 +53,12 @@ func _on_validate_now_button_pressed() -> void:
 ## Displays [param validation_message] with the appropriate severity icon.
 ## Clicking the entry selects [param origin_node] in the scene tree.
 func add_node_warning_to_dock(
-	origin_node: Node, validation_message: GodotDoctorValidationMessage
+	node_ancestor_path: String, validation_message: GodotDoctorValidationMessage
 ) -> void:
 	GodotDoctorNotifier.print_debug(
 		(
 			"Adding node warning to dock for node: %s, message: %s"
-			% [origin_node.name, validation_message.message]
+			% [node_ancestor_path, validation_message.message]
 		)
 	)
 	var warning_instance: GodotDoctorNodeValidationWarning = (
@@ -58,21 +66,30 @@ func add_node_warning_to_dock(
 	)
 	var icon_path: String = _get_warning_icon_path_for_severity(validation_message.severity_level)
 	warning_instance.icon.texture = load(icon_path) as Texture2D
-	warning_instance.origin_node = origin_node
+
+	var node_ancestors: PackedStringArray = node_ancestor_path.split("/")
+	var current_path: String = ""
+	for i in range(1, node_ancestors.size()):
+		var node_name: String = node_ancestors[i]
+		current_path += node_name + "/"
+	var relative_path = current_path.trim_suffix("/")
+
+	warning_instance.origin_node = scene_root_for_validations.get_node(relative_path)
+	warning_instance.origin_node_root = scene_root_for_validations
 	warning_instance.label.text = validation_message.message
-	error_holder.add_child(warning_instance)
+	_error_holder.add_child(warning_instance)
 
 
 ## Adds a resource-related warning to the dock for [param origin_resource].
 ## Displays [param validation_message] with the appropriate severity icon.
 ## Clicking the entry opens [param origin_resource] in the inspector.
 func add_resource_warning_to_dock(
-	origin_resource: Resource, validation_message: GodotDoctorValidationMessage
+	resource_path: String, validation_message: GodotDoctorValidationMessage
 ) -> void:
 	GodotDoctorNotifier.print_debug(
 		(
 			"Adding resource warning to dock for resource: %s, message: %s"
-			% [origin_resource.resource_path, validation_message.message]
+			% [resource_path, validation_message.message]
 		)
 	)
 	var warning_instance: GodotDoctorResourceValidationWarning = (
@@ -80,15 +97,15 @@ func add_resource_warning_to_dock(
 	)
 	var icon_path: String = _get_warning_icon_path_for_severity(validation_message.severity_level)
 	warning_instance.icon.texture = load(icon_path) as Texture2D
-	warning_instance.origin_resource = origin_resource
+	warning_instance.origin_resource = ResourceLoader.load(resource_path) as Resource
 	warning_instance.label.text = validation_message.message
-	error_holder.add_child(warning_instance)
+	_error_holder.add_child(warning_instance)
 
 
-## Clear all warnings from the dock.
+## Removes all warnings from the dock.
 func clear_errors() -> void:
-	GodotDoctorNotifier.print_debug("Clearing all warnings from the dock.")
-	var children: Array[Node] = error_holder.get_children()
+	GodotDoctorNotifier.print_debug("Clearing all warnings from the dock.", self)
+	var children: Array[Node] = _error_holder.get_children()
 	for child in children:
 		child.free()
 
@@ -102,10 +119,10 @@ func _get_warning_icon_path_for_severity(
 			return SEVERITY_INFO_ICON_PATH
 		ValidationCondition.Severity.WARNING:
 			if GodotDoctorPlugin.instance.settings.treat_warnings_as_errors:
-				return EVERITY_ERROR_ICON_PATH
+				return SEVERITY_ERROR_ICON_PATH
 			return SEVERITY_WARNING_ICON_PATH
 		ValidationCondition.Severity.ERROR:
-			return EVERITY_ERROR_ICON_PATH
+			return SEVERITY_ERROR_ICON_PATH
 		_:
 			push_error(
 				(

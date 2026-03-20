@@ -1,12 +1,13 @@
 ## A class that represents a validation condition.
 ## It holds a callable that performs the validation,
 ## and an error message to be used if the validation fails.
-## The callable should return either a `bool`, or
-## an `Array` of nested `ValidationConditions`.
-## Used by GodotDoctor to define validation rules.
+## The callable should return either a [code]bool[/code], or
+## an [code]Array[/code] of nested [ValidationCondition]s.
+## Used by [GodotDoctorValidator] to define validation rules.
 class_name ValidationCondition
 extends RefCounted
 
+## Severity levels used to classify validation messages.
 enum Severity {
 	## Informational message; does not indicate a problem.
 	INFO,
@@ -16,8 +17,11 @@ enum Severity {
 	ERROR
 }
 
+## The callable evaluated when this condition is tested.
 var callable: Callable
+## The error message reported when this condition fails.
 var error_message: String
+## The severity level reported when this condition fails.
 var severity_level: Severity
 
 
@@ -373,7 +377,7 @@ static func get_default_validation_conditions(
 	validation_target: Object
 ) -> Array[ValidationCondition]:
 	GodotDoctorNotifier.print_debug(
-		"Generating default validation conditions for: %s" % validation_target
+		"Generating default validation conditions for: %s" % validation_target, ValidationCondition
 	)
 	## Grab all exported properties from the target's script
 	var export_props: Array[Dictionary] = _get_export_props(validation_target)
@@ -402,7 +406,9 @@ static func get_default_validation_conditions(
 ## Retrieves all exported properties from [param object]'s script.
 ## Only includes properties that are both script variables and marked for editor visibility.
 static func _get_export_props(object: Object) -> Array[Dictionary]:
-	GodotDoctorNotifier.print_debug("Getting export properties for object: %s" % object)
+	GodotDoctorNotifier.print_debug(
+		"Getting export properties for object: %s" % object, ValidationCondition
+	)
 	if object == null:
 		return []
 

@@ -11,7 +11,7 @@ var start: float = NAN
 ## The end of the range.
 var end: float = NAN
 ## Whether the end of the range is included in the range.
-## If true, the range includes the end value.
+## If [code]true[/code], the range includes the end value.
 var inclusive: bool = false
 ## The tolerance for floating-point comparisons.
 var epsilon: float = EPSILON_DEFAULT
@@ -22,9 +22,12 @@ var epsilon: float = EPSILON_DEFAULT
 ## [param inclusive_end] determines whether [param end] is included in the range.
 ## [param epsilon] is the tolerance for floating-point comparisons.
 ## By default, the range is exclusive.
-## e.g.
-## [code]GodotDoctorRangeFloat(1.0, 10.0)[/code] contains [1 ... (10 - epsilon) +/- epsilon].
-## [code]GodotDoctorRangeFloat(1.0, 10.0, true)[/code] contains [1 ... 10 +/- epsilon].
+## [br][br]
+## Example:
+## [codeblock]
+## GodotDoctorRangeFloat.new(1.0, 10.0)        # contains [1 ... (10 - epsilon) +/- epsilon]
+## GodotDoctorRangeFloat.new(1.0, 10.0, true)  # contains [1 ... 10 +/- epsilon]
+## [/codeblock]
 func _init(
 	start: float = 0.0,
 	end: float = 0.0,

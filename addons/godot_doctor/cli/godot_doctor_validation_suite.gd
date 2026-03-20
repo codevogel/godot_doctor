@@ -1,3 +1,6 @@
+## A [Resource] that defines a set of scenes and resources to validate in CLI mode.
+## Supports manual scene/resource lists as well as automatic generation
+## based on directory and file filters.
 @tool
 class_name GodotDoctorValidationSuite
 extends Resource
@@ -52,14 +55,16 @@ extends Resource
 @export_file("*.tres", "*.res") var _resources: Array[String] = []
 
 
-## Get the paths to the scenes to validate in this suite.
+## Returns the paths to the scenes to validate in this suite.
+## If [member generate_suite_contents] is enabled, the list is generated automatically.
 func get_scenes() -> Array[String]:
 	if generate_suite_contents:
 		return _generate_suite_scenes()
 	return _scenes
 
 
-## Get the paths to the resources to validate in this suite.
+## Returns the paths to the resources to validate in this suite.
+## If [member generate_suite_contents] is enabled, the list is generated automatically.
 func get_resources() -> Array[String]:
 	if generate_suite_contents:
 		return _generate_suite_resources()
@@ -77,7 +82,7 @@ func _generate_suite_resources() -> Array[String]:
 
 
 ## Recursively collects files matching the given [param extensions] (accepting wildcard patterns)
-## in all [member directories_to_include], exluding any files in [param files_to_exclude]
+## in all [member directories_to_include], excluding any files in [param files_to_exclude]
 ## or in any [member directories_to_exclude].
 func _collect_files(extensions: Array[String], files_to_exclude: Array[String]) -> Array[String]:
 	var result: Array[String] = []

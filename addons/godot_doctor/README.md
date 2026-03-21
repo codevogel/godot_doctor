@@ -391,7 +391,7 @@ The XML report option will generate a report as such:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites tests="1" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-20T16:04:47">
+<testsuites tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-21T12:21:11">
   <testsuite name="validation_suite.tres" path="res://addons/godot_doctor/examples/validation_suite_example/validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
     <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
       <node name="FooSpawner" path="MyGame/FooSpawner" messages="2" failures="2" harderrors="1" warnings="1" infos="0">

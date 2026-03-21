@@ -374,7 +374,8 @@ jobs:
       #  on the XML report and how to generate it.)
       - name: Summarise report
         if: always()
-        run: # The contents of this script can be found in the `cli_example` example.
+        # The contents of this script can be found in the `cli_example` example.
+        run:
           python3 .github/workflows/scripts/godot_doctor_job_summary_reporter.py
 ```
 

@@ -1,8 +1,12 @@
-# Example: Validation Suites (Manual + Generated)
+# Example: Using Godot Doctor on the Command Line
 
 This example demonstrates how to configure a `GodotDoctorValidationSuite` for
 CLI/headless validation, both with **generated suite contents** and **manual
 suite contents**.
+
+It also refers to the [main README](/addons/godot_doctor/README.md) for
+instructions on setting up GitHub Actions workflows, XML report generation, and
+job summaries based on the XML report.
 
 ## The Issue
 
@@ -36,7 +40,8 @@ pipelines.
 
 ## This Example
 
-This folder contains `validation_suite.tres`, configured in **generated mode**:
+This directory contains `example_validation_suite.tres`, which is a
+ValidationSuite that works through the **generated mode**:
 
 ```gdresource
 [resource]
@@ -47,7 +52,7 @@ directories_to_include = Array[String](["res://addons/godot_doctor/examples/gene
 
 This means the suite will:
 
-1. Automatically scan `general_example` recursively,
+1. Automatically scan the `general_example` directory recursively,
 2. Include matching scenes (`*.tscn`, `*.scn`) and resources (`*.tres`,
    `*.res`),
 3. Treat warnings as errors in CLI output.
@@ -80,7 +85,33 @@ validated.
 4. Open `addons/godot_doctor/settings/godot_doctor_settings.tres` and add your
    suite resource to `validation_suites`.
 
+## GitHub Actions Workflow Setup
+
+For workflow setup instructions, refer to the main README:
+
+- [CI/CD Integration](/addons/godot_doctor/README.md#cicd-integration)
+
+## XML Report Setup
+
+For XML report configuration and output details, refer to:
+
+- [Generating a JUnit-like XML Report](/addons/godot_doctor/README.md#generating-a-junit-like-xml-report)
+
+## Job Summary Setup from the XML Report
+
+For generating a GitHub Actions Job Summary from the XML report, refer to the
+same main README section above and use the script included in this example as a
+starting point:
+
+- [`godot_doctor_job_summary_reporter.py`](/addons/godot_doctor/examples/cli_example/godot_doctor_job_summary_reporter.py)
+- [Generating a JUnit-like XML Report](/addons/godot_doctor/README.md#generating-a-junit-like-xml-report)
+
 ## Key Takeaway
 
 Use **generated suites** when you want low-maintenance, directory-driven
 validation coverage, and **manual suites** when you need precise control.
+
+It's possible to setup a runner workflow that runs Godot Doctor on the command
+line, generate an XML report from the results, and then use that XML report to
+process the results into any downstream tools you want, such as a script that
+generates a GitHub Actions Job Summary.

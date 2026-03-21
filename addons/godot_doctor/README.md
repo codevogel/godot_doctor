@@ -257,8 +257,8 @@ To run Godot Doctor on the CLI:
    validate specific scenes or resources.
 
    > ℹ️ There is an
-   > [example](/addons/godot_doctor/examples/validation_suite_example/README.md)
-   > that goes more in depth on how to set up validation suites.
+   > [example](/addons/godot_doctor/examples/cli_example/README.md) that goes
+   > more in depth on how to set up validation suites.
 
 2. Assign the suite resource to the `validation_suites` property of the
    `GodotDoctorSettings` resource
@@ -376,7 +376,7 @@ generating a
 [Job Summary](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
 that shows the validation results in a human-readable format directly in the
 GitHub Actions UI. (An example of such a script is found in the
-[validation suite example](/addons/godot_doctor/examples/validation_suite_example/).)
+[cli_example](/addons/godot_doctor/examples/cli_example/).)
 
 To enable XML report generation, set the `export_xml_report` property to `true`
 in the `GodotDoctorSettings` resource. Optionally, you can also specify the
@@ -392,7 +392,7 @@ The XML report option will generate a report as such:
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-21T12:21:11">
-  <testsuite name="validation_suite.tres" path="res://addons/godot_doctor/examples/validation_suite_example/validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
+  <testsuite name="example_validation_suite.tres" path="res://addons/godot_doctor/examples/cli_example/example_validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
     <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
       <node name="FooSpawner" path="MyGame/FooSpawner" messages="2" failures="2" harderrors="1" warnings="1" infos="0">
         <harderror>packed_scene_of_foo_type is not a valid instance.</harderror>

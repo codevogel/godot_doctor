@@ -4,7 +4,6 @@
 
 [resource]
 script = ExtResource("1_abpyc")
-treat_warnings_as_errors = true
 generate_suite_contents = true
 directories_to_include = Array[String](["res://addons/godot_doctor/examples/general_example"])
 metadata/_custom_type_script = "uid://cs4sbfbc855ad"

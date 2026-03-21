@@ -271,8 +271,8 @@ To run Godot Doctor on the CLI:
    ```
 
    > ℹ️ The `--quit-after 30` flag is used to ensure that Godot exits after 30
-   > seconds, just in case there are any issues that cause the validation
-   > process to hang. You can adjust this timeout as needed.
+   > seconds, just in case there the plugin doesn't initialize properly. You can
+   > adjust this timer as needed.
 
 The output is presented in a tree structure, making it easy to identify which
 scenes and nodes have validation issues:
@@ -281,6 +281,27 @@ scenes and nodes have validation issues:
 
 The CLI output exits with a non-zero status code if any validation conditions
 fail, making it easy to integrate into CI/CD pipelines.
+
+> Currently, there is no proper built-in way to have an EditorPlugin wait for
+> the editor to finish initializing when running in headless mode. There is an
+> [open proposal](https://github.com/godotengine/godot-proposals/issues/14502)
+> to address this, but until then, timing the run of the CLI is a bit hacky.
+>
+> So as a workaround, the plugin currently detects this through an internal
+> editor hook (`_set_window_layout`). However, this hook is not guaranteed to
+> fire in all environments. For example, on some CI runners there is no saved
+> editor layout, and the `_set_window_layout` may not be called. To handle this,
+> Godot Doctor provides two fallback timer settings in the `GodotDoctorSettings`
+> resource (`addons/godot_doctor/settings/godot_doctor_settings.tres`).
+> `fallback_cli_delay_before_start` determines how long to wait for the editor
+> hook to fire before starting validation regardless of editor initialization,
+> and `fallback_cli_delay_before_quit` determines how long to allow the
+> validation run to execute before force-quitting with exit code `1`. This
+> ensures that the CLI validation process doesn't hang indefinitely if something
+> goes wrong. (Note that these timeouts are separate from the `--quit-after`
+> flag passed to Godot, which is used for when the plugin doesn't initialize at
+> all.) You can adjust these timeouts as needed based on the expected
+> initialization time of your project, to save on runner minutes.
 
 ### CI/CD Integration
 
@@ -353,7 +374,8 @@ jobs:
       #  on the XML report and how to generate it.)
       - name: Summarise report
         if: always()
-        run: python3 .github/workflows/scripts/godot_doctor_report_summary.py
+        run: # The contents of this script can be found in the `cli_example` example.
+          python3 .github/workflows/scripts/godot_doctor_job_summary_reporter.py
 ```
 
 Placing this file at `.github/workflows/godot_doctor.yaml` in your repository

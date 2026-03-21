@@ -44,6 +44,7 @@ Or, by manual installation:
   - [Nested Validation Conditions](#nested-validation-conditions)
 - [Running Godot Doctor on the CLI](#running-godot-doctor-on-the-cli)
   - [CI/CD Integration](#cicd-integration)
+  - [Generating a JUnit-like XML Report](#generating-a-junit-like-xml-report)
 - [How It Works](#how-it-works)
 - [Examples](#examples)
 - [Installation](#installation)
@@ -294,29 +295,65 @@ An example GitHub Actions workflow may look like this:
 name: "Godot Doctor"
 
 on:
-  workflow_dispatch: # this allows you to manually trigger the workflow from the Actions tab in GitHub
+  # Allow the workflow to be triggered manually from the GitHub Actions tab
+  workflow_dispatch:
+  # Trigger the workflow on push to any branch
   push:
     branches: ["**"]
+  # Trigger the workflow on pull request to any branch
   pull_request:
     branches: ["**"]
 
 jobs:
-  gdscript-checks:
-    name: "Run Godot Doctor CLI"
+  # This job runs the Godot Doctor CLI to analyze the project and (optionally) generate a report
+  godot-doctor:
+    name: "Run Godot Doctor CLI 🩺"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.2
-      - name: Install Godot
+      # Checkout the repository to access the Godot project files
+      - uses: "actions/checkout@v6.0.2"
+      # Install Godot
+      - name: "Install Godot"
         run: |
           GODOT_VERSION="4.6.1"
           wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           unzip -q "Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
           mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
           chmod +x /usr/local/bin/godot
+      # Import the project first to ensure that it is ready for analysis.
       - name: Import project
-        run: godot --headless --editor --quit --quit-after 30 || true
+        # This quits as soon as the project is imported, which is sufficient
+        # for preparing the project for analysis
+        # We use `--quit-after 30` as a failsafe so the runner doesn't hang
+        # indefinitely if something goes wrong during importing
+        # You may want to adjust this timeout if you find that your project
+        # takes longer than 30 seconds to import.
+        run: godot --headless --editor --quit --quit-after 30
       - name: "Run Godot Doctor CLI"
+        # Now we run Godot Doctor again, this time running Godot Doctor through the CLI.
+        # Again, we use `--quit-after 30` as a failsafe to prevent hanging indefinitely.
         run: godot --headless --editor --quit-after 30 -- --run-godot-doctor
+      # Optional: When using the `enable_xml_report` setting, you can upload
+      # the generated XML report as an artifact for later analysis
+      - name: "Upload Godot Doctor Report"
+        # Run regardless of the success or failure of the previous step,
+        # as we want to know the results of Godot Doctor even if
+        # it finds issues in the project, and thus fails the previous step.
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          # The name of the artifact can be anything you like.
+          # Here we use "godot-doctor-report" for clarity.
+          name: godot-doctor-report
+          # The path to the generated XML report.
+          # This should match the path you configured in the settings resource.
+          path: tests/reports/godot_doctor_report.xml
+      # Optional: You can also summarise the report in the workflow logs for a quick overview.
+      # (See the next section 'Generating a JUnit-like XML Report' for more details
+      #  on the XML report and how to generate it.)
+      - name: Summarise report
+        if: always()
+        run: python3 .github/workflows/scripts/godot_doctor_report_summary.py
 ```
 
 Placing this file at `.github/workflows/godot_doctor.yaml` in your repository
@@ -329,6 +366,97 @@ be addressed.
 You can setup GitHub to require this check to pass before allowing pull requests
 to be merged, ensuring that all code merged into your main branches adheres to
 your validation rules.
+
+### Generating a JUnit-like XML Report
+
+In addition to the console output, you can configure Godot Doctor to generate a
+JUnit-like XML report of the validation results. This makes it easier to parse
+the results of the report in later stages of your CI/CD pipeline, such as
+generating a
+[Job Summary](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
+that shows the validation results in a human-readable format directly in the
+GitHub Actions UI. (An example of such a script is found in the
+[validation suite example](/addons/godot_doctor/examples/validation_suite_example/).)
+
+To enable XML report generation, set the `export_xml_report` property to `true`
+in the `GodotDoctorSettings` resource. Optionally, you can also specify the
+output directory and filename for the XML report using the
+`xml_report_output_dir` (default: `res://tests/reports/`) and
+`xml_report_filename` (default: `godot_doctor_report.xml`). properties.
+
+> ℹ️ Don't forget to add the output directory to your `.gitignore`, as you
+> likely don't want to commit generated reports to your repository.
+
+The XML report option will generate a report as such:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="1" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-20T16:04:47">
+  <testsuite name="validation_suite.tres" path="res://addons/godot_doctor/examples/validation_suite_example/validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
+    <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
+      <node name="FooSpawner" path="MyGame/FooSpawner" messages="2" failures="2" harderrors="1" warnings="1" infos="0">
+        <harderror>packed_scene_of_foo_type is not a valid instance.</harderror>
+        <warning type="promoted_to_error">packed_scene_of_foo_type is null.</warning>
+      </node>
+      <node name="MyEnemy" path="MyGame/MyEnemy" messages="1" failures="1" harderrors="0" warnings="1" infos="0">
+        <warning type="promoted_to_error">Initial health should not be greater than max health.</warning>
+      </node>
+      <node name="PlayerController" path="MyGame/PlayerController" messages="1" failures="1" harderrors="1" warnings="0" infos="0">
+        <harderror>player is not a valid instance.</harderror>
+      </node>
+      <node name="Player" path="MyGame/Player" messages="1" failures="0" harderrors="0" warnings="0" infos="1">
+        <info>Player name longer than 12 characters may cause UI issues.</info>
+      </node>
+      <node name="WeaponSpawner" path="MyGame/WeaponSpawner" messages="1" failures="1" harderrors="1" warnings="0" infos="0">
+        <harderror>weapon_resource is not a valid instance.</harderror>
+      </node>
+    </testcase>
+    <testcase name="example_scene_foo_type.tscn" path="res://addons/godot_doctor/examples/general_example/example_scene_foo_type.tscn" type="scene" tests="1" messages="0" failures="0" harderrors="0" warnings="0" infos="0">
+    </testcase>
+    <testcase name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" type="resource" tests="1" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+      <resource name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+        <harderror>sprite is not a valid instance.</harderror>
+        <warning type="promoted_to_error">Damage should be a positive value.</warning>
+        <warning type="promoted_to_error">Melee reach should not be greater than ranged reach.</warning>
+      </resource>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+The `xml` report is JUnit-_like_, meaning it follows a structure somewhat
+similar to the XML reports generated by testing frameworks like JUnit. Godot
+Doctor takes some liberties with the structure to better fit the validation
+context, so here's a breakdown of the structure:
+
+- The top-level element is `<testsuites>`, which collects all the validation
+  suites that were run.
+- Each `<testsuite>` element represents a `GodotDoctorValidationSuite` resource,
+  tallying up the statistics for all the scenes and resources that were
+  validated as part of that suite. The `name` attribute corresponds to the name
+  of the suite resource, and the `path` attribute indicates the file path to
+  that resource.
+- Inside each `<testsuite>`, there are `<testcase>` elements, which represent
+  individual scenes or resources that were validated. The `name` attribute is
+  the name of the scene or resource, the `path` attribute is the file path to
+  that scene or resource, and the `type` attribute indicates whether it's a
+  scene or a resource.
+- Within each `<testcase>`, there are either `<node>` elements or `<resource>`
+  elements, depending on the `type` of the testcase.
+  - `<node>` elements represent individual nodes in a scene that had validation
+    messages reported. The `name` attribute is the name of the node, and the
+    `path` attribute is the node's path within the scene.
+  - `<resource>` elements represent individual resources that had validation
+    messages reported. The `name` attribute is the name of the resource, and the
+    `path` attribute is the file path to that resource.
+- Inside each `<node>` or `<resource>`, there are `<harderror>`, `<warning>`,
+  and `<info>` elements, which represent the individual validation messages that
+  were reported for that node or resource. The text content of these elements is
+  the error message associated with the validation condition that failed.
+- Each `<testsuites>`, `<testsuite>`, `<testcase>`, `<node>`, and `<resource>`
+  element includes attributes that tally up the total number of tests, messages,
+  failures, hard errors, warnings, and infos that were reported at that level of
+  the hierarchy.
 
 ## How It Works
 

@@ -9,4 +9,5 @@ script = ExtResource("1_w45p4")
 default_dock_position = 5
 show_debug_prints = true
 validation_suites = Array[ExtResource("2_np33a")]([ExtResource("3_g2m2r")])
+export_xml_report = false
 metadata/_custom_type_script = "uid://dtaq5a6mhbihi"

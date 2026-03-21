@@ -526,7 +526,18 @@ func _set_window_layout(_configuration: ConfigFile) -> void:
 	# This should be replaced once Godot provides a proper hook for editor startup.
 	# (see: https://github.com/godotengine/godot-proposals/issues/14502 )
 	if _run_mode == RunMode.CLI:
-		_editor_ready_semaphore.post()
+		_post_cli_thread()
+
+
+func _post_cli_thread() -> void:
+	if _run_mode != RunMode.CLI:
+		push_error("Attempted to post CLI thread while not in CLI mode.")
+		return
+	if _editor_ready_semaphore == null:
+		push_error("Attempted to post CLI thread before editor ready semaphore was initialized.")
+		quit_with_fail_early_if_headless()
+		return
+	_editor_ready_semaphore.post()
 
 
 ## Quits the editor with the given [param exit_code].

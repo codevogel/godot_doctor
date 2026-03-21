@@ -12,7 +12,12 @@ extends Resource
 ## based on the generative suite content filters below.
 ## This is useful to avoid having to manually maintain
 ## the list of scenes and resources to validate in a suite.
-@export var generate_suite_contents: bool = false
+@export var generate_suite_contents: bool = false:
+	set(value):
+		if generate_suite_contents == value:
+			return
+		generate_suite_contents = value
+		notify_property_list_changed()
 
 @export_group("Generate Suite Filters")
 ## Directories to include when generating the suite contents
@@ -131,3 +136,30 @@ func _collect_files_recursive(
 func _resource_has_script(path: String) -> bool:
 	var resource: Resource = ResourceLoader.load(path)
 	return resource != null and resource.get_script() != null
+
+
+## Editor callback to dynamically update the property usage of the generative suite
+## content filter properties, enabling/disabling the relevant fields based on the value of
+## [member generate_suite_contents].
+func _validate_property(property: Dictionary) -> void:
+	var property_name: String = property.name
+	var is_generate_filter_property: bool = (
+		property_name
+		in [
+			"directories_to_include",
+			"directories_to_exclude",
+			"scenes_to_exclude",
+			"resources_to_exclude"
+		]
+	)
+	var is_suite_contents_property: bool = property_name in ["_scenes", "_resources"]
+
+	var should_disable: bool = (
+		(is_generate_filter_property and not generate_suite_contents)
+		or (is_suite_contents_property and generate_suite_contents)
+	)
+
+	if should_disable:
+		property.usage = property.usage | PROPERTY_USAGE_READ_ONLY
+	else:
+		property.usage = property.usage & ~PROPERTY_USAGE_READ_ONLY

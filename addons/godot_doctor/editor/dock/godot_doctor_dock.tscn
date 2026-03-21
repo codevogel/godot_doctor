@@ -1,0 +1,29 @@
+[gd_scene format=3 uid="uid://d2i0wno12y3v3"]
+
+[ext_resource type="Script" uid="uid://3dc6vbnqyd7f" path="res://addons/godot_doctor/editor/dock/godot_doctor_dock.gd" id="1_0jykx"]
+
+[node name="Godot Doctor" type="VBoxContainer" unique_id=723311386 node_paths=PackedStringArray("_validate_now_button")]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_0jykx")
+_validate_now_button = NodePath("ValidateNowButton")
+
+[node name="ValidateNowButton" type="Button" parent="." unique_id=500203057]
+layout_mode = 2
+text = "Validate Now"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="." unique_id=1481577799]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ErrorHolder" type="VBoxContainer" parent="ScrollContainer" unique_id=78114644]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 10

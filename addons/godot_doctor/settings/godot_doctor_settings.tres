@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="GodotDoctorSettings" format=3 uid="uid://dk02mg62vw2m1"]
 
 [ext_resource type="Script" uid="uid://dtaq5a6mhbihi" path="res://addons/godot_doctor/settings/godot_doctor_settings.gd" id="1_w45p4"]
+[ext_resource type="Script" uid="uid://cs4sbfbc855ad" path="res://addons/godot_doctor/cli/godot_doctor_validation_suite.gd" id="2_np33a"]
 
 [resource]
 script = ExtResource("1_w45p4")

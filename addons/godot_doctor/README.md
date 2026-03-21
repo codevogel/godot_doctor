@@ -42,6 +42,9 @@ Or, by manual installation:
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
+- [Running Godot Doctor on the CLI](#running-godot-doctor-on-the-cli)
+  - [CI/CD Integration](#cicd-integration)
+  - [Generating a JUnit-like XML Report](#generating-a-junit-like-xml-report)
 - [How It Works](#how-it-works)
 - [Examples](#examples)
 - [Installation](#installation)
@@ -106,7 +109,7 @@ type), before you even run the game.
 ```gdscript
 ## Example: A validation condition that checks whether the `PackedScene`
 ##          variable `scene_of_foo_type` is of type `Foo`.
-ValidationCondition.scene_is_of_type(scene_of_foo_type, Foo)
+ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo)
 ```
 
 ### Automatic Scene Validation
@@ -187,9 +190,9 @@ var condition = ValidationCondition.simple(
 ### Predefined Common Validation Conditions
 
 There's also a bunch of often-used validation conditions available as static
-methods on the `ValidationCondition` class, such as `scene_is_of_type`,
-`is_instance_valid`, `string_not_empty`, and more, which saves you time writing
-common validation logic.
+methods on the `ValidationCondition` class, such as `is_scene_of_type`,
+`is_instance_valid`, `is_string_not_empty`, and more, which saves you time
+writing common validation logic.
 
 You can find them all in
 [the `ValidationCondition` class](/addons/godot_doctor/primitives/validation_condition.gd)
@@ -237,6 +240,247 @@ ValidationCondition.new(
   )
 ```
 
+## Running Godot Doctor on the CLI
+
+Godot Doctor can be run from the command line, allowing you to integrate it into
+your CI/CD pipeline or run it as a standalone validation tool. While using it in
+the editor provides real-time feedback, running it on the CLI can be useful for
+automated checks during development or before commits, ensuring your entire
+project adheres to your validation rules.
+
+To run Godot Doctor on the CLI:
+
+1. Create a `GodotDoctorValidationSuite` resource in your project. By default,
+   it will generatively collect _all_ scenes and resources in your project. You
+   can also exclude specific scripts or directories in the suite asset from this
+   collection process, or create multiple custom validation suites that only
+   validate specific scenes or resources.
+
+   > ℹ️ There is an
+   > [example](/addons/godot_doctor/examples/cli_example/README.md) that goes
+   > more in depth on how to set up validation suites.
+
+2. Assign the suite resource to the `validation_suites` property of the
+   `GodotDoctorSettings` resource
+   (`addons/godot_doctor/settings/godot_doctor_settings.tres`).
+
+3. run Godot Doctor on the CLI, use the following command:
+
+   ```bash
+   godot --headless --editor --quit-after 30 -- --run-godot-doctor
+   ```
+
+   > ℹ️ The `--quit-after 30` flag is used to ensure that Godot exits after 30
+   > seconds, just in case there the plugin doesn't initialize properly. You can
+   > adjust this timer as needed.
+
+The output is presented in a tree structure, making it easy to identify which
+scenes and nodes have validation issues:
+
+![cli-output-example](/github_assets/png/cli_output.png)
+
+The CLI output exits with a non-zero status code if any validation conditions
+fail, making it easy to integrate into CI/CD pipelines.
+
+> Currently, there is no proper built-in way to have an EditorPlugin wait for
+> the editor to finish initializing when running in headless mode. There is an
+> [open proposal](https://github.com/godotengine/godot-proposals/issues/14502)
+> to address this, but until then, timing the run of the CLI is a bit hacky.
+>
+> So as a workaround, the plugin currently detects this through an internal
+> editor hook (`_set_window_layout`). However, this hook is not guaranteed to
+> fire in all environments. For example, on some CI runners there is no saved
+> editor layout, and the `_set_window_layout` may not be called. To handle this,
+> Godot Doctor provides two fallback timer settings in the `GodotDoctorSettings`
+> resource (`addons/godot_doctor/settings/godot_doctor_settings.tres`).
+> `fallback_cli_delay_before_start` determines how long to wait for the editor
+> hook to fire before starting validation regardless of editor initialization,
+> and `fallback_cli_delay_before_quit` determines how long to allow the
+> validation run to execute before force-quitting with exit code `1`. This
+> ensures that the CLI validation process doesn't hang indefinitely if something
+> goes wrong. (Note that these timeouts are separate from the `--quit-after`
+> flag passed to Godot, which is used for when the plugin doesn't initialize at
+> all.) You can adjust these timeouts as needed based on the expected
+> initialization time of your project, to save on runner minutes.
+
+### CI/CD Integration
+
+You can integrate Godot Doctor into your CI/CD pipeline (e.g., GitHub Actions,
+GitLab CI, Jenkins) to automatically validate your project on every push or pull
+request. This helps catch issues early and maintain code quality across your
+team.
+
+An example GitHub Actions workflow may look like this:
+
+```yaml
+name: "Godot Doctor"
+
+on:
+  # Allow the workflow to be triggered manually from the GitHub Actions tab
+  workflow_dispatch:
+  # Trigger the workflow on push to any branch
+  push:
+    branches: ["**"]
+  # Trigger the workflow on pull request to any branch
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  # This job runs the Godot Doctor CLI to analyze the project and (optionally) generate a report
+  godot-doctor:
+    name: "Run Godot Doctor CLI 🩺"
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository to access the Godot project files
+      - uses: "actions/checkout@v6.0.2"
+      # Install Godot
+      - name: "Install Godot"
+        run: |
+          GODOT_VERSION="4.6.1"
+          wget -q "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q "Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          mv "Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          chmod +x /usr/local/bin/godot
+      # Import the project first to ensure that it is ready for analysis.
+      - name: Import project
+        # This quits as soon as the project is imported, which is sufficient
+        # for preparing the project for analysis
+        # We use `--quit-after 30` as a failsafe so the runner doesn't hang
+        # indefinitely if something goes wrong during importing
+        # You may want to adjust this timeout if you find that your project
+        # takes longer than 30 seconds to import.
+        run: godot --headless --editor --quit --quit-after 30
+      - name: "Run Godot Doctor CLI"
+        # Now we run Godot Doctor again, this time running Godot Doctor through the CLI.
+        # Again, we use `--quit-after 30` as a failsafe to prevent hanging indefinitely.
+        run: godot --headless --editor --quit-after 30 -- --run-godot-doctor
+      # Optional: When using the `enable_xml_report` setting, you can upload
+      # the generated XML report as an artifact for later analysis
+      - name: "Upload Godot Doctor Report"
+        # Run regardless of the success or failure of the previous step,
+        # as we want to know the results of Godot Doctor even if
+        # it finds issues in the project, and thus fails the previous step.
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          # The name of the artifact can be anything you like.
+          # Here we use "godot-doctor-report" for clarity.
+          name: godot-doctor-report
+          # The path to the generated XML report.
+          # This should match the path you configured in the settings resource.
+          path: tests/reports/godot_doctor_report.xml
+      # Optional: You can also summarise the report in the workflow logs for a quick overview.
+      # (See the next section 'Generating a JUnit-like XML Report' for more details
+      #  on the XML report and how to generate it.)
+      - name: Summarise report
+        if: always()
+        # The contents of this script can be found in the `cli_example` example.
+        run:
+          python3 .github/workflows/scripts/godot_doctor_job_summary_reporter.py
+```
+
+Placing this file at `.github/workflows/godot_doctor.yaml` in your repository
+will set up the workflow to run on every push and pull request, installing
+Godot, importing the project, and executing Godot Doctor in headless mode. If
+any validation conditions fail, the workflow will exit with a non-zero status,
+causing the check to fail and alerting the developers to the issues that need to
+be addressed.
+
+You can setup GitHub to require this check to pass before allowing pull requests
+to be merged, ensuring that all code merged into your main branches adheres to
+your validation rules.
+
+### Generating a JUnit-like XML Report
+
+In addition to the console output, you can configure Godot Doctor to generate a
+JUnit-like XML report of the validation results. This makes it easier to parse
+the results of the report in later stages of your CI/CD pipeline, such as
+generating a
+[Job Summary](https://github.blog/news-insights/product-news/supercharging-github-actions-with-job-summaries/)
+that shows the validation results in a human-readable format directly in the
+GitHub Actions UI. (An example of such a script is found in the
+[cli_example](/addons/godot_doctor/examples/cli_example/).)
+
+To enable XML report generation, set the `export_xml_report` property to `true`
+in the `GodotDoctorSettings` resource. Optionally, you can also specify the
+output directory and filename for the XML report using the
+`xml_report_output_dir` (default: `res://tests/reports/`) and
+`xml_report_filename` (default: `godot_doctor_report.xml`). properties.
+
+> ℹ️ Don't forget to add the output directory to your `.gitignore`, as you
+> likely don't want to commit generated reports to your repository.
+
+The XML report option will generate a report as such:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-21T12:21:11">
+  <testsuite name="example_validation_suite.tres" path="res://addons/godot_doctor/examples/cli_example/example_validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
+    <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
+      <node name="FooSpawner" path="MyGame/FooSpawner" messages="2" failures="2" harderrors="1" warnings="1" infos="0">
+        <harderror>packed_scene_of_foo_type is not a valid instance.</harderror>
+        <warning type="promoted_to_error">packed_scene_of_foo_type is null.</warning>
+      </node>
+      <node name="MyEnemy" path="MyGame/MyEnemy" messages="1" failures="1" harderrors="0" warnings="1" infos="0">
+        <warning type="promoted_to_error">Initial health should not be greater than max health.</warning>
+      </node>
+      <node name="PlayerController" path="MyGame/PlayerController" messages="1" failures="1" harderrors="1" warnings="0" infos="0">
+        <harderror>player is not a valid instance.</harderror>
+      </node>
+      <node name="Player" path="MyGame/Player" messages="1" failures="0" harderrors="0" warnings="0" infos="1">
+        <info>Player name longer than 12 characters may cause UI issues.</info>
+      </node>
+      <node name="WeaponSpawner" path="MyGame/WeaponSpawner" messages="1" failures="1" harderrors="1" warnings="0" infos="0">
+        <harderror>weapon_resource is not a valid instance.</harderror>
+      </node>
+    </testcase>
+    <testcase name="example_scene_foo_type.tscn" path="res://addons/godot_doctor/examples/general_example/example_scene_foo_type.tscn" type="scene" tests="1" messages="0" failures="0" harderrors="0" warnings="0" infos="0">
+    </testcase>
+    <testcase name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" type="resource" tests="1" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+      <resource name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+        <harderror>sprite is not a valid instance.</harderror>
+        <warning type="promoted_to_error">Damage should be a positive value.</warning>
+        <warning type="promoted_to_error">Melee reach should not be greater than ranged reach.</warning>
+      </resource>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+The `xml` report is JUnit-_like_, meaning it follows a structure somewhat
+similar to the XML reports generated by testing frameworks like JUnit. Godot
+Doctor takes some liberties with the structure to better fit the validation
+context, so here's a breakdown of the structure:
+
+- The top-level element is `<testsuites>`, which collects all the validation
+  suites that were run.
+- Each `<testsuite>` element represents a `GodotDoctorValidationSuite` resource,
+  tallying up the statistics for all the scenes and resources that were
+  validated as part of that suite. The `name` attribute corresponds to the name
+  of the suite resource, and the `path` attribute indicates the file path to
+  that resource.
+- Inside each `<testsuite>`, there are `<testcase>` elements, which represent
+  individual scenes or resources that were validated. The `name` attribute is
+  the name of the scene or resource, the `path` attribute is the file path to
+  that scene or resource, and the `type` attribute indicates whether it's a
+  scene or a resource.
+- Within each `<testcase>`, there are either `<node>` elements or `<resource>`
+  elements, depending on the `type` of the testcase.
+  - `<node>` elements represent individual nodes in a scene that had validation
+    messages reported. The `name` attribute is the name of the node, and the
+    `path` attribute is the node's path within the scene.
+  - `<resource>` elements represent individual resources that had validation
+    messages reported. The `name` attribute is the name of the resource, and the
+    `path` attribute is the file path to that resource.
+- Inside each `<node>` or `<resource>`, there are `<harderror>`, `<warning>`,
+  and `<info>` elements, which represent the individual validation messages that
+  were reported for that node or resource. The text content of these elements is
+  the error message associated with the validation condition that failed.
+- Each `<testsuites>`, `<testsuite>`, `<testcase>`, `<node>`, and `<resource>`
+  element includes attributes that tally up the total number of tests, messages,
+  failures, hard errors, warnings, and infos that were reported at that level of
+  the hierarchy.
+
 ## How It Works
 
 1. **Automatic Discovery**: When you save a scene, Godot Doctor scans all nodes
@@ -251,7 +495,9 @@ ValidationCondition.new(
 
 ## Examples
 
-For detailed examples and common validation patterns, see
+There are many examples available that help you better understand how to use
+Godot Doctor in your project, and how to write validation conditions for
+different use cases. You can find them all in
 [the examples README](/addons/godot_doctor/examples/README.md).
 
 ## Installation

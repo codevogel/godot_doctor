@@ -4,21 +4,36 @@
 ## Report issues or feature requests at https://github.com/codevogel/godot_doctor/issues
 ## License: MIT
 @tool
+class_name GodotDoctorPlugin
 extends EditorPlugin
 
-## Emitted when a validation is requested, passing the root node of the current edited scene.
-signal validation_requested(scene_root: Node)
+## Emitted when validation is complete.
+## In Headless mode, this signals the CLI reporter to exit the process.
+## In Editor mode, this can be used to trigger any post-validation actions.
+signal validation_complete
+
+## Defines the mode in which the plugin is running: Editor or CLI (headless).
+enum RunMode { NONE, EDITOR, CLI }
 
 #gdlint: disable=max-line-length
-## The method name that nodes and resources should implement to provide validation conditions.
-const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
-## The path of the dock scene used to display validation warnings.
-const VALIDATOR_DOCK_SCENE_PATH: String = "res://addons/godot_doctor/dock/godot_doctor_dock.tscn"
 ## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
 const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
 const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor"
 #gdlint: enable=max-line-length
+
+## Singleton instance of the plugin for global access if needed.
+## Avoid using this directly in most cases.
+## This can, however, be useful for starting validation from external scripts
+## such as the Dock's 'Validate Now' button.
+static var instance: GodotDoctorPlugin:
+	get:
+		assert(_instance != null, "GodotDoctorPlugin instance is not initialized yet.")
+		return _instance
+
+## Internal backing field for the singleton instance of the plugin.
+## Use [member instance] for global access instead of using this field directly.
+static var _instance: GodotDoctorPlugin = null
 
 ## A Resource that holds the settings for the Godot Doctor plugin.
 var settings: GodotDoctorSettings:
@@ -29,81 +44,607 @@ var settings: GodotDoctorSettings:
 			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
 		return settings
 
-## The dock for displaying validation results.
-var _dock: GodotDoctorDock
+## The current mode in which the plugin is running, determined at runtime based on the environment.
+var mode: RunMode:
+	get:
+		return _run_mode
 
-# ============================================================================
-# LIFECYCLE METHODS - Plugin initialization and cleanup
-# ============================================================================
+## The validator responsible for executing validation logic on nodes and resources.
+var _validator: GodotDoctorValidator
+
+## The runner responsible for executing validation in the editor environment.
+var _active_runner: GodotDoctorRunner
+## The collector responsible for gathering validation results during a run.
+var _active_collector: GodotDoctorValidationCollector
+## The reporter responsible for generating reports from collected validation results.
+var _active_reporter: GodotDoctorValidationReporter
+
+## Thread that the CLI runner runs on.
+## Only created when the editor signals readiness or a fallback timer fires.
+var _cli_thread: Thread
+
+## Internal backing field for the current mode in which the plugin is running.
+var _run_mode: RunMode = RunMode.NONE
+
+## Stores all active signal connections as [Signal, Callable] pairs for later disconnection.
+var _signal_connections: Array = []
+
+#region Plugin Lifecycle
+
+
+## Called when the plugin enters the scene scene_tree.
+## Initializes the plugin by connecting signals and adding the dock to the editor,
+## or running in CLI mode when headless.
+func _enter_tree():
+	# Set the instance before any GodotDoctorNotifier calls,
+	# as it needs the instance to function properly.
+	_instance = self
+	GodotDoctorNotifier.print_debug("Set plugin singleton", self)
+
+	GodotDoctorNotifier.print_debug("Entering scene_tree...", self)
+
+	# Shared initialization for any mode
+	_initialize_for_any_mode()
+
+	# Check if we're running in headless mode (CLI) and initialize accordingly.
+	if DisplayServer.get_name() == "headless":
+		# In headless mode, we only run if the appropriate command line argument is provided.
+		if not OS.get_cmdline_user_args().has("--run-godot-doctor"):
+			GodotDoctorNotifier.print_debug(
+				"Skipping validation as --run-godot-doctor was not provided", self
+			)
+			return
+		# If the argument is provided, we initialize for CLI mode.
+		_initialize_for_cli_mode()
+		# The CLI run will be started later by either:
+		# 1. _set_window_layout (normal path: editor signals readiness)
+		# 2. The start fallback timer (fallback: editor never signals readiness)
+		# 3. _exit_tree synchronous fallback (last resort: plugin removed before either fires)
+		_start_cli_start_fallback_timer()
+		return
+
+	# If not headless, initialize for editor mode.
+	_initialize_for_editor_mode()
+	# In headless mode, the runner is called through the _on_scene_saved event or
+	# through validate_scene_root_and_edited_resource, so no need to call it here.
+	GodotDoctorNotifier.push_toast("Plugin loaded.", 0)
+
+
+## Shared initialization for any [enum RunMode].
+func _initialize_for_any_mode():
+	GodotDoctorNotifier.print_debug("Performing shared initialization for any mode...", self)
+	GodotDoctorNotifier.print_debug("Creating Validator", self)
+	_validator = GodotDoctorValidator.new()
+	GodotDoctorNotifier.print_debug("Shared initialization complete.", self)
+
+
+## Initialization specific to [enum RunMode.EDITOR].
+func _initialize_for_editor_mode():
+	_run_mode = RunMode.EDITOR
+	GodotDoctorNotifier.print_debug("Running in editor mode, initializing Editor mode...", self)
+	GodotDoctorNotifier.print_debug("Creating Editor Runner", self)
+	_active_runner = GodotDoctorEditorRunner.new(_validator)
+	GodotDoctorNotifier.print_debug("Creating Editor Reporter", self)
+	_active_reporter = GodotDoctorEditorValidationReporter.new()
+	GodotDoctorNotifier.print_debug("Creating Editor Collector", self)
+	_active_collector = GodotDoctorEditorValidationCollector.new()
+	_connect_signals()
+	GodotDoctorNotifier.print_debug("Editor initialization complete.", self)
+
+
+## Initialization specific to [enum RunMode.CLI].
+func _initialize_for_cli_mode():
+	_run_mode = RunMode.CLI
+	GodotDoctorNotifier.print_debug("Running in headless, initializing CLI mode...", self)
+	GodotDoctorNotifier.print_debug("Creating CLI Runner", self)
+	_active_runner = GodotDoctorCLIRunner.new(_validator)
+	GodotDoctorNotifier.print_debug("Creating CLI Reporter", self)
+	_active_reporter = GodotDoctorCLIValidationReporter.new()
+	GodotDoctorNotifier.print_debug("Creating CLI Collector", self)
+	_active_collector = GodotDoctorCLIValidationCollector.new()
+	_connect_signals()
+	GodotDoctorNotifier.print_debug("CLI initialization complete.", self)
 
 
 ## Called when the plugin is enabled by the user through Project Settings > Plugins.
 ## Displays a welcome dialog if configured in settings.
 func _enable_plugin() -> void:
-	_print_debug("Enabling plugin...")
-	# We don't really have any globals to load yet, but this is where we would do it.
-
+	GodotDoctorNotifier.print_debug("Enabling plugin...", self)
 	if settings.show_welcome_dialog:
 		_show_welcome_dialog()
+	GodotDoctorNotifier.print_debug("Plugin enabled", self)
 
 
 ## Called when the plugin is disabled by the user through Project Settings > Plugins.
 func _disable_plugin() -> void:
-	_print_debug("Disabling plugin...")
+	GodotDoctorNotifier.print_debug("Disabling plugin...", self)
+	GodotDoctorNotifier.print_debug("Plugin disabled", self)
 
 
-## Called when the plugin enters the scene tree.
-## Initializes the plugin by connecting signals and adding the dock to the editor.
-func _enter_tree():
-	_print_debug("Entering tree...")
-	_connect_signals()
-	_dock = preload(VALIDATOR_DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
-	add_control_to_dock(
-		_setting_dock_slot_to_editor_dock_slot(settings.default_dock_position), _dock
-	)
-	_push_toast("Plugin loaded.", 0)
-
-
-## Called when the plugin exits the scene tree.
+## Called when the plugin exits the scene scene_tree.
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
-	_print_debug("Exiting tree...")
+	GodotDoctorNotifier.print_debug("Exiting scene_tree...", self)
+	# If we're in CLI mode and the thread was never started (neither _set_window_layout
+	# nor the fallback timer fired), run validation synchronously on the main thread.
+	# This avoids the deadlock that would occur if we tried to use a thread here
+	# (main thread blocked on wait_to_finish while the thread needs main thread
+	# for physics node instantiation).
+	if _run_mode == RunMode.CLI and _cli_thread == null:
+		GodotDoctorNotifier.print_debug(
+			"CLI thread was never started. Running validation synchronously...", self
+		)
+		_active_runner.run()
+	_teardown()
+
+	# Clear the singleton instance as the very last action,
+	# because debug prints rely on it.
+	GodotDoctorNotifier.print_debug("Clearing plugin singleton", self)
+	_instance = null
+
+
+## Tears down the plugin by cleaning up threads and signal connections.
+func _teardown() -> void:
+	GodotDoctorNotifier.print_debug("Tearing down plugin...", self)
+	if _cli_thread != null:
+		_cli_thread.wait_to_finish()
+		_cli_thread = null
 	_disconnect_signals()
-	_remove_dock()
-	_push_toast("Plugin unloaded.", 0)
 
 
-# ============================================================================
-# SIGNAL MANAGEMENT - Connection and disconnection of signals
-# ============================================================================
+#endregion
+
+#region Signal Management
+
+
+## Connect a [param signal_to_connect_to] to a [param callable_to_execute]
+## and track the connection for later disconnection.
+func _connect_and_track(signal_to_connect_to: Signal, callable_to_execute: Callable) -> void:
+	signal_to_connect_to.connect(callable_to_execute)
+	_signal_connections.append([signal_to_connect_to, callable_to_execute])
+
+
+## Disconnects all tracked signals in [member _signal_connections] and clears the list.
+func _disconnect_all_tracked_signals() -> void:
+	for conn in _signal_connections:
+		var signal_to_disconnect: Signal = conn[0]
+		var callable_executed_on_signal: Callable = conn[1]
+		if signal_to_disconnect.is_connected(callable_executed_on_signal):
+			signal_to_disconnect.disconnect(callable_executed_on_signal)
+	_signal_connections.clear()
 
 
 ## Connects all necessary signals for the plugin to function.
-## Connects to scene_saved and validation_requested signals.
 func _connect_signals():
-	_print_debug("Connecting signals...")
-	scene_saved.connect(_on_scene_saved)
-	validation_requested.connect(_on_validation_requested)
+	GodotDoctorNotifier.print_debug("Connecting signals...", self)
+	_connect_and_track(scene_saved, _on_scene_saved)
+	_connect_runner_signals()
+	_connect_validator_signals()
+
+
+## Connects signals specific to the active runner.
+func _connect_runner_signals():
+	if _active_runner == null:
+		push_error("Attempted to connect runner signals before runner was initialized.")
+		quit_with_fail_early_if_headless()
+		return
+
+	GodotDoctorNotifier.print_debug("Connecting runner signals...", self)
+	_connect_and_track(
+		_active_runner.started_scene_collection, _active_collector.on_started_scene_collection
+	)
+	_connect_and_track(
+		_active_runner.finished_scene_collection, _active_collector.on_finished_scene_collection
+	)
+	_connect_and_track(
+		_active_runner.started_run_for_scene_res_path,
+		_active_collector.on_started_run_for_scene_res_path
+	)
+	_connect_and_track(
+		_active_runner.finished_run_for_scene_res_path,
+		_active_collector.on_finished_run_for_scene_res_path
+	)
+	_connect_and_track(
+		_active_runner.started_resource_collection, _active_collector.on_started_resource_collection
+	)
+	_connect_and_track(
+		_active_runner.finished_resource_collection,
+		_active_collector.on_finished_resource_collection
+	)
+	_connect_and_track(
+		_active_runner.started_node_collection, _active_collector.on_started_node_collection
+	)
+	_connect_and_track(
+		_active_runner.finished_node_collection, _active_collector.on_finished_node_collection
+	)
+	_connect_and_track(
+		_active_runner.started_run_for_resource, _active_collector.on_started_run_for_resource
+	)
+	_connect_and_track(
+		_active_runner.finished_run_for_resource, _active_collector.on_finished_run_for_resource
+	)
+	_connect_and_track(_active_runner.run_complete, _on_run_complete)
+
+	match _run_mode:
+		RunMode.EDITOR:
+			GodotDoctorNotifier.print_debug(
+				"Detected Editor Runner, connecting editor-specific signals...", self
+			)
+			_connect_editor_runner_signals()
+		RunMode.CLI:
+			GodotDoctorNotifier.print_debug(
+				"Detected CLI Runner, connecting CLI-specific signals...", self
+			)
+			_connect_cli_runner_signals()
+		_:
+			push_error("Attempted to connect runner signals with unsupported run mode.")
+			quit_with_fail_early_if_headless()
+
+
+## Connects signals specific to the editor runner (for [RunMode.EDITOR]).
+func _connect_editor_runner_signals():
+	if _active_runner == null:
+		push_error("Attempted to connect editor runner signals before runner was initialized.")
+		return
+	if not _active_runner is GodotDoctorEditorRunner:
+		push_error("Attempted to connect editor runner signals with a non-editor runner.")
+		return
+	if not _active_reporter is GodotDoctorEditorValidationReporter:
+		push_error("Attempted to connect editor runner signals with a non-editor reporter.")
+		return
+
+	var editor_runner: GodotDoctorEditorRunner = _active_runner as GodotDoctorEditorRunner
+	var editor_reporter: GodotDoctorEditorValidationReporter = (
+		_active_reporter as GodotDoctorEditorValidationReporter
+	)
+	_connect_and_track(
+		editor_runner.run_for_edited_scene_root_requested,
+		editor_reporter.on_run_for_edited_scene_root_requested
+	)
+	_connect_and_track(
+		editor_runner.started_run_for_edited_scene_root,
+		editor_reporter.on_started_run_for_edited_scene_root
+	)
+	_connect_and_track(
+		editor_runner.finished_run_for_edited_scene_root,
+		editor_reporter.on_finished_run_for_edited_scene_root
+	)
+	_connect_and_track(
+		editor_runner.started_run_for_edited_resource,
+		editor_reporter.on_started_run_for_edited_resource
+	)
+	_connect_and_track(
+		editor_runner.finished_run_for_edited_resource,
+		editor_reporter.on_finished_run_for_edited_resource
+	)
+
+
+## Connects signals specific to the CLI runner (for [RunMode.CLI]).
+func _connect_cli_runner_signals():
+	if _active_runner == null:
+		push_error("Attempted to connect CLI runner signals before runner was initialized.")
+		return
+	if not _active_runner is GodotDoctorCLIRunner:
+		push_error("Attempted to connect CLI runner signals with a non-CLI runner.")
+		return
+	if not _active_collector is GodotDoctorCLIValidationCollector:
+		push_error("Attempted to connect CLI runner signals with a non-CLI collector.")
+		return
+	var cli_runner: GodotDoctorCLIRunner = _active_runner as GodotDoctorCLIRunner
+	var cli_collector: GodotDoctorCLIValidationCollector = (
+		_active_collector as GodotDoctorCLIValidationCollector
+	)
+	_connect_and_track(
+		cli_runner.started_validation_suite_collection,
+		cli_collector.on_started_validation_suite_collection
+	)
+	_connect_and_track(
+		cli_runner.finished_validation_suite_collection,
+		cli_collector.on_finished_validation_suite_collection
+	)
+	_connect_and_track(
+		cli_runner.started_run_for_validation_suite,
+		cli_collector.on_started_run_for_validation_suite
+	)
+	_connect_and_track(
+		cli_runner.finished_run_for_validation_suite,
+		cli_collector.on_finished_run_for_validation_suite
+	)
+
+
+## Connects signals emitted by the validator during validation runs.
+func _connect_validator_signals():
+	if _validator == null:
+		push_error("Attempted to connect validator signals before validator was initialized.")
+		quit_with_fail_early_if_headless()
+		return
+
+	GodotDoctorNotifier.print_debug("Connecting validator signals...", self)
+	_connect_and_track(_validator.validated_node, _active_collector.on_validated_node)
+	_connect_and_track(_validator.validated_resource, _active_collector.on_validated_resource)
 
 
 ## Disconnects all connected signals to avoid dangling connections.
-## Safely disconnects even if signals are not currently connected.
 func _disconnect_signals():
-	_print_debug("Disconnecting signals...")
-	if scene_saved.is_connected(_on_scene_saved):
-		scene_saved.disconnect(_on_scene_saved)
-	if validation_requested.is_connected(_on_validation_requested):
-		validation_requested.disconnect(_on_validation_requested)
+	GodotDoctorNotifier.print_debug("Disconnecting signals...", self)
+	_disconnect_all_tracked_signals()
 
 
-# ============================================================================
-# UI AND DIALOG MANAGEMENT - Welcome dialog and dock management
-# ============================================================================
+#endregion
+
+#region Event Handlers
 
 
-## Shows a welcome dialog to the user on first plugin enable.
-## Displays the welcome message and a link to the GitHub repository.
-func _show_welcome_dialog():
+## Called when a scene is saved by the user; triggers validation if
+## [member GodotDoctorSettings.validate_on_save] is enabled.
+func _on_scene_saved(file_path: String) -> void:
+	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path, self)
+	if settings.validate_on_save:
+		_active_runner.run()
+
+
+## Called when the runner signals that the entire validation run is complete.
+func _on_run_complete() -> void:
+	GodotDoctorNotifier.print_debug("Validation run complete.", self)
+
+	match _run_mode:
+		RunMode.EDITOR:
+			GodotDoctorNotifier.print_debug(
+				"Detected editor mode, reporting results for editor...", self
+			)
+			_report_on_collected_results_for_editor()
+		RunMode.CLI:
+			GodotDoctorNotifier.print_debug("Detected CLI mode, reporting results for CLI...", self)
+			var passed: bool = _report_on_collected_results_for_cli()
+			quit_with_code(0 if passed else 1)
+		_:
+			push_error("Attempted to handle run complete with unsupported run mode.")
+			quit_with_fail_early_if_headless()
+
+
+## Processes the collected validation results and generates reports for editor mode.
+func _report_on_collected_results_for_editor() -> void:
+	if _run_mode != RunMode.EDITOR:
+		push_error("Attempted to report on collected results for editor while not in editor mode.")
+		quit_with_fail_early_if_headless()
+		return
+	GodotDoctorNotifier.print_debug("Reporting on collected results for editor...", self)
+
+	# Assert that the active reporter and collector are
+	# of the expected types for editor mode before proceeding.
+	if (
+		not _active_reporter is GodotDoctorEditorValidationReporter
+		or not _active_collector is GodotDoctorEditorValidationCollector
+	):
+		push_error(
+			"Attempted to report on collected results with incompatible reporter or collector types."
+		)
+		quit_with_fail_early_if_headless()
+		return
+
+	# Cast the active reporter and collector to their expected types for editor mode.
+	var editor_reporter: GodotDoctorEditorValidationReporter = (
+		_active_reporter as GodotDoctorEditorValidationReporter
+	)
+	var editor_collector: GodotDoctorEditorValidationCollector = (
+		_active_collector as GodotDoctorEditorValidationCollector
+	)
+
+	# Report on scene validation results
+	var scene_validation_collection: GodotDoctorSceneValidationCollection = (
+		editor_collector.get_scene_validation_collection()
+	)
+	# If no scene validation collection was created,
+	# the user probably didn't have a scene open, or there were no messages reported,
+	# so we skip reporting on scene validation results and continue.
+	if scene_validation_collection == null:
+		GodotDoctorNotifier.print_debug(
+			"Skipping scene validation reporting as no scene validation collection was created.",
+			self
+		)
+	else:
+		# Report on scene validation results using the editor reporter.
+		editor_reporter.report_on_scene_validation_collection(scene_validation_collection)
+
+	# Report on resource validation results
+	var resource_validation_collection: GodotDoctorResourceValidationCollection = (
+		editor_collector.get_resource_validation_collection()
+	)
+	# If no resource validation collection was created,
+	# the user probably didn't have any resources open, or there were no messages reported,
+	# so we skip reporting on resource validation results and continue.
+	if resource_validation_collection == null:
+		(
+			GodotDoctorNotifier
+			. print_debug(
+				"Skipping resource validation reporting as no resource validation collection was created.",
+				self
+			)
+		)
+	else:
+		# Report on resource validation results using the editor reporter.
+		editor_reporter.report_on_resource_validation_collection(resource_validation_collection)
+
+	# After reporting, we clear the collections to prevent duplicate collection on next run.
+	editor_collector.clear_collections()
+
+
+## Processes the collected validation results and generates reports for CLI mode.
+## Returns [code]true[/code] if validation passed, [code]false[/code] if validation failed.
+func _report_on_collected_results_for_cli() -> bool:
+	if _run_mode != RunMode.CLI:
+		push_error("Attempted to report on collected results for CLI while not in CLI mode.")
+		quit_with_fail_early_if_headless()
+		# Should already have quit here, but just in case, we
+		# return false to indicate failure
+		return false
+
+	# Assert that the active reporter and collector are
+	# of the expected types for CLI mode before proceeding.
+	GodotDoctorNotifier.print_debug("Reporting on collected results for CLI...", self)
+	if (
+		not _active_reporter is GodotDoctorCLIValidationReporter
+		or not _active_collector is GodotDoctorCLIValidationCollector
+	):
+		push_error(
+			"Attempted to report on collected results with incompatible reporter or collector types."
+		)
+		quit_with_fail_early_if_headless()
+		# Should already have quit here, but just in case, we
+		# return false to indicate failure
+		return false
+
+	# Cast the active reporter and collector to their expected types for CLI mode.
+	var cli_reporter: GodotDoctorCLIValidationReporter = (
+		_active_reporter as GodotDoctorCLIValidationReporter
+	)
+	var cli_collector: GodotDoctorCLIValidationCollector = (
+		_active_collector as GodotDoctorCLIValidationCollector
+	)
+
+	# Report on validation suite results using the CLI reporter.
+	# This will generate a console report and an optional XML report,
+	# and return whether validation passed.
+	var passed: bool = cli_reporter.report_on_validation_suite_collection(
+		cli_collector.get_validation_suite_collection()
+	)
+	# Return the result of whether validation passed,
+	# which will be used to determine the process exit code.
+	return passed
+
+
+#endregion
+
+#region Process Management
+
+
+## Quits the editor with the given [param exit_code].
+func quit_with_code(exit_code: int) -> void:
+	if not DisplayServer.get_name() == "headless":
+		push_error("quit_with_code called outside of headless mode.")
+		return
+	get_tree().quit(exit_code)
+
+
+## Quits the editor with a failure code if running in headless mode.
+func quit_with_fail_early_if_headless() -> void:
+	if not DisplayServer.get_name() == "headless":
+		return
+	push_error("Validation failed. Exiting with code 1.")
+	quit_with_code(1)
+
+
+# Subregion for Process Management related to CLI thread management and fallback timers.
+#region CLI Thread Management
+
+
+## Called by the editor on startup.
+## We use this hook to start the CLI runner thread once the editor is ready.
+func _set_window_layout(_configuration: ConfigFile) -> void:
+	# This is called by the editor when it's ready,
+	# so we can assume that the editor is ready at this point.
+	# NOTE: This is a bit of a hack;
+	# This should be replaced once Godot provides a proper hook for editor startup.
+	# (see: https://github.com/godotengine/godot-proposals/issues/14502 )
+	if _run_mode == RunMode.CLI:
+		_start_cli_thread()
+
+
+## Starts the CLI runner thread if it hasn't been started yet,
+## and kicks off the quit fallback timer.
+func _start_cli_thread() -> void:
+	if _cli_thread != null:
+		# Already started (e.g., by _set_window_layout or fallback timer). Nothing to do.
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI runner thread...", self)
+	_cli_thread = Thread.new()
+	_cli_thread.start(_active_runner.run)
+	_start_cli_quit_fallback_timer()
+
+
+## Creates and starts the start fallback timer using [method SceneTree.create_timer].
+## When it times out, it posts the semaphore so the runner thread can proceed
+## even if [method _set_window_layout] was never called.
+func _start_cli_start_fallback_timer() -> void:
+	var delay: float = settings.fallback_cli_delay_before_start
+	if delay <= 0.0:
+		GodotDoctorNotifier.print_debug(
+			"Start fallback timer disabled (fallback_cli_delay_before_start <= 0)", self
+		)
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI start fallback timer (%.1fs)..." % delay, self)
+	var timer: SceneTreeTimer = get_tree().create_timer(delay)
+	timer.timeout.connect(_on_cli_start_fallback_timeout, CONNECT_ONE_SHOT)
+
+
+## Called when the start fallback timer expires.
+## Posts the semaphore so the runner thread is unblocked even without
+## [method _set_window_layout] having been called.
+func _on_cli_start_fallback_timeout() -> void:
+	GodotDoctorNotifier.print_debug(
+		"Start fallback timer expired. Starting CLI runner thread...", self
+	)
+	_start_cli_thread()
+
+
+## Creates and starts the quit fallback timer using [method SceneTree.create_timer].
+## When it times out, the process is force-quit with exit code 1.
+func _start_cli_quit_fallback_timer() -> void:
+	var delay: float = settings.fallback_cli_delay_before_quit
+	if delay <= 0.0:
+		GodotDoctorNotifier.print_debug(
+			"Quit fallback timer disabled (fallback_cli_delay_before_quit <= 0)", self
+		)
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI quit fallback timer (%.1fs)..." % delay, self)
+	var timer: SceneTreeTimer = get_tree().create_timer(delay)
+	timer.timeout.connect(_on_cli_quit_fallback_timeout, CONNECT_ONE_SHOT)
+
+
+## Called when the quit fallback timer expires.
+## Force-quits the process because the CLI runner took too long.
+func _on_cli_quit_fallback_timeout() -> void:
+	push_error(
+		(
+			"CLI quit fallback timer expired (%.1fs). " % settings.fallback_cli_delay_before_quit
+			+ "Force-quitting. Increase 'fallback_cli_delay_before_quit' in "
+			+ "GodotDoctorSettings if your project needs more time."
+		)
+	)
+	quit_with_code(1)
+
+
+#endregion
+
+#endregion
+
+#region External Validation Entry Point
+
+
+## Validation entry point for both the current scene root and edited resource.
+## Useful when you want to validate from some external trigger like an [EditorScript]
+## NOTE: This should only be used in editor mode, as it relies on the editor runner.
+func validate_scene_root_and_edited_resource() -> void:
+	if _run_mode != RunMode.EDITOR:
+		push_error("validate_scene_root_and_edited_resource called while not in editor mode.")
+		return
+	if _active_runner == null:
+		push_error("validate_scene_root_and_edited_resource called outside of editor mode.")
+		return
+	if _active_runner is not GodotDoctorEditorRunner:
+		push_error("validate_scene_root_and_edited_resource called with incompatible runner type.")
+		return
+	_active_runner.run()
+
+
+#endregion
+
+#region UI
+
+
+## Shows the welcome dialog on first plugin enable.
+func _show_welcome_dialog() -> void:
+	GodotDoctorNotifier.print_debug("Showing welcome dialog...", self)
 	var dialog: AcceptDialog = AcceptDialog.new()
 	dialog.title = "Godot Doctor"
 	dialog.dialog_text = ""
@@ -117,348 +658,8 @@ func _show_welcome_dialog():
 	link_button.uri = PLUGIN_REPOSITORY_URL
 	vbox.add_child(link_button)
 
-	get_editor_interface().get_base_control().add_child(dialog)
+	EditorInterface.get_base_control().add_child(dialog)
 	dialog.exclusive = false
 	dialog.popup_centered()
 
-
-## Removes the validation warnings dock from the editor and frees it.
-func _remove_dock():
-	remove_control_from_docks(_dock)
-	_dock.free()
-
-
-# ============================================================================
-# EVENT HANDLERS - Signal callbacks for scene saves and validation requests
-# ============================================================================
-
-
-## Called when a scene is saved by the user.
-## Retrieves the edited scene root and emits the validation_requested signal.
-func _on_scene_saved(file_path: String) -> void:
-	_print_debug("Scene saved: %s" % file_path)
-	var current_edited_scene_root: Node = get_editor_interface().get_edited_scene_root()
-	if not is_instance_valid(current_edited_scene_root):
-		_print_debug("No current edited scene root. Skipping validation.")
-		return
-	validation_requested.emit(current_edited_scene_root)
-
-
-## Called when validation is requested for the current scene.
-## Clears previous errors, validates the edited resource if applicable,
-## finds all nodes to validate in the scene tree, and validates each one.
-func _on_validation_requested(scene_root: Node) -> void:
-	# Clear previous errors
-	_dock.clear_errors()
-
-	var edited_object: Object = EditorInterface.get_inspector().get_edited_object()
-	if edited_object is Resource:
-		var script: Script = edited_object.get_script()
-		if script not in settings.default_validation_ignore_list:
-			_validate_resource(edited_object as Resource)
-
-	# Find all nodes to validate
-	var nodes_to_validate: Array = _find_nodes_to_validate_in_tree(scene_root)
-	_print_debug("Found %d nodes to validate." % nodes_to_validate.size())
-
-	# Validate each node
-	for node: Node in nodes_to_validate:
-		_validate_node(node)
-
-
-# ============================================================================
-# CORE VALIDATION - Main validation entry points for nodes and resources
-# ============================================================================
-
-
-## Validates a resource by collecting default validation conditions (if enabled)
-## and any custom validation conditions defined in the resource.
-## Processes the validation conditions and reports any errors to the dock.
-func _validate_resource(resource: Resource):
-	var validation_conditions: Array[ValidationCondition] = []
-	if settings.use_default_validations:
-		validation_conditions.append_array(_get_default_validation_conditions(resource))
-	if resource.has_method(VALIDATING_METHOD_NAME):
-		var generated_conditions: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
-		validation_conditions.append_array(generated_conditions)
-	_validate_resource_validation_conditions(resource, validation_conditions)
-
-
-## Validates a single node by collecting default validation conditions (if enabled),
-## custom validation conditions defined in the node (handling both @tool and non-@tool scripts),
-## and processing the results.
-## For non-@tool scripts, creates a temporary instance to call validation methods on.
-func _validate_node(node: Node) -> void:
-	_print_debug("Validating node: %s" % node.name)
-	var validation_target: Object = node
-
-	# Depending on whether the validation target is marked as @tool or not,
-	# we may need to create a new instance of the script to call the method on.
-	validation_target = _make_instance_from_placeholder(node)
-
-	var validation_conditions: Array[ValidationCondition] = []
-
-	if settings.use_default_validations:
-		validation_conditions.append_array(_get_default_validation_conditions(validation_target))
-
-	# Now call the method on the appropriate target (the original node if @tool,
-	# or the new instance if non-@tool).
-	if validation_target.has_method(VALIDATING_METHOD_NAME):
-		_print_debug("Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target])
-		var generated_conditions = validation_target.call(VALIDATING_METHOD_NAME)
-		_print_debug("Generated validation conditions: %s" % [generated_conditions])
-		validation_conditions.append_array(generated_conditions)
-	elif not settings.use_default_validations:
-		# This should never happen, since we filtered for nodes that have no validation method
-		# when use_default_validations is false, but do this just in case
-		push_error(
-			(
-				"_validate_node called on %s, but it didn't have the validation method (%s)."
-				% [validation_target.name, VALIDATING_METHOD_NAME]
-			)
-		)
-
-	_validate_node_validation_conditions(node, validation_conditions)
-
-	# If we created a temporary instance, we should free it.
-	if validation_target != node and is_instance_valid(validation_target):
-		validation_target.free()
-
-
-# ============================================================================
-# VALIDATION CONDITION PROCESSING - Processing and reporting validation results
-# ============================================================================
-
-
-## Processes validation conditions for a resource.
-## Evaluates all conditions, formats errors, displays toasts, and adds warnings to the dock.
-func _validate_resource_validation_conditions(
-	resource: Resource, validation_conditions: Array[ValidationCondition]
-) -> void:
-	var validation_result: ValidationResult = ValidationResult.new(validation_conditions)
-	var validation_messages: Array[ValidationMessage] = validation_result.errors
-	if validation_messages.size() > 0:
-		var severity_level = (
-			validation_messages
-			. map(func(msg: ValidationMessage) -> int: return msg.severity_level)
-			. max()
-		)
-
-		_push_toast(
-			(
-				"Found %s configuration warning(s) in %s."
-				% [validation_result.errors.size(), resource.resource_path]
-			),
-			severity_level
-		)
-	for msg in validation_messages:
-		var name: String = resource.resource_path.split("/")[-1]
-		_print_debug(
-			(
-				"Found message with severity %s in node %s: %s"
-				% [msg.severity_level, resource, msg.message]
-			)
-		)
-		_print_debug("Adding message to dock...")
-		# Push the warning to the dock, passing the original resource so the user can locate it.
-		_dock.add_resource_warning_to_dock(resource, msg)
-
-
-## Processes validation conditions for a node.
-## Evaluates all conditions, formats errors, displays toasts, and adds warnings to the dock.
-func _validate_node_validation_conditions(
-	node: Node, validation_conditions: Array[ValidationCondition]
-) -> void:
-	var validation_messages: Array[ValidationMessage] = []
-	# ValidationResult processes the conditions upon instantiation.
-	var validation_result = ValidationResult.new(validation_conditions)
-	validation_messages.append_array(validation_result.errors)
-	# Process the resulting errors
-	if validation_messages.size() > 0:
-		var severity_level = (
-			validation_messages
-			. map(func(msg: ValidationMessage) -> int: return msg.severity_level)
-			. max()
-		)
-
-		_push_toast(
-			(
-				"Found %s configuration warning(s) in %s."
-				% [validation_result.errors.size(), node.name]
-			),
-			severity_level
-		)
-	for msg in validation_messages:
-		_print_debug(
-			(
-				"Found message with severity %s in node %s: %s"
-				% [msg.severity_level, node.name, msg.message]
-			)
-		)
-		_print_debug("Adding message to dock...")
-		# Push the warning to the dock, passing the original node so the user can locate it.
-		_dock.add_node_warning_to_dock(node, msg)
-
-
-# ============================================================================
-# HELPER METHODS - Node finding and property inspection
-# ============================================================================
-
-
-## Recursively finds all nodes in the scene tree that should be validated.
-## Returns nodes that have a script attached.
-## Returns all nodes that have script when default validations are enabled
-## or returns nodes that implement the VALIDATING_METHOD_NAME method.
-func _find_nodes_to_validate_in_tree(node: Node) -> Array:
-	var nodes_to_validate: Array = []
-
-	# Only add nodes that have a script attached
-	var script: Script = node.get_script()
-	if script != null and not (script in settings.default_validation_ignore_list):
-		# Add all nodes if use_default_validations is true,
-		# or add only the nodes that have the method if it is false
-		if settings.use_default_validations or node.has_method(VALIDATING_METHOD_NAME):
-			nodes_to_validate.append(node)
-
-	# Add their children too, if any
-	var children: Array[Node] = node.get_children()
-	for child in children:
-		nodes_to_validate.append_array(_find_nodes_to_validate_in_tree(child))
-	return nodes_to_validate
-
-
-## Generates default validation conditions for an object by inspecting its exported properties.
-## Creates validation conditions for:
-## - Object properties: checks if they are valid instances
-## - String properties: checks if they are non-empty after stripping whitespace
-## Returns an array of generated ValidationCondition objects.
-func _get_default_validation_conditions(validation_target: Object) -> Array[ValidationCondition]:
-	var export_props: Array[Dictionary] = _get_export_props(validation_target)
-	var validation_conditions: Array[ValidationCondition] = []
-
-	for export_prop in export_props:
-		var prop_name: String = export_prop["name"]
-		var prop_value: Variant = validation_target.get(prop_name)
-		var prop_type: Variant.Type = export_prop["type"]
-		match prop_type:
-			TYPE_OBJECT:
-				validation_conditions.append(
-					ValidationCondition.is_instance_valid(prop_value, prop_name)
-				)
-			TYPE_STRING:
-				validation_conditions.append(
-					ValidationCondition.stripped_string_not_empty(prop_value, prop_name)
-				)
-			_:
-				continue
-	return validation_conditions
-
-
-## Retrieves all exported properties from an object's script.
-## Returns an array of property dictionaries containing metadata for each exported variable.
-## Only includes properties that are both script variables and marked for editor visibility.
-## Returns an empty array if the object is null, or has no script and isn't a resource.
-func _get_export_props(object: Object) -> Array[Dictionary]:
-	if object == null:
-		return []
-
-	var script: Script = object.get_script()
-	if script == null:
-		return []
-
-	var export_props: Array[Dictionary] = []
-
-	for prop in script.get_script_property_list():
-		# Only include actual script variables
-		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE):
-			continue
-
-		# Only include exported variables
-		if not (prop.usage & PROPERTY_USAGE_EDITOR):
-			continue
-
-		export_props.append(prop)
-
-	return export_props
-
-
-# ============================================================================
-# INSTANCE MANAGEMENT - Creating and copying node properties
-# ============================================================================
-
-
-## Creates a temporary instance of a non-@tool script for validation purposes.
-## For non-@tool scripts, creates a new instance and copies properties and children.
-## For @tool scripts or scripts with no script, returns the original node.
-## This allows validation of non-@tool scripts without executing gameplay code in the editor.
-func _make_instance_from_placeholder(original_node: Node) -> Object:
-	var script: Script = original_node.get_script()
-	var is_tool_script: bool = script and script.is_tool()
-
-	if not (script and not is_tool_script):
-		# If there's no script, or if it's a @tool script, return the original node.
-		# (The non-placeholder instance doesn't matter, since we won't be validating it anyway,
-		# or already exists, because it is a @tool script.)
-		return original_node
-
-	# Create a new instance of the script
-	var new_instance: Node = script.new()
-
-	# Duplicate the children from the original node to the new instance
-	for child in original_node.get_children():
-		new_instance.add_child(child.duplicate())
-
-	_copy_properties(original_node, new_instance)
-	return new_instance
-
-
-## Copies all editor-visible properties from one node to another.
-## This is used to transfer state from the editor node to a temporary validation instance.
-func _copy_properties(from_node: Node, to_node: Node) -> void:
-	for prop in from_node.get_property_list():
-		if prop.usage & PROPERTY_USAGE_EDITOR:
-			to_node.set(prop.name, from_node.get(prop.name))
-
-
-# ============================================================================
-# UTILITY METHODS - Debug printing, toasts, and configuration mapping
-# ============================================================================
-
-
-## Prints a debug message to the console if debug printing is enabled in settings.
-func _print_debug(message: String) -> void:
-	if settings.show_debug_prints:
-		print("[GODOT DOCTOR] %s" % message)
-
-
-## Pushes a toast notification to the editor toaster if toasts are enabled in settings.
-## [param severity] - 0 for info (default), 1 for warning, 2 for error.
-func _push_toast(message: String, severity: int = 0) -> void:
-	if settings.show_toasts:
-		EditorInterface.get_editor_toaster().push_toast("Godot Doctor: %s" % message, severity)
-
-
-## Converts the custom DockSlot enum from settings to the EditorPlugin.DockSlot enum.
-## Maps all eight dock slot positions from the settings enum to the engine enum values.
-#gdlint:disable = max-returns
-func _setting_dock_slot_to_editor_dock_slot(dock_slot: GodotDoctorSettings.DockSlot) -> DockSlot:
-	match dock_slot:
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UL:
-			return DockSlot.DOCK_SLOT_LEFT_UL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BL:
-			return DockSlot.DOCK_SLOT_LEFT_BL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_UR:
-			return DockSlot.DOCK_SLOT_LEFT_UR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_LEFT_BR:
-			return DockSlot.DOCK_SLOT_LEFT_BR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UL:
-			return DockSlot.DOCK_SLOT_RIGHT_UL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BL:
-			return DockSlot.DOCK_SLOT_RIGHT_BL
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_UR:
-			return DockSlot.DOCK_SLOT_RIGHT_UR
-		GodotDoctorSettings.DockSlot.DOCK_SLOT_RIGHT_BR:
-			return DockSlot.DOCK_SLOT_RIGHT_BR
-		_:
-			return DockSlot.DOCK_SLOT_RIGHT_BL  # Default fallback
-#gdlint:enable = max-returns
+#endregion

@@ -1,3 +1,4 @@
+@tool
 ## A resource that holds settings for the [GodotDoctorPlugin].
 ## Used by [GodotDoctorPlugin] to store and access user preferences.
 class_name GodotDoctorSettings
@@ -33,8 +34,21 @@ extends Resource
 ## The validation suites that should be run when executing the CLI.
 @export var validation_suites: Array[GodotDoctorValidationSuite] = []
 ## Whether to export a JUnit-style XML report after CLI validation completes.
-@export var export_xml_report: bool = false
+@export var export_xml_report: bool = false:
+	set(value):
+		if export_xml_report == value:
+			return
+		export_xml_report = value
+		notify_property_list_changed()
 ## The output filename used for the XML report.
 @export var xml_report_filename: String = "godot_doctor_report.xml"
 ## The directory where the XML report is written.
 @export_dir var xml_report_output_dir: String = "res://tests/reports/"
+
+
+func _validate_property(property: Dictionary) -> void:
+	var property_name: String = property.name
+	if property_name in ["xml_report_filename", "xml_report_output_dir"] and not export_xml_report:
+		property.usage = property.usage | PROPERTY_USAGE_READ_ONLY
+	else:
+		property.usage = property.usage & ~PROPERTY_USAGE_READ_ONLY

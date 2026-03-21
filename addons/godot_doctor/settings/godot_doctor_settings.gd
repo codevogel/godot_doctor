@@ -32,10 +32,17 @@ extends Resource
 
 @export_group("CLI settings")
 ## The validation suites that should be run when executing the CLI.
-@export var validation_suites: Array[GodotDoctorValidationSuite] = []
+@export var validation_suites: Array[GodotDoctorValidationSuite] = []:
+	set(value):
+		validation_suites = value
+		if not _has_validation_suites() and export_xml_report:
+			export_xml_report = false
+		notify_property_list_changed()
 ## Whether to export a JUnit-style XML report after CLI validation completes.
 @export var export_xml_report: bool = false:
 	set(value):
+		if value and not _has_validation_suites():
+			value = false
 		if export_xml_report == value:
 			return
 		export_xml_report = value
@@ -46,9 +53,22 @@ extends Resource
 @export_dir var xml_report_output_dir: String = "res://tests/reports/"
 
 
+## Returns whether any non-null validation suites are assigned to [member validation_suites].
+func _has_validation_suites() -> bool:
+	return validation_suites.any(func(suite): return suite != null)
+
+
+## Editor callback that validates property values and updates their usage flags.
+## This is used to disable the [member export_xml_report], [member xml_report_filename],
+## and [member xml_report_output_dir] properties when they are not applicable
+## based on the current settings.
 func _validate_property(property: Dictionary) -> void:
 	var property_name: String = property.name
-	if property_name in ["xml_report_filename", "xml_report_output_dir"] and not export_xml_report:
+	if property_name == "export_xml_report" and not _has_validation_suites():
+		property.usage = property.usage | PROPERTY_USAGE_READ_ONLY
+	elif (
+		property_name in ["xml_report_filename", "xml_report_output_dir"] and not export_xml_report
+	):
 		property.usage = property.usage | PROPERTY_USAGE_READ_ONLY
 	else:
 		property.usage = property.usage & ~PROPERTY_USAGE_READ_ONLY

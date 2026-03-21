@@ -31,6 +31,7 @@ extends Resource
 @export var default_validation_ignore_list: Array[Script] = []
 
 @export_group("CLI settings")
+
 ## The validation suites that should be run when executing the CLI.
 @export var validation_suites: Array[GodotDoctorValidationSuite] = []:
 	set(value):
@@ -38,6 +39,17 @@ extends Resource
 		if not _has_validation_suites() and export_xml_report:
 			export_xml_report = false
 		notify_property_list_changed()
+## Maximum time (in seconds) to wait for the editor to signal readiness before
+## starting the CLI runner anyway. This is a temporary workaround which is required
+## because there currently is no surefire way to detect when the editor is ready.
+## Recommended is to leave this on the default value, but it can be increased
+## depending on your running environment.
+## Set to [code]0[/code] to disable.
+@export_range(0, 120, 1, "suffix:seconds") var fallback_cli_delay_before_start: float = 5.0
+## Maximum time (in seconds) to allow the CLI runner to execute before force-quitting
+## with exit code [code]1[/code]. This prevents the process from hanging indefinitely
+## if validation gets stuck. Set to [code]0[/code] to disable.
+@export_range(0, 300, 1, "suffix:seconds") var fallback_cli_delay_before_quit: float = 30.0
 ## Whether to export a JUnit-style XML report after CLI validation completes.
 @export var export_xml_report: bool = false:
 	set(value):
@@ -64,7 +76,17 @@ func _has_validation_suites() -> bool:
 ## based on the current settings.
 func _validate_property(property: Dictionary) -> void:
 	var property_name: String = property.name
-	if property_name == "export_xml_report" and not _has_validation_suites():
+	if (
+		(
+			property_name
+			in [
+				"export_xml_report",
+				"fallback_cli_delay_before_start",
+				"fallback_cli_delay_before_quit"
+			]
+		)
+		and not _has_validation_suites()
+	):
 		property.usage = property.usage | PROPERTY_USAGE_READ_ONLY
 	elif (
 		property_name in ["xml_report_filename", "xml_report_output_dir"] and not export_xml_report

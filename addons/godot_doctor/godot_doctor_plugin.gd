@@ -60,9 +60,8 @@ var _active_collector: GodotDoctorValidationCollector
 var _active_reporter: GodotDoctorValidationReporter
 
 ## Thread that the CLI runner runs on.
+## Only created when the editor signals readiness or a fallback timer fires.
 var _cli_thread: Thread
-## Semaphore used to signal the CLI runner thread that the editor is ready.
-var _editor_ready_semaphore: Semaphore
 
 ## Internal backing field for the current mode in which the plugin is running.
 var _run_mode: RunMode = RunMode.NONE
@@ -95,12 +94,13 @@ func _enter_tree():
 				"Skipping validation as --run-godot-doctor was not provided", self
 			)
 			return
-		# If the argument is provided, we initialize for CLI mode and start the validation process.
+		# If the argument is provided, we initialize for CLI mode.
 		_initialize_for_cli_mode()
-		# In CLI mode, we run the validation right away.
-		# We run the validation in a separate thread to allow waiting for the editor to be ready.
-		_cli_thread = Thread.new()
-		_cli_thread.start(_active_runner.run)
+		# The CLI run will be started later by either:
+		# 1. _set_window_layout (normal path: editor signals readiness)
+		# 2. The start fallback timer (fallback: editor never signals readiness)
+		# 3. _exit_tree synchronous fallback (last resort: plugin removed before either fires)
+		_start_cli_start_fallback_timer()
 		return
 
 	# If not headless, initialize for editor mode.
@@ -136,10 +136,8 @@ func _initialize_for_editor_mode():
 func _initialize_for_cli_mode():
 	_run_mode = RunMode.CLI
 	GodotDoctorNotifier.print_debug("Running in headless, initializing CLI mode...", self)
-	GodotDoctorNotifier.print_debug("Creating 'editor ready' semaphore", self)
-	_editor_ready_semaphore = Semaphore.new()
 	GodotDoctorNotifier.print_debug("Creating CLI Runner", self)
-	_active_runner = GodotDoctorCLIRunner.new(_validator, _editor_ready_semaphore)
+	_active_runner = GodotDoctorCLIRunner.new(_validator)
 	GodotDoctorNotifier.print_debug("Creating CLI Reporter", self)
 	_active_reporter = GodotDoctorCLIValidationReporter.new()
 	GodotDoctorNotifier.print_debug("Creating CLI Collector", self)
@@ -167,6 +165,16 @@ func _disable_plugin() -> void:
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
 	GodotDoctorNotifier.print_debug("Exiting scene_tree...", self)
+	# If we're in CLI mode and the thread was never started (neither _set_window_layout
+	# nor the fallback timer fired), run validation synchronously on the main thread.
+	# This avoids the deadlock that would occur if we tried to use a thread here
+	# (main thread blocked on wait_to_finish while the thread needs main thread
+	# for physics node instantiation).
+	if _run_mode == RunMode.CLI and _cli_thread == null:
+		GodotDoctorNotifier.print_debug(
+			"CLI thread was never started. Running validation synchronously...", self
+		)
+		_active_runner.run()
 	_teardown()
 
 	# Clear the singleton instance as the very last action,
@@ -175,13 +183,9 @@ func _exit_tree():
 	_instance = null
 
 
-## Tears down the plugin by cleaning up threads, semaphores, and signal connections.
+## Tears down the plugin by cleaning up threads and signal connections.
 func _teardown() -> void:
 	GodotDoctorNotifier.print_debug("Tearing down plugin...", self)
-	if _editor_ready_semaphore != null:
-		# Post in case the CLI runner was never posted.
-		_editor_ready_semaphore.post()
-		_editor_ready_semaphore = null
 	if _cli_thread != null:
 		_cli_thread.wait_to_finish()
 		_cli_thread = null
@@ -189,8 +193,6 @@ func _teardown() -> void:
 
 
 #endregion
-
-#region Signal Management
 
 #region Signal Management
 
@@ -516,30 +518,6 @@ func _report_on_collected_results_for_cli() -> bool:
 #region Process Management
 
 
-## Called by the editor on startup.
-## We use this hook to allow the CLI runner thread
-## to wait until the editor is ready before starting validation.
-func _set_window_layout(_configuration: ConfigFile) -> void:
-	# This is called by the editor when it's ready,
-	# so we can assume that the editor is ready at this point.
-	# NOTE: This is a bit of a hack;
-	# This should be replaced once Godot provides a proper hook for editor startup.
-	# (see: https://github.com/godotengine/godot-proposals/issues/14502 )
-	if _run_mode == RunMode.CLI:
-		_post_cli_thread()
-
-
-func _post_cli_thread() -> void:
-	if _run_mode != RunMode.CLI:
-		push_error("Attempted to post CLI thread while not in CLI mode.")
-		return
-	if _editor_ready_semaphore == null:
-		push_error("Attempted to post CLI thread before editor ready semaphore was initialized.")
-		quit_with_fail_early_if_headless()
-		return
-	_editor_ready_semaphore.post()
-
-
 ## Quits the editor with the given [param exit_code].
 func quit_with_code(exit_code: int) -> void:
 	if not DisplayServer.get_name() == "headless":
@@ -555,6 +533,88 @@ func quit_with_fail_early_if_headless() -> void:
 	push_error("Validation failed. Exiting with code 1.")
 	quit_with_code(1)
 
+
+# Subregion for Process Management related to CLI thread management and fallback timers.
+#region CLI Thread Management
+
+
+## Called by the editor on startup.
+## We use this hook to start the CLI runner thread once the editor is ready.
+func _set_window_layout(_configuration: ConfigFile) -> void:
+	# This is called by the editor when it's ready,
+	# so we can assume that the editor is ready at this point.
+	# NOTE: This is a bit of a hack;
+	# This should be replaced once Godot provides a proper hook for editor startup.
+	# (see: https://github.com/godotengine/godot-proposals/issues/14502 )
+	if _run_mode == RunMode.CLI:
+		_start_cli_thread()
+
+
+## Starts the CLI runner thread if it hasn't been started yet,
+## and kicks off the quit fallback timer.
+func _start_cli_thread() -> void:
+	if _cli_thread != null:
+		# Already started (e.g., by _set_window_layout or fallback timer). Nothing to do.
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI runner thread...", self)
+	_cli_thread = Thread.new()
+	_cli_thread.start(_active_runner.run)
+	_start_cli_quit_fallback_timer()
+
+
+## Creates and starts the start fallback timer using [method SceneTree.create_timer].
+## When it times out, it posts the semaphore so the runner thread can proceed
+## even if [method _set_window_layout] was never called.
+func _start_cli_start_fallback_timer() -> void:
+	var delay: float = settings.fallback_cli_delay_before_start
+	if delay <= 0.0:
+		GodotDoctorNotifier.print_debug(
+			"Start fallback timer disabled (fallback_cli_delay_before_start <= 0)", self
+		)
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI start fallback timer (%.1fs)..." % delay, self)
+	var timer: SceneTreeTimer = get_tree().create_timer(delay)
+	timer.timeout.connect(_on_cli_start_fallback_timeout, CONNECT_ONE_SHOT)
+
+
+## Called when the start fallback timer expires.
+## Posts the semaphore so the runner thread is unblocked even without
+## [method _set_window_layout] having been called.
+func _on_cli_start_fallback_timeout() -> void:
+	GodotDoctorNotifier.print_debug(
+		"Start fallback timer expired. Starting CLI runner thread...", self
+	)
+	_start_cli_thread()
+
+
+## Creates and starts the quit fallback timer using [method SceneTree.create_timer].
+## When it times out, the process is force-quit with exit code 1.
+func _start_cli_quit_fallback_timer() -> void:
+	var delay: float = settings.fallback_cli_delay_before_quit
+	if delay <= 0.0:
+		GodotDoctorNotifier.print_debug(
+			"Quit fallback timer disabled (fallback_cli_delay_before_quit <= 0)", self
+		)
+		return
+	GodotDoctorNotifier.print_debug("Starting CLI quit fallback timer (%.1fs)..." % delay, self)
+	var timer: SceneTreeTimer = get_tree().create_timer(delay)
+	timer.timeout.connect(_on_cli_quit_fallback_timeout, CONNECT_ONE_SHOT)
+
+
+## Called when the quit fallback timer expires.
+## Force-quits the process because the CLI runner took too long.
+func _on_cli_quit_fallback_timeout() -> void:
+	push_error(
+		(
+			"CLI quit fallback timer expired (%.1fs). " % settings.fallback_cli_delay_before_quit
+			+ "Force-quitting. Increase 'fallback_cli_delay_before_quit' in "
+			+ "GodotDoctorSettings if your project needs more time."
+		)
+	)
+	quit_with_code(1)
+
+
+#endregion
 
 #endregion
 

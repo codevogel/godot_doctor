@@ -14,19 +14,9 @@ signal started_run_for_validation_suite(suite: GodotDoctorValidationSuite)
 ## Emitted when finishing validation for [param suite].
 signal finished_run_for_validation_suite(suite: GodotDoctorValidationSuite)
 
-## Semaphore that the runner waits on until the editor signals it is ready.
-var _editor_ready_semaphore: Semaphore
 
-
-## Initializes the runner with [param validator] and [param editor_ready_semaphore].
-func _init(validator: GodotDoctorValidator, editor_ready_semaphore: Semaphore) -> void:
-	super._init(validator)
-	_editor_ready_semaphore = editor_ready_semaphore
-
-
-## Waits for the editor to signal readiness, then runs all validation suites.
+## Runs all validation suites.
 func _run() -> void:
-	_editor_ready_semaphore.wait()
 	_run_for_suites()
 
 

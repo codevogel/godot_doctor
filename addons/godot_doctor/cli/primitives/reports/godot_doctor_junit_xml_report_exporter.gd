@@ -82,9 +82,10 @@ func _build_junit_xml_report(
 ) -> String:
 	var timestamp: String = Time.get_datetime_string_from_system(false, false)
 
-	var total_validated_items: int = summary_stats[
-		GodotDoctorSummaryReport.Stat.RESOURCES_VALIDATED
-	]
+	var total_validated_items: int = (
+		summary_stats[GodotDoctorSummaryReport.Stat.RESOURCES_VALIDATED]
+		+ summary_stats[GodotDoctorSummaryReport.Stat.NODES_VALIDATED]
+	)
 	var total_messages: int = (
 		summary_stats[GodotDoctorSummaryReport.Stat.INFO_COUNT]
 		+ summary_stats[GodotDoctorSummaryReport.Stat.WARNING_COUNT]

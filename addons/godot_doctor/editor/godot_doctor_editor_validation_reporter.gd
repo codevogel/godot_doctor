@@ -13,7 +13,9 @@ var _dock: GodotDoctorDock
 ## Initializes this reporter and adds the [GodotDoctorDock] to the editor layout
 ## at the position defined by [member GodotDoctorSettings.default_dock_position].
 func _init() -> void:
+	GodotDoctorNotifier.print_debug("Adding dock to editor", self)
 	_dock = preload(DOCK_SCENE_PATH).instantiate() as GodotDoctorDock
+
 	GodotDoctorPlugin.instance.add_control_to_dock(
 		GodotDoctorPlugin.instance.settings.default_dock_position, _dock
 	)
@@ -155,6 +157,14 @@ func report_resource_messages(
 
 	for msg in messages:
 		_dock.add_resource_validation_message(resource_path, msg)
+
+
+func teardown() -> void:
+	GodotDoctorNotifier.print_debug("Tearing down editor validation reporter.", self)
+	GodotDoctorNotifier.print_debug("Removing dock from editor and freeing it.", self)
+	GodotDoctorPlugin.instance.remove_control_from_docks(_dock)
+	_dock.queue_free()
+	_dock = null
 
 
 ## Promotes [param severity_level] to [constant ValidationCondition.Severity.ERROR]

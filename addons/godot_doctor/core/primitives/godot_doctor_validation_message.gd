@@ -16,3 +16,23 @@ var severity_level: ValidationCondition.Severity
 func _init(message: String, severity_level: ValidationCondition.Severity) -> void:
 	self.message = message
 	self.severity_level = severity_level
+
+
+static func promoted_severity_level(
+	treat_warnings_as_errors: bool, severity_level: ValidationCondition.Severity
+) -> ValidationCondition.Severity:
+	if treat_warnings_as_errors and severity_level == ValidationCondition.Severity.WARNING:
+		return ValidationCondition.Severity.ERROR
+	return severity_level
+
+
+static func map_to_promoted_severity_levels(
+	treat_warnings_as_errors: bool, messages: Array[GodotDoctorValidationMessage]
+) -> Array[ValidationCondition.Severity]:
+	var mapped_promoted_severity_levels: Array = messages.map(
+		func(msg: GodotDoctorValidationMessage) -> ValidationCondition.Severity:
+			return promoted_severity_level(treat_warnings_as_errors, msg.severity_level)
+	)
+	var severity_levels: Array[ValidationCondition.Severity] = []
+	severity_levels.assign(mapped_promoted_severity_levels)
+	return severity_levels

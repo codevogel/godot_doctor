@@ -19,11 +19,6 @@ func _init() -> void:
 	)
 
 
-## Clears all validation warnings from the dock.
-func clear_dock() -> void:
-	_dock.clear_errors()
-
-
 ## Called when a validation run starts for [param scene_root].
 ## Clears the dock and sets the active scene root for validation display.
 func on_started_run_for_edited_scene_root(scene_root: Node) -> void:
@@ -48,8 +43,9 @@ func on_finished_run_for_edited_resource() -> void:
 	pass
 
 
+## Called when a validation run is requested for the edited scene root.
 func on_run_for_edited_scene_root_requested() -> void:
-	clear_dock()
+	_dock.clear_errors()
 
 
 ## Reports validation results from [param scene_validation_collection] to the dock.
@@ -124,7 +120,7 @@ func report_node_messages(
 	)
 
 	for msg in messages:
-		_dock.add_node_warning_to_dock(node_ancestor_path, msg)
+		_dock.add_node_validation_message(node_ancestor_path, msg)
 
 
 ## Pushes a toast notification and adds each message in [param messages] to the dock
@@ -143,12 +139,13 @@ func report_resource_messages(
 
 	var num_messages: int = messages.size()
 
-	var promoted_severity_levels: Array = messages.map(
-		func(msg: GodotDoctorValidationMessage) -> int:
-			return promoted_severity_level(
-				GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, msg.severity_level
-			)
+	var promoted_severity_levels: Array[ValidationCondition.Severity] = (
+		GodotDoctorValidationMessage
+		. map_to_promoted_severity_levels(
+			GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, messages
+		)
 	)
+
 	var toast_severity_level: int = promoted_severity_levels.max()
 
 	GodotDoctorNotifier.push_toast(
@@ -157,7 +154,7 @@ func report_resource_messages(
 	)
 
 	for msg in messages:
-		_dock.add_resource_warning_to_dock(resource_path, msg)
+		_dock.add_resource_validation_message(resource_path, msg)
 
 
 ## Promotes [param severity_level] to [constant ValidationCondition.Severity.ERROR]

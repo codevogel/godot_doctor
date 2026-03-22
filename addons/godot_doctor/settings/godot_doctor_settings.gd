@@ -18,6 +18,9 @@ extends Resource
 @export var show_debug_prints: bool = false
 ## Whether to show toast notifications for important events.
 @export var show_toasts: bool = true
+## Whether to show a severity glyph (info, warning, error) in
+## the dock title.
+@export var show_severity_glyph_in_dock_title: bool = true
 
 @export_group("Validation settings")
 ## Whether to treat warnings as errors in validation results.

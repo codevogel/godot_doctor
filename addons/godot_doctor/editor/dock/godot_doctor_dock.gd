@@ -44,6 +44,9 @@ var _current_messages: Array[GodotDoctorValidationMessage] = []
 
 ## Connects the validate-now button signal when the dock enters the scene tree.
 func _enter_tree() -> void:
+	GodotDoctorNotifier.print_debug(
+		"Entering scene tree. Connecting signals and adding dock to editor.", self
+	)
 	_validate_now_button.pressed.connect(_on_validate_now_button_pressed)
 
 	# Mark title as dirty here to ensure that it updates when dragging to a new dock slot.
@@ -52,6 +55,9 @@ func _enter_tree() -> void:
 
 ## Disconnects the validate-now button signal when the dock exits the scene tree.
 func _exit_tree() -> void:
+	GodotDoctorNotifier.print_debug(
+		"Exiting scene tree. Disconnecting signals and removing dock from editor.", self
+	)
 	if _validate_now_button.pressed.is_connected(_on_validate_now_button_pressed):
 		_validate_now_button.pressed.disconnect(_on_validate_now_button_pressed)
 
@@ -134,6 +140,7 @@ func clear_errors() -> void:
 func _mark_title_dirty() -> void:
 	if _title_is_dirty:
 		return
+	GodotDoctorNotifier.print_debug("Marking title as dirty for update.", self)
 	_title_is_dirty = true
 	# Call deffered to ensure that multiple calls to _mark_title_dirty
 	# in the same frame only trigger one title update.

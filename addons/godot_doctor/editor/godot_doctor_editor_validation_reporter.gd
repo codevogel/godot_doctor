@@ -139,12 +139,13 @@ func report_resource_messages(
 
 	var num_messages: int = messages.size()
 
-	var promoted_severity_levels: Array = messages.map(
-		func(msg: GodotDoctorValidationMessage) -> int:
-			return promoted_severity_level(
-				GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, msg.severity_level
-			)
+	var promoted_severity_levels: Array[ValidationCondition.Severity] = (
+		GodotDoctorValidationMessage
+		. map_to_promoted_severity_levels(
+			GodotDoctorPlugin.instance.settings.treat_warnings_as_errors, messages
+		)
 	)
+
 	var toast_severity_level: int = promoted_severity_levels.max()
 
 	GodotDoctorNotifier.push_toast(

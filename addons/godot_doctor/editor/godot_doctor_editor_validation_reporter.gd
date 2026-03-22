@@ -19,11 +19,6 @@ func _init() -> void:
 	)
 
 
-## Clears all validation warnings from the dock.
-func clear_dock() -> void:
-	_dock.clear_errors()
-
-
 ## Called when a validation run starts for [param scene_root].
 ## Clears the dock and sets the active scene root for validation display.
 func on_started_run_for_edited_scene_root(scene_root: Node) -> void:
@@ -48,8 +43,9 @@ func on_finished_run_for_edited_resource() -> void:
 	pass
 
 
+## Called when a validation run is requested for the edited scene root.
 func on_run_for_edited_scene_root_requested() -> void:
-	clear_dock()
+	_dock.clear_errors()
 
 
 ## Reports validation results from [param scene_validation_collection] to the dock.

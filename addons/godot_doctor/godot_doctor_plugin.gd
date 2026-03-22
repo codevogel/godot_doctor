@@ -186,6 +186,15 @@ func _exit_tree():
 ## Tears down the plugin by cleaning up threads and signal connections.
 func _teardown() -> void:
 	GodotDoctorNotifier.print_debug("Tearing down plugin...", self)
+	if _run_mode == RunMode.EDITOR:
+		if not _active_reporter is GodotDoctorEditorValidationReporter:
+			push_error("Attempted to teardown with incompatible reporter type for editor mode.")
+			quit_with_fail_early_if_headless()
+		else:
+			var editor_reporter: GodotDoctorEditorValidationReporter = (
+				_active_reporter as GodotDoctorEditorValidationReporter
+			)
+			editor_reporter.teardown()
 	if _cli_thread != null:
 		_cli_thread.wait_to_finish()
 		_cli_thread = null

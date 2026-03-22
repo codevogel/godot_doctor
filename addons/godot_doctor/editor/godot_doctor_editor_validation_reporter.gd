@@ -124,7 +124,7 @@ func report_node_messages(
 	)
 
 	for msg in messages:
-		_dock.add_node_warning_to_dock(node_ancestor_path, msg)
+		_dock.add_node_validation_message(node_ancestor_path, msg)
 
 
 ## Pushes a toast notification and adds each message in [param messages] to the dock
@@ -157,7 +157,7 @@ func report_resource_messages(
 	)
 
 	for msg in messages:
-		_dock.add_resource_warning_to_dock(resource_path, msg)
+		_dock.add_resource_validation_message(resource_path, msg)
 
 
 ## Promotes [param severity_level] to [constant ValidationCondition.Severity.ERROR]

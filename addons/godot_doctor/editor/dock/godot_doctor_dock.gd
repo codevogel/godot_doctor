@@ -49,10 +49,10 @@ func _on_validate_now_button_pressed() -> void:
 	GodotDoctorPlugin.instance.validate_scene_root_and_edited_resource()
 
 
-## Adds a node-related warning to the dock for [param origin_node].
+## Adds a node-related message to the dock for [param origin_node].
 ## Displays [param validation_message] with the appropriate severity icon.
 ## Clicking the entry selects [param origin_node] in the scene tree.
-func add_node_warning_to_dock(
+func add_node_validation_message(
 	node_ancestor_path: String, validation_message: GodotDoctorValidationMessage
 ) -> void:
 	GodotDoctorNotifier.print_debug(
@@ -80,10 +80,10 @@ func add_node_warning_to_dock(
 	_error_holder.add_child(warning_instance)
 
 
-## Adds a resource-related warning to the dock for [param origin_resource].
+## Adds a resource-related message to the dock for [param origin_resource].
 ## Displays [param validation_message] with the appropriate severity icon.
 ## Clicking the entry opens [param origin_resource] in the inspector.
-func add_resource_warning_to_dock(
+func add_resource_validation_message(
 	resource_path: String, validation_message: GodotDoctorValidationMessage
 ) -> void:
 	GodotDoctorNotifier.print_debug(

@@ -3,7 +3,7 @@ name: "🔎 Format and lint checks"
 on:
    workflow_dispatch:
    push:
-      branches: ["**"]
+      branches: ["main"]
    pull_request:
       branches: ["**"]
 

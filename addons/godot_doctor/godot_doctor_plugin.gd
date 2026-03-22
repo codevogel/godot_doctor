@@ -49,6 +49,9 @@ var mode: RunMode:
 	get:
 		return _run_mode
 
+## The update checker responsible for checking for plugin updates on startup and notifying the user.
+var _update_checker: GodotDoctorUpdateChecker
+
 ## The validator responsible for executing validation logic on nodes and resources.
 var _validator: GodotDoctorValidator
 
@@ -82,6 +85,11 @@ func _enter_tree():
 	GodotDoctorNotifier.print_debug("Set plugin singleton", self)
 
 	GodotDoctorNotifier.print_debug("Entering scene_tree...", self)
+
+	if settings.check_for_updates_on_startup:
+		_update_checker = GodotDoctorUpdateChecker.new()
+		_update_checker.update_check_completed.connect(_on_update_check_completed, CONNECT_ONE_SHOT)
+		add_child(_update_checker)
 
 	# Shared initialization for any mode
 	_initialize_for_any_mode()
@@ -198,6 +206,9 @@ func _teardown() -> void:
 	if _cli_thread != null:
 		_cli_thread.wait_to_finish()
 		_cli_thread = null
+	# Free the update checker if it exists to clean up any pending HTTP requests and timers.
+	if _update_checker != null:
+		_update_checker.queue_free()
 	_disconnect_signals()
 
 
@@ -541,6 +552,11 @@ func quit_with_fail_early_if_headless() -> void:
 		return
 	push_error("Validation failed. Exiting with code 1.")
 	quit_with_code(1)
+
+
+func _on_update_check_completed() -> void:
+	GodotDoctorNotifier.print_debug("Update check completed, freeing update checker.", self)
+	_update_checker.queue_free()
 
 
 # Subregion for Process Management related to CLI thread management and fallback timers.

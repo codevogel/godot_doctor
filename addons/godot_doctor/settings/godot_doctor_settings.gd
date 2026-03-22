@@ -7,6 +7,9 @@ extends Resource
 ## The default position of the GodotDoctor dock in the editor.
 @export var default_dock_position: EditorPlugin.DockSlot = EditorPlugin.DockSlot.DOCK_SLOT_RIGHT_BL
 
+## Whether to automatically check for plugin updates on plugin startup.
+@export var check_for_updates_on_startup: bool = true
+
 ## Whether to automatically run validations when saving a script.
 ## If this is set to [code]false[/code], users will need to manually trigger validations.
 @export var validate_on_save: bool = true

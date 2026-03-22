@@ -33,6 +33,11 @@ var scene_root_for_validations: Node = null
 ## Whether the dock title needs to be updated
 var _title_is_dirty: bool = false
 
+## Internal list of current validation messages,
+## used to keep track of the number of messages
+## and to filter on the highest severity level.
+var _current_messages: Array[GodotDoctorValidationMessage] = []
+
 ## The container that holds all warning instances.
 @onready var _error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
 
@@ -69,6 +74,7 @@ func add_node_validation_message(
 			% [node_ancestor_path, validation_message.message]
 		)
 	)
+	_current_messages.append(validation_message)
 	var warning_instance: GodotDoctorNodeValidationWarning = (
 		load(NODE_WARNING_SCENE_PATH).instantiate() as GodotDoctorNodeValidationWarning
 	)
@@ -101,6 +107,7 @@ func add_resource_validation_message(
 			% [resource_path, validation_message.message]
 		)
 	)
+	_current_messages.append(validation_message)
 	var warning_instance: GodotDoctorResourceValidationWarning = (
 		load(RESOURCE_WARNING_SCENE_PATH).instantiate() as GodotDoctorResourceValidationWarning
 	)
@@ -119,13 +126,17 @@ func clear_errors() -> void:
 	for child in children:
 		child.free()
 	_mark_title_dirty()
+	_current_messages.clear()
 
 
 ## Updates the dock title on next idle frame to indicate the current number of messages.
 ## Does nothing if the title is already marked dirty to avoid redundant updates.
 func _mark_title_dirty() -> void:
-	if not _title_is_dirty:
-		_title_is_dirty = true
+	if _title_is_dirty:
+		return
+	_title_is_dirty = true
+	# Call deffered to ensure that multiple calls to _mark_title_dirty
+	# in the same frame only trigger one title update.
 	_update_title.call_deferred()
 
 
@@ -145,9 +156,42 @@ func _update_title() -> void:
 		return
 	var tab_index: int = tab_container.get_tab_idx_from_control(editor_dock)
 
-	var new_title: String = "%s (%s)" % [DOCK_TITLE, _error_holder.get_child_count()]
+	var new_title: String = (
+		"%s %s (%s)" % [_get_indicator_glyph(), DOCK_TITLE, _current_messages.size()]
+	)
 	tab_container.set_tab_title(tab_index, new_title)
 	_title_is_dirty = false
+
+
+func _get_indicator_glyph() -> String:
+	var settings: GodotDoctorSettings = GodotDoctorPlugin.instance.settings
+
+	if not settings.show_severity_glyph_in_dock_title:
+		return ""
+
+	if _current_messages.is_empty():
+		return "✅"
+
+	var promoted_severity_levels: Array[ValidationCondition.Severity] = (
+		GodotDoctorValidationMessage
+		. map_to_promoted_severity_levels(settings.treat_warnings_as_errors, _current_messages)
+	)
+	var highest_severity_level: int = promoted_severity_levels.max()
+	match highest_severity_level:
+		ValidationCondition.Severity.INFO:
+			return "ℹ️"
+		ValidationCondition.Severity.WARNING:
+			return "⚠️"
+		ValidationCondition.Severity.ERROR:
+			return "❌"
+		_:
+			push_error(
+				(
+					"No indicator glyph defined for severity level: "
+					+ ValidationCondition.Severity.keys()[highest_severity_level]
+				)
+			)
+			return ""
 
 
 ## Returns the icon asset path corresponding to [param severity_level].

@@ -9,6 +9,8 @@ extends Control
 
 #gdlint: disable=max-line-length
 
+const DOCK_TITLE: String = "Godot Doctor"
+
 ## Path to the info severity icon asset.
 const SEVERITY_INFO_ICON_PATH: StringName = "res://addons/godot_doctor/editor/dock/warning/assets/icon/info.png"
 ## Path to the warning severity icon asset.
@@ -28,6 +30,9 @@ const RESOURCE_WARNING_SCENE_PATH: StringName = "res://addons/godot_doctor/edito
 ## The scene root used as reference when resolving node paths for warnings.
 var scene_root_for_validations: Node = null
 
+## Whether the dock title needs to be updated
+var _title_is_dirty: bool = false
+
 ## The container that holds all warning instances.
 @onready var _error_holder: VBoxContainer = $ScrollContainer/ErrorHolder
 
@@ -35,6 +40,9 @@ var scene_root_for_validations: Node = null
 ## Connects the validate-now button signal when the dock enters the scene tree.
 func _enter_tree() -> void:
 	_validate_now_button.pressed.connect(_on_validate_now_button_pressed)
+
+	# Mark title as dirty here to ensure that it updates when dragging to a new dock slot.
+	_mark_title_dirty()
 
 
 ## Disconnects the validate-now button signal when the dock exits the scene tree.
@@ -78,6 +86,7 @@ func add_node_validation_message(
 	warning_instance.origin_node_root = scene_root_for_validations
 	warning_instance.label.text = validation_message.message
 	_error_holder.add_child(warning_instance)
+	_mark_title_dirty()
 
 
 ## Adds a resource-related message to the dock for [param origin_resource].
@@ -100,6 +109,7 @@ func add_resource_validation_message(
 	warning_instance.origin_resource = ResourceLoader.load(resource_path) as Resource
 	warning_instance.label.text = validation_message.message
 	_error_holder.add_child(warning_instance)
+	_mark_title_dirty()
 
 
 ## Removes all warnings from the dock.
@@ -108,6 +118,36 @@ func clear_errors() -> void:
 	var children: Array[Node] = _error_holder.get_children()
 	for child in children:
 		child.free()
+	_mark_title_dirty()
+
+
+## Updates the dock title on next idle frame to indicate the current number of messages.
+## Does nothing if the title is already marked dirty to avoid redundant updates.
+func _mark_title_dirty() -> void:
+	if not _title_is_dirty:
+		_title_is_dirty = true
+	_update_title.call_deferred()
+
+
+## Updates the dock title to include the current number of messages.
+func _update_title() -> void:
+	var editor_dock := get_parent() as EditorDock
+	if not editor_dock:
+		GodotDoctorNotifier.print_debug(
+			"Could not find parent EditorDock for new_title update.", self
+		)
+		return
+	var tab_container := editor_dock.get_parent() as TabContainer
+	if not tab_container:
+		GodotDoctorNotifier.print_debug(
+			"Could not find parent TabContainer for new_title update.", self
+		)
+		return
+	var tab_index: int = tab_container.get_tab_idx_from_control(editor_dock)
+
+	var new_title: String = "%s (%s)" % [DOCK_TITLE, _error_holder.get_child_count()]
+	tab_container.set_tab_title(tab_index, new_title)
+	_title_is_dirty = false
 
 
 ## Returns the icon asset path corresponding to [param severity_level].

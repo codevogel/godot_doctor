@@ -1,34 +1,41 @@
 name: "🔎 Format and lint checks"
 
 on:
-   workflow_dispatch:
-   push:
-      branches: ["main"]
-   pull_request:
-      branches: ["**"]
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["**"]
 
 jobs:
-   gdscript-checks:
-      name: "Lint and format checks for GDScript"
-      runs-on: ubuntu-latest
-      steps:
-         - uses: actions/checkout@v4
-         - uses: Scony/godot-gdscript-toolkit@master
-         - run: gdformat --check .
-         - run: gdlint .
-   markdown-checks:
-      name: "Lint and format checks for Markdown"
-      runs-on: ubuntu-latest
-      steps:
-         - uses: actions/checkout@v4
-
-         - name: Lint Markdown
-           uses: DavidAnson/markdownlint-cli2-action@v22
-           with:
-              globs: "**/*.md"
-
-         - name: Check Markdown formatting
-           uses: creyD/prettier_action@v4.6
-           with:
-              dry: true
-              prettier_options: --check **/*.md
+  gdscript-lint:
+    name: "GDScript Linting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: Scony/godot-gdscript-toolkit@master
+      - run: gdlint .
+  gdscript-format:
+    name: "GDScript Formatting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: Scony/godot-gdscript-toolkit@master
+      - run: gdformat --check .
+  markdown-lint:
+    name: "Markdown Linting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: DavidAnson/markdownlint-cli2-action@v22
+        with:
+          globs: "**/*.md"
+  markdown-format:
+    name: "Markdown Formatting"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: creyD/prettier_action@v4.6
+        with:
+          dry: true
+          prettier_options: --check **/*.md

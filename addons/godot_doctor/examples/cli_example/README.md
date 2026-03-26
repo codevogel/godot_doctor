@@ -47,7 +47,7 @@ ValidationSuite that works through the **generated mode**:
 [resource]
 treat_warnings_as_errors = true
 generate_suite_contents = true
-directories_to_include = Array[String](["res://addons/godot_doctor/examples/general_example"])
+directories_to_include = Array[String](["res://addons/godot_doctor/examples/gdscript/general_example"])
 ```
 
 This means the suite will:

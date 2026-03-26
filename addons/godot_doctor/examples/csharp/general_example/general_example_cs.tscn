@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://b0t6n65w1ej83"]
+
+[ext_resource type="Script" uid="uid://ce5uqjpyalj6o" path="res://addons/godot_doctor/examples/csharp/general_example/ExampleFooSpawner.cs" id="1_mhiwu"]
+[ext_resource type="Script" uid="uid://ct3dr23xh4rre" path="res://addons/godot_doctor/examples/csharp/general_example/ExampleMyEnemy.cs" id="2_ajnx6"]
+[ext_resource type="Script" uid="uid://c4i2r82b54c1n" path="res://addons/godot_doctor/examples/csharp/general_example/ExamplePlayerController.cs" id="3_p25f1"]
+[ext_resource type="Script" uid="uid://bpw07qdr1ua31" path="res://addons/godot_doctor/examples/csharp/general_example/ExamplePlayer.cs" id="4_swenm"]
+[ext_resource type="Script" uid="uid://d3tjb2oijkolf" path="res://addons/godot_doctor/examples/csharp/general_example/ExampleWeaponSpawner.cs" id="5_6mfsl"]
+
+[node name="MyGame" type="Node" unique_id=19449262]
+
+[node name="FooSpawner" type="Node" parent="." unique_id=1630695270]
+script = ExtResource("1_mhiwu")
+
+[node name="MyEnemy" type="Node" parent="." unique_id=1409236088]
+script = ExtResource("2_ajnx6")
+
+[node name="PlayerController" type="Node" parent="." unique_id=1284022859]
+script = ExtResource("3_p25f1")
+
+[node name="Player" type="Node" parent="." unique_id=22143909]
+script = ExtResource("4_swenm")
+
+[node name="WeaponSpawner" type="Node" parent="." unique_id=1966624890]
+script = ExtResource("5_6mfsl")

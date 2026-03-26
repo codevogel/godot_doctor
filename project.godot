@@ -11,8 +11,12 @@ config_version=5
 [application]
 
 config/name="godot_doctor"
-config/features=PackedStringArray("4.6", "Forward Plus")
+config/features=PackedStringArray("4.6", "C#", "Forward Plus")
 config/icon="res://icon.svg"
+
+[dotnet]
+
+project/assembly_name="godot_doctor"
 
 [editor_plugins]
 

@@ -1,0 +1,54 @@
+[gd_scene format=3 uid="uid://b7bokayxlayp8"]
+
+[ext_resource type="Script" uid="uid://c1qy5u3d1h6l0" path="res://addons/godot_doctor/examples/csharp/verify_child_count_example/ScriptWithChildCount.cs" id="1_xc43y"]
+[ext_resource type="Script" uid="uid://tlalxyb622uv" path="res://addons/godot_doctor/examples/csharp/verify_child_count_example/ScriptWithMaximumChildCount.cs" id="2_vuqfe"]
+[ext_resource type="Script" uid="uid://dxop8eg7uc4pd" path="res://addons/godot_doctor/examples/csharp/verify_child_count_example/ScriptWithMinimumChildCount.cs" id="3_grfox"]
+[ext_resource type="Script" uid="uid://g1sughkffa1g" path="res://addons/godot_doctor/examples/csharp/verify_child_count_example/ScriptWithNoChildrenAllowed.cs" id="4_rei8j"]
+
+[node name="VerifyNodeCountExampleCs" type="Node" unique_id=686845801]
+
+[node name="NodeWithChildCount" type="Node" parent="." unique_id=818408688]
+script = ExtResource("1_xc43y")
+
+[node name="Node1" type="Node" parent="NodeWithChildCount" unique_id=1172909861]
+
+[node name="Node2" type="Node" parent="NodeWithChildCount" unique_id=1890498871]
+
+[node name="Node3" type="Node" parent="NodeWithChildCount" unique_id=1231393293]
+
+[node name="Node4" type="Node" parent="NodeWithChildCount" unique_id=1407989737]
+
+[node name="Node5" type="Node" parent="NodeWithChildCount" unique_id=818942061]
+
+[node name="NodeWithMaxChildCount" type="Node" parent="." unique_id=1160705736]
+script = ExtResource("2_vuqfe")
+
+[node name="Node1" type="Node" parent="NodeWithMaxChildCount" unique_id=1167655972]
+
+[node name="Node2" type="Node" parent="NodeWithMaxChildCount" unique_id=1703875994]
+
+[node name="Node3" type="Node" parent="NodeWithMaxChildCount" unique_id=2049293386]
+
+[node name="Node4" type="Node" parent="NodeWithMaxChildCount" unique_id=1108452000]
+
+[node name="Node5" type="Node" parent="NodeWithMaxChildCount" unique_id=2067700107]
+
+[node name="NodeWithMinChildCount" type="Node" parent="." unique_id=1588054614]
+script = ExtResource("3_grfox")
+
+[node name="Node1" type="Node" parent="NodeWithMinChildCount" unique_id=1071198542]
+
+[node name="Node2" type="Node" parent="NodeWithMinChildCount" unique_id=411455577]
+
+[node name="NodeWithNoChildrenAllowed" type="Node" parent="." unique_id=80162906]
+script = ExtResource("4_rei8j")
+
+[node name="Node1" type="Node" parent="NodeWithNoChildrenAllowed" unique_id=460140873]
+
+[node name="Node2" type="Node" parent="NodeWithNoChildrenAllowed" unique_id=1305798915]
+
+[node name="Node3" type="Node" parent="NodeWithNoChildrenAllowed" unique_id=492200895]
+
+[node name="Node4" type="Node" parent="NodeWithNoChildrenAllowed" unique_id=468167218]
+
+[node name="Node5" type="Node" parent="NodeWithNoChildrenAllowed" unique_id=225368692]

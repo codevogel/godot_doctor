@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://bf4xrwlqc2x43"]
+
+[ext_resource type="Script" uid="uid://b5va28p4qdd3n" path="res://addons/godot_doctor/examples/csharp/verify_exports_example/ScriptWithExportsExample.cs" id="1_e04bc"]
+
+[node name="VerifyExportExampleCs" type="Node" unique_id=582300046]
+
+[node name="NodeWithExports" type="Node" parent="." unique_id=598388178 node_paths=PackedStringArray("MyNode")]
+script = ExtResource("1_e04bc")
+MyNode = NodePath("../WronglyNamedNode")
+
+[node name="WronglyNamedNode" type="Node" parent="." unique_id=1765698400]

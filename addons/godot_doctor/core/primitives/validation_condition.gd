@@ -28,14 +28,14 @@ enum InheritanceSearchStrategy {
 	## regardless of whether it has a script or not.
 	## i.e. the root node of the base scene that has no further parents.
 	TOPMOST_ROOT,
-	## Only consider the last root node in the PackedScene's inheritance chain,
-	## that has a script attached.
-	## i.e. the root node of the last parent scene that has a script.
-	FIRST_SCRIPT_ROOT,
 	## Only consider the first root node in the PackedScene's inheritance chain,
 	## that has a script attached.
 	## i.e. the root node of the first parent scene that has a script, starting
 	## from the directly referenced scene and moving up the inheritance chain.
+	FIRST_SCRIPT_ROOT,
+	## Only consider the last root node in the PackedScene's inheritance chain,
+	## that has a script attached.
+	## i.e. the root node of the last parent scene that has a script.
 	LAST_SCRIPT_ROOT
 }
 
@@ -316,35 +316,52 @@ static func is_scene_of_type(
 			var class_result: GodotDoctorClassNameQueryResult = _get_class_name_from_packed_scene(
 				packed_scene, inheritance_search_strategy
 			)
+
 			var expected_name: StringName = expected_type.get_global_name()
+			var is_csharp_script: bool = (
+				ClassDB.class_exists("CSharpScript")
+				and expected_type != null
+				and expected_type.get_class() == "CSharpScript"
+			)
+			if expected_name.is_empty() and is_csharp_script:
+				expected_name = expected_type.resource_path.get_file().get_basename()
+
+			var expected_type_desc: String = (
+				(
+					"(Expecting: %s, based on the filename, Strategy: %s)"
+					% [expected_name, search_strategy_string]
+				)
+				if is_csharp_script
+				else "(Expecting: %s, Strategy: %s)" % [expected_name, search_strategy_string]
+			)
 
 			# If there's no script, return a nested condition indicating failure.
 			if not class_result.has_script:
 				return [
 					ValidationCondition.simple(
 						false,
-						(
-							"%s has no script attached. (Expecting: %s, Search strategy: %s)"
-							% [variable_name, expected_name, search_strategy_string]
-						),
+						"%s has no script attached. %s" % [variable_name, expected_type_desc],
 						severity_level
 					)
 				]
 
 			# If the script has no class_name, return a nested condition indicating failure.
 			if not class_result.has_class_name:
+				if is_csharp_script:
+					var msg = (
+						#gdlint: ignore=max-line-length
+						"%s has a C# script attached, but it bears no 'class_name'. You might be missing the [GlobalClass] attribute. %s"
+						% [variable_name, expected_type_desc]
+					)
+					return [ValidationCondition.simple(false, msg, severity_level)]
 				return [
-					(
-						ValidationCondition
-						. simple(
-							false,
-							(
-								#gdlint: ignore=max-line-length
-								"%s has a script attached, but it bears no 'class_name'. (Expecting: %s, Search strategy: %s)"
-								% [variable_name, expected_name, search_strategy_string]
-							),
-							severity_level
-						)
+					ValidationCondition.simple(
+						false,
+						(
+							"%s has a script attached, but it bears no 'class_name'. %s"
+							% [variable_name, expected_type_desc]
+						),
+						severity_level
 					)
 				]
 
@@ -353,16 +370,13 @@ static func is_scene_of_type(
 			var found_name: StringName = class_result.found_class_name
 			if found_name != expected_name and not _inherits_from(found_name, expected_name):
 				return [
-					(
-						ValidationCondition
-						. simple(
-							false,
-							(
-								"%s script type (%s) is a mismatch. (Expecting: %s, Search strategy: %s)"
-								% [variable_name, found_name, expected_name, search_strategy_string]
-							),
-							severity_level
-						)
+					ValidationCondition.simple(
+						false,
+						(
+							"%s script type (%s) is a mismatch. %s"
+							% [variable_name, found_name, expected_type_desc]
+						),
+						severity_level
 					)
 				]
 			return true,
@@ -471,7 +485,7 @@ static func _inherits_from(child_class_name: StringName, parent_class_name: Stri
 ##     you should probably not call this directly, unless you have a very good reason for doing so.
 ## [/b]
 static func get_default_validation_conditions(
-	validation_target: Object
+	validation_target: Object, _visited: Array[Object] = []
 ) -> Array[ValidationCondition]:
 	GodotDoctorNotifier.print_debug(
 		"Generating default validation conditions for: %s" % validation_target, ValidationCondition
@@ -492,6 +506,16 @@ static func get_default_validation_conditions(
 				validation_conditions.append(
 					ValidationCondition.is_instance_valid(prop_value, prop_name)
 				)
+				# If the property is a valid Resource, also recurse into its exported properties.
+				if (
+					prop_value is Resource
+					and is_instance_valid(prop_value)
+					and prop_value not in _visited
+				):
+					_visited.append(prop_value)
+					validation_conditions.append_array(
+						get_default_validation_conditions(prop_value, _visited)
+					)
 			TYPE_STRING:
 				validation_conditions.append(
 					ValidationCondition.is_stripped_string_not_empty(prop_value, prop_name)

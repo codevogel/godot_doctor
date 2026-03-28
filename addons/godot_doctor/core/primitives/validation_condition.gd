@@ -343,7 +343,7 @@ static func _get_class_name_from_packed_scene(
 				var script: Script = state.get_node_property_value(0, i)
 				return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
 		state = state.get_base_scene_state()
-	
+
 	return GodotDoctorClassNameQueryResult.new(false)
 
 

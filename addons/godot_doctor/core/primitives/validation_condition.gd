@@ -334,15 +334,16 @@ static func _get_class_name_from_packed_scene(
 ) -> GodotDoctorClassNameQueryResult:
 	var state: SceneState = packed_scene.get_state()
 
-	# Walk up the tree in case this PackedScene inherits from another PackedScene
-	while state.get_base_scene_state() != null:
+	# Walk up the tree in case this PackedScene inherits from another PackedScene until
+	# a root node with a script attached is found, or until reaching the rootmost node
+	while state != null:
+		# Look for the script property in the root node (always index 0)
+		for i in state.get_node_property_count(0):
+			if state.get_node_property_name(0, i) == &"script":
+				var script: Script = state.get_node_property_value(0, i)
+				return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
 		state = state.get_base_scene_state()
-
-	# Look for the script property in the root node (always index 0)
-	for i in state.get_node_property_count(0):
-		if state.get_node_property_name(0, i) == &"script":
-			var script: Script = state.get_node_property_value(0, i)
-			return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
+	
 	return GodotDoctorClassNameQueryResult.new(false)
 
 

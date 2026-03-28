@@ -2,6 +2,7 @@
 ## Validates scene roots and resources by collecting and evaluating [ValidationCondition]s,
 ## then emitting results for the active [GodotDoctorValidationCollector] to capture.
 ## Settings are accessed via the [GodotDoctorPlugin] singleton.
+@tool
 class_name GodotDoctorValidator
 
 ## Emitted when [param node] has been validated with the resulting [param messages].

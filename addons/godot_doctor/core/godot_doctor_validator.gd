@@ -173,6 +173,7 @@ func _make_instance_from_potential_placeholder_node(original_node: Node) -> Obje
 		return original_node
 
 	var new_instance: Node = script.new()
+	new_instance.name = original_node.name
 
 	for child in original_node.get_children():
 		new_instance.add_child(child.duplicate())

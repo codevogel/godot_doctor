@@ -10,7 +10,8 @@ signal validated_node(node: Node, messages: Array[GodotDoctorValidationMessage])
 signal validated_resource(resource: Resource, messages: Array[GodotDoctorValidationMessage])
 
 ## The name of the method that nodes and resources should implement to supply validation conditions.
-const VALIDATING_METHOD_NAME: String = "_get_validation_conditions"
+const VALIDATING_METHOD_NAME_GDSCRIPT: String = "_get_validation_conditions"
+const VALIDATING_METHOD_NAME_CSHARP: String = "GetValidationConditions"
 
 #region PUBLIC API - Entry points for validating scenes and resources
 
@@ -70,13 +71,17 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 			ValidationCondition.get_default_validation_conditions(validation_target)
 		)
 
+	var validating_method_name: String = _get_validating_method_name(validation_target)
+
 	# If the node implements the validating method, call it and append its conditions.
-	if validation_target.has_method(VALIDATING_METHOD_NAME):
+	if validation_target.has_method(validating_method_name):
 		GodotDoctorNotifier.print_debug(
-			"Calling %s on %s" % [VALIDATING_METHOD_NAME, validation_target], self
+			"Calling %s on %s" % [validating_method_name, validation_target], self
 		)
 		# We expect the method to return an array of ValidationCondition objects.
-		var generated: Array[ValidationCondition] = validation_target.call(VALIDATING_METHOD_NAME)
+		var generated_conditions: Array[ValidationCondition] = []
+		var generated: Array = validation_target.call(validating_method_name)
+		generated_conditions.assign(generated)
 		GodotDoctorNotifier.print_debug("Generated validation conditions: %s" % [generated], self)
 		# Append the generated conditions to the list of conditions to evaluate.
 		conditions.append_array(generated)
@@ -88,7 +93,7 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 		push_error(
 			(
 				"_collect_node_messages called on %s, but it has no validation method (%s)."
-				% [validation_target.name, VALIDATING_METHOD_NAME]
+				% [validation_target.name, validating_method_name]
 			)
 		)
 		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
@@ -117,9 +122,12 @@ func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidati
 	if GodotDoctorPlugin.instance.settings.use_default_validations:
 		conditions.append_array(ValidationCondition.get_default_validation_conditions(resource))
 
+	var validating_method_name: String = _get_validating_method_name(resource)
 	# If the resource implements the validating method, call it and append its conditions.
-	if resource.has_method(VALIDATING_METHOD_NAME):
-		var generated: Array[ValidationCondition] = resource.call(VALIDATING_METHOD_NAME)
+	if resource.has_method(validating_method_name):
+		var generated_conditions: Array[ValidationCondition] = []
+		var generated: Array = resource.call(validating_method_name)
+		generated_conditions.assign(generated)
 		conditions.append_array(generated)
 
 	# Actual evaluation takes place in the creation of the GodotDoctorValidationResult,
@@ -132,9 +140,17 @@ func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidati
 #region Helper Methods
 
 
+func _get_validating_method_name(target: Object) -> String:
+	if target.has_method(VALIDATING_METHOD_NAME_GDSCRIPT):
+		return VALIDATING_METHOD_NAME_GDSCRIPT
+	if target.has_method(VALIDATING_METHOD_NAME_CSHARP):
+		return VALIDATING_METHOD_NAME_CSHARP
+	return ""
+
+
 ## Recursively finds all nodes in [param node]'s subtree that should be validated.
 ## Returns all nodes with a script when default validations are enabled,
-## or only nodes that implement [constant VALIDATING_METHOD_NAME].
+## or only nodes that implement [constant VALIDATING_METHOD_NAME_GDSCRIPT].
 func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Array:
 	if not recursing:
 		GodotDoctorNotifier.print_debug("Finding nodes to validate at root: %s" % node.name, self)
@@ -147,8 +163,8 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 	):
 		if (
 			GodotDoctorPlugin.instance.settings.use_default_validations
-			or node.has_method(VALIDATING_METHOD_NAME)
-		):
+			or not _get_validating_method_name(node).is_empty()
+		):  # ← replaces the has_method check
 			nodes_to_validate.append(node)
 
 	for child in node.get_children():

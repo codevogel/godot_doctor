@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://rw23fvis10sx"]
+
+[ext_resource type="Script" uid="uid://c2htwyvwi0a44" path="res://addons/godot_doctor/examples/csharp/general_example/FooCS.cs" id="1_d3p4s"]
+
+[node name="ExampleSceneFooTypeCs" type="Node" unique_id=791177318]
+script = ExtResource("1_d3p4s")

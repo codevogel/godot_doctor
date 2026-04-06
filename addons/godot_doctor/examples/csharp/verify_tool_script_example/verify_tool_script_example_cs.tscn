@@ -1,0 +1,9 @@
+[gd_scene format=3 uid="uid://sh4mm74g36lg"]
+
+[ext_resource type="Script" uid="uid://duseg11xjqb14" path="res://addons/godot_doctor/examples/csharp/verify_tool_script_example/ToolScript.cs" id="1_v1eis"]
+
+[node name="VerifyToolScriptExampleCs" type="Node" unique_id=792400589]
+
+[node name="ToolNode" type="Node" parent="." unique_id=1735029388]
+script = ExtResource("1_v1eis")
+MyInt = 105

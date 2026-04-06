@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="ExampleWeaponCS" format=3 uid="uid://dnbnba6edchom"]
+
+[ext_resource type="Script" uid="uid://yhmlwvyxgmc0" path="res://addons/godot_doctor/examples/csharp/general_example/ExampleWeaponCS.cs" id="1_lsr7o"]
+
+[resource]
+script = ExtResource("1_lsr7o")
+metadata/_custom_type_script = "uid://yhmlwvyxgmc0"

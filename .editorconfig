@@ -14,3 +14,9 @@ insert_final_newline = true
 [*.{yaml,yml}]
 indent_style = space
 indent_size = 2
+
+[*.cs]
+dotnet_analyzer_diagnostic.category-Performance.severity = warning
+dotnet_analyzer_diagnostic.category-Design.severity = warning
+dotnet_analyzer_diagnostic.category-Reliability.severity = warning
+dotnet_analyzer_diagnostic.category-Usage.severity = warning

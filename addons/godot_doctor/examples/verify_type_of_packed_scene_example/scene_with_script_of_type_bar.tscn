@@ -1,7 +1,0 @@
-[gd_scene format=3 uid="uid://q1x4335433kr"]
-
-[ext_resource type="Script" uid="uid://c5f1ep2iantvo" path="res://addons/godot_doctor/examples/verify_type_of_packed_scene_example/bar.gd" id="1_rd2sy"]
-
-[node name="SceneOfTypeBar" type="Node" unique_id=227130533]
-script = ExtResource("1_rd2sy")
-metadata/_custom_type_script = "uid://c5f1ep2iantvo"

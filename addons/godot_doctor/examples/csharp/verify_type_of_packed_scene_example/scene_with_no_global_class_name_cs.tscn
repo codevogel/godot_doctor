@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bowlmmwxekxmy"]
+
+[ext_resource type="Script" uid="uid://b201m7t3pyth7" path="res://addons/godot_doctor/examples/csharp/verify_type_of_packed_scene_example/ScriptWithNoGlobalClassName.cs" id="1_2cbiv"]
+
+[node name="SceneOfNoGlobalClassNameCs" type="Node" unique_id=1963274604]
+script = ExtResource("1_2cbiv")

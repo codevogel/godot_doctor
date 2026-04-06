@@ -2,7 +2,7 @@
 
 A powerful validation plugin for Godot that catches errors before they reach
 runtime. Validate scenes, nodes, and resources using a declarative, test-driven
-approach. No `@tool` required!
+approach, in either `gdscript` or `C#`. No `@tool` required!
 
 <!-- markdownlint-disable-next-line MD033 MD013 -->
 <img src="https://raw.githubusercontent.com/codevogel/godot_doctor/refs/heads/main/github_assets/png/godot_doctor_logo.png" width="256" alt="godot doctor logo"/>
@@ -20,7 +20,11 @@ Or, by manual installation:
 
 1. Download the source code .zip from the
    [latest release](https://github.com/codevogel/godot_doctor/releases/latest).
-2. Copy the `addons/godot_doctor` folder to your project's `addons/` directory
+2. Copy the `addons/godot_doctor` folder to your project's `addons/` directory.
+   (Optional:) If you don't use `C#` in your project, you can safely delete the
+   `addons/godot_doctor/core/csharp` and the
+   `addons/godot_doctor/examples/csharp` directories.
+
 3. Enable the plugin in Project Settings > Plugins
 4. (Optional:) Adjust the settings asset in `addons/godot_doctor/settings`.
 
@@ -42,6 +46,7 @@ Or, by manual installation:
   - [Reuse validation logic with Callables](#reuse-validation-logic-with-callables)
   - [Abstract Away Complex Logic](#abstract-away-complex-logic)
   - [Nested Validation Conditions](#nested-validation-conditions)
+  - [IValidatable Interface](#ivalidatable-interface)
 - [Running Godot Doctor on the CLI](#running-godot-doctor-on-the-cli)
   - [CI/CD Integration](#cicd-integration)
   - [Generating a JUnit-like XML Report](#generating-a-junit-like-xml-report)
@@ -106,10 +111,20 @@ validate the type of a `PackedScene`, ensuring that the root of the scene that
 you are instancing is of the expected type (e.g. has a script attached of that
 type), before you even run the game.
 
+**GDscript:**
+
 ```gdscript
 ## Example: A validation condition that checks whether the `PackedScene`
 ##          variable `scene_of_foo_type` is of type `Foo`.
 ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo)
+```
+
+**C#:**
+
+```csharp
+// Example: A validation condition that checks whether the `PackedScene`
+// variable `PackedSceneOfFooType` is of type `Foo`.
+ValidationCondition.IsSceneOfType<Foo>(PackedSceneOfFooType)
 ```
 
 ### Automatic Scene Validation
@@ -148,10 +163,75 @@ error messages, making it easier to read and maintain.
 
 ## Syntax
 
+**GDscript:**
+
+Just add a `_get_validation_conditions()` method script that returns an array of
+`ValidationCondition` objects to any `.gd` script:
+
+```gdscript
+func _get_validation_conditions() -> Array[ValidationCondition]:
+  return [
+    ValidationCondition.new(
+      func(): return health > 0,
+      "Health must be greater than 0"
+    ),
+    ValidationCondition.simple(
+      health > 0,
+      "Health must be greater than 0"
+    ),
+    ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo)
+  ]
+```
+
+Note: You do not need to add `@tool` to `Node` scripts for this to work, so you
+can keep your gameplay code clean and focused! However, if you want to validate
+a `Resource` script, you _will_ need to add `@tool` to that script, due to
+engine limitations. However, Resource scripts don't need to be guarded against
+running editor code in runtime, so the `@tool` annotation should be all you
+need.
+
+**C#:**
+
+Implement the `IValidatable` interface and a public implementation of the
+`GetValidationConditions()` method that returns a `Godot.Collections.Array`.
+(This interface is optional, but it makes it easier to implement consistently).
+
+Create an `System.Array<VAlidationCondition>` of
+`GodotDoctor.Core.Primitives.ValidationCondition` objects, then convert it to a
+`Godot.Collections.Array` using the `ToGodotArray()` extension method:
+
+```csharp
+public Array GetValidationConditions()
+{
+   ValidationCondition[] conditions =
+   [
+      new ValidationCondition(
+         () => InitialHealth > 0,
+         "Initial health must be greater than 0"
+      ),
+      ValidationCondition.Simple(
+         InitialHealth > 0,
+         "Initial health must be greater than 0"
+      ),
+      ValidationCondition.IsSceneOfType<Foo>(SceneOfFooType)
+   ];
+   return conditions.ToGodotArray();
+}
+```
+
+Note: Just like with GDScript, you do not need to add the `[Tool]` attribute to
+`Node` scripts for this to work, so you can keep your gameplay code clean and
+focused! However, if you want to validate a `Resource` script, you _will_ need
+to add the `[Tool]` attribute to that script, due to engine limitations.
+However, Resource scripts don't need to be guarded against running editor code
+in runtime, so the `[Tool]` attribute should be all you need.
+
 ### ValidationCondition
 
 The core of Godot Doctor is the `ValidationCondition` class, which takes a
 callable and an error message:
+
+**GDscript:**
 
 ```gdscript
 # Basic validation condition
@@ -161,9 +241,21 @@ var condition = ValidationCondition.new(
 )
 ```
 
+**C#:**
+
+```csharp
+// Basic validation condition in C#
+var condition = new ValidationCondition(
+  () => health > 0,
+  "Health must be greater than 0"
+);
+```
+
 Optionally, you can also pass one of three severity levels (`INFO`, `WARNING`,
 `ERROR`) as a third argument, which will adjust at what level of severity the
 error is reported in the Godot Doctor dock:
+
+**GDscript:**
 
 ```gdscript
 # Validation condition with severity level
@@ -174,10 +266,23 @@ var condition = ValidationCondition.new(
 )
 ```
 
+**C#:**
+
+```csharp
+// Validation condition with severity level in C#
+var condition = new ValidationCondition(
+  () => health > 0,
+  "Health must be greater than 0",
+  ValidationCondition.Severity.ERROR
+);
+```
+
 ### Simple validations
 
 For basic boolean validations, use the convenience `simple()` method, allowing
 you to skip the `func()` wrapper:
+
+**GDscript:**
 
 ```gdscript
 # Equivalent to the above, but more concise
@@ -185,6 +290,16 @@ var condition = ValidationCondition.simple(
     health > 0,
     "Health must be greater than 0"
 )
+```
+
+**C#:**
+
+```csharp
+// Equivalent to the above, but more concise in C#
+var condition = ValidationCondition.Simple(
+  health > 0,
+  "Health must be greater than 0"
+);
 ```
 
 ### Predefined Common Validation Conditions
@@ -201,6 +316,8 @@ You can find them all in
 
 Using `Callables` allows you to reuse common validation methods:
 
+**GDscript:**
+
 ```gdscript
 func _is_more_than_zero(value: int) -> bool:
   return value > 0
@@ -211,9 +328,25 @@ var condition = ValidationCondition.simple(
 )
 ```
 
+**C#:**
+
+```csharp
+private bool IsMoreThanZero(int value)
+{
+  return value > 0;
+}
+
+var condition = ValidationCondition.Simple(
+  IsMoreThanZero(health),
+  "Health must be greater than 0"
+);
+```
+
 ### Abstract Away Complex Logic
 
 Or abstract away complex logic into separate methods:
+
+**GDscript:**
 
 ```gdscript
 var condition = ValidationCondition.new(
@@ -225,19 +358,90 @@ func complex_validation_logic() -> bool:
  # Complex logic here
 ```
 
+**C#:**
+
+```csharp
+var condition = new ValidationCondition(
+  ComplexValidationLogic(value),
+  "Complex validation failed"
+);
+
+// C# implementation of the complex logic in a separate method
+private static bool ComplexValidationLogicImplementation(int value) {
+  // Complex logic here
+};
+
+// Wrapper function to return a Godot Variant from the implementation
+private static System.Func<Variant> ComplexValidationLogic(int value) => () => ComplexValidationLogicImplementation(value);
+
+
+```
+
 ### Nested Validation Conditions
 
 Making use of variatic typing, Validation conditions can return arrays of other
 validation conditions, allowing you to nest validation logic where needed:
 
+**GDscript:**
+
 ```gdscript
 ValidationCondition.new(
-   func() -> Variant:
-    if not is_instance_valid(my_resource):
-     return false
-    return my_resource.get_validation_conditions(),
-   "my_resource must be assigned."
-  )
+  func() -> Variant:
+  if not is_instance_valid(weapon_resource):
+  # We return false in case the weapon resource is null
+  return false
+  # or an array of this resource's conditions in case it is valid.
+  return weapon_resource.get_validation_conditions(),
+  "Weapon resource validation failed"
+)
+```
+
+**C#:**
+
+```csharp
+new ValidationCondition(
+   () =>
+   {
+      if (IsInstanceValid(WeaponResource))
+      {
+         return WeaponResource.GetValidationConditions();
+      }
+      return false;
+   },
+   "Weapon resource is not valid."
+)
+```
+
+## IValidatable Interface
+
+The C# wrapper also includes a `IValidatable` interface that you can implement
+on your C# scripts, which makes it easier to add validation conditions to your
+script without needing to remember the exact method signature of
+`GetValidationConditions()`:
+
+```csharp
+public partial class ExampleMyEnemy : Node, IValidatable
+{
+   /// <summary>The health value the enemy starts with.</summary>
+   [Export]
+   public int InitialHealth { get; set; } = 120;
+
+   /// <summary>The maximum health value the enemy can have.</summary>
+   [Export]
+   public int MaxHealth { get; set; } = 100;
+
+   public Array GetValidationConditions()
+   {
+      ValidationCondition[] conditions =
+      [
+         ValidationCondition.Simple(
+            InitialHealth <= MaxHealth,
+            "Initial health should not be greater than max health."
+         ),
+      ];
+      return conditions.ToGodotArray();
+   }
+}
 ```
 
 ## Running Godot Doctor on the CLI
@@ -416,7 +620,7 @@ The XML report option will generate a report as such:
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuites tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1" timestamp="2026-03-21T12:21:11">
   <testsuite name="example_validation_suite.tres" path="res://addons/godot_doctor/examples/cli_example/example_validation_suite.tres" tests="7" messages="9" failures="8" harderrors="4" warnings="4" infos="1">
-    <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
+    <testcase name="general_example.tscn" path="res://addons/godot_doctor/examples/gdscript/general_example/general_example.tscn" type="scene" tests="5" messages="6" failures="5" harderrors="3" warnings="2" infos="1">
       <node name="FooSpawner" path="MyGame/FooSpawner" messages="2" failures="2" harderrors="1" warnings="1" infos="0">
         <harderror>packed_scene_of_foo_type is not a valid instance.</harderror>
         <warning type="promoted_to_error">packed_scene_of_foo_type is null.</warning>
@@ -434,10 +638,10 @@ The XML report option will generate a report as such:
         <harderror>weapon_resource is not a valid instance.</harderror>
       </node>
     </testcase>
-    <testcase name="example_scene_foo_type.tscn" path="res://addons/godot_doctor/examples/general_example/example_scene_foo_type.tscn" type="scene" tests="1" messages="0" failures="0" harderrors="0" warnings="0" infos="0">
+    <testcase name="example_scene_foo_type.tscn" path="res://addons/godot_doctor/examples/gdscript/general_example/example_scene_foo_type.tscn" type="scene" tests="1" messages="0" failures="0" harderrors="0" warnings="0" infos="0">
     </testcase>
-    <testcase name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" type="resource" tests="1" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
-      <resource name="example_weapon.tres" path="res://addons/godot_doctor/examples/general_example/example_weapon.tres" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+    <testcase name="example_weapon.tres" path="res://addons/godot_doctor/examples/gdscript/general_example/example_weapon.tres" type="resource" tests="1" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
+      <resource name="example_weapon.tres" path="res://addons/godot_doctor/examples/gdscript/general_example/example_weapon.tres" messages="3" failures="3" harderrors="1" warnings="2" infos="0">
         <harderror>sprite is not a valid instance.</harderror>
         <warning type="promoted_to_error">Damage should be a positive value.</warning>
         <warning type="promoted_to_error">Melee reach should not be greater than ranged reach.</warning>

@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://ds1hdw1pfctka"]
+
+[ext_resource type="Script" uid="uid://cdletsw0e7eom" path="res://addons/godot_doctor/examples/csharp/verify_resource_example/ScriptWithExportedResource.cs" id="1_6fvyi"]
+[ext_resource type="Resource" path="res://addons/godot_doctor/examples/csharp/verify_resource_example/my_resource_cs.tres" id="2_q2xy2"]
+
+[node name="VerifyResourceExampleCs" type="Node" unique_id=347503312]
+
+[node name="NodeWithExportedResource" type="Node" parent="." unique_id=22017922]
+script = ExtResource("1_6fvyi")
+MyResource = ExtResource("2_q2xy2")

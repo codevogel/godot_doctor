@@ -17,6 +17,28 @@ enum Severity {
 	ERROR
 }
 
+## Inheritance search strategies for scene type validation.
+enum InheritanceSearchStrategy {
+	## Only consider the root node of the PackedScene referenced,
+	## regardless of whether it has a script or not.
+	## i.e. the root node of the directly referenced scene,
+	## even if it has a scene as a parent scene.
+	DIRECT,
+	## Only consider the very topmost root node of the PackedScene's inheritance chain,
+	## regardless of whether it has a script or not.
+	## i.e. the root node of the base scene that has no further parents.
+	TOPMOST_ROOT,
+	## Only consider the last root node in the PackedScene's inheritance chain,
+	## that has a script attached.
+	## i.e. the root node of the last parent scene that has a script.
+	FIRST_SCRIPT_ROOT,
+	## Only consider the first root node in the PackedScene's inheritance chain,
+	## that has a script attached.
+	## i.e. the root node of the first parent scene that has a script, starting
+	## from the directly referenced scene and moving up the inheritance chain.
+	LAST_SCRIPT_ROOT
+}
+
 ## The callable evaluated when this condition is tested.
 var callable: Callable
 ## The error message reported when this condition fails.
@@ -50,12 +72,10 @@ func evaluate(args: Array = []) -> Variant:
 		# Ensure all items in the array are ValidationConditions
 		for item in result:
 			if typeof(item) != typeof(ValidationCondition):
-				#gdlint: disable = max-line-length
-				push_error(
-					"ValidationCondition Callable returned an array, but not all items are ValidationCondition instances."
-				)
+				#gdlint: ignore=max-line-length
+				var msg = "ValidationCondition Callable returned an array, but not all items are ValidationCondition instances"
+				push_error(msg)
 				GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
-				#gd-lint: enable = max-line-length
 				return false
 		return result as Array[ValidationCondition]
 	push_error(
@@ -93,9 +113,9 @@ static func is_instance_valid(
 static func string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
-	push_warning(
-		"[ValidationCondition.string_not_empty] is deprecated. Please use [ValidationCondition.is_string_not_empty] instead. (string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
-	)
+	#gdlint: ignore=max-line-length
+	var msg: String = "[ValidationCondition.string_not_empty] is deprecated. Please use [ValidationCondition.is_string_not_empty] instead. (string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	push_warning(msg)
 	return is_string_not_empty(value, variable_name, severity_level)
 
 
@@ -114,9 +134,9 @@ static func is_string_not_empty(
 static func stripped_string_not_empty(
 	value: String, variable_name: String = "String", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
-	push_warning(
-		"[ValidationCondition.stripped_string_not_empty] is deprecated. Please use [ValidationCondition.is_stripped_string_not_empty] instead. (stripped_string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
-	)
+	#gdlint: ignore=max-line-length
+	var msg: String = "[ValidationCondition.stripped_string_not_empty] is deprecated. Please use [ValidationCondition.is_stripped_string_not_empty] instead. (stripped_string_not_empty will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	push_warning(msg)
 	return is_stripped_string_not_empty(value, variable_name, severity_level)
 
 
@@ -162,7 +182,8 @@ static func is_in_range_float(
 	)
 
 
-## Creates a [ValidationCondition] that checks whether [param node] has exactly [param expected_count] children.
+## Creates a [ValidationCondition] that checks whether [param node] has exactly
+## [param expected_count] children.
 ## [param variable_name] is the display name used in the error message, defaulting to "Node".
 ## This is a convenience method for checking child count with a default error message.
 static func has_child_count(
@@ -181,7 +202,8 @@ static func has_child_count(
 	)
 
 
-## Creates a [ValidationCondition] that checks whether [param node] has at least [param minimum_count] children.
+## Creates a [ValidationCondition] that checks whether [param node] has at least
+## [param minimum_count] children.
 ## [param variable_name] is the display name used in the error message, defaulting to "Node".
 ## This is a convenience method for checking minimum child count with a default error message.
 static func has_minimum_child_count(
@@ -200,8 +222,10 @@ static func has_minimum_child_count(
 	)
 
 
-## Creates a [ValidationCondition] that checks whether [param node] has at most [param maximum_count] children.
-## [param variable_name] is the display name used in the error message, defaulting to "Node".
+## Creates a [ValidationCondition] that checks whether [param node]
+## has at most [param maximum_count] children.
+## [param variable_name] is the display name used in the error message,
+## defaulting to "Node".
 ## This is a convenience method for checking maximum child count with a default error message.
 static func has_maximum_child_count(
 	node: Node,
@@ -221,7 +245,8 @@ static func has_maximum_child_count(
 
 ## Creates a [ValidationCondition] that checks whether [param node] has no children.
 ## [param variable_name] is the display name used in the error message, defaulting to "Node".
-## This is a convenience method for checking absence of children; equivalent to [method has_child_count] with [param expected_count] = 0.
+## This is a convenience method for checking absence of children;
+## equivalent to [method has_child_count] with [param expected_count] = 0.
 static func has_no_children(
 	node: Node, variable_name: String = "Node", severity_level: Severity = Severity.WARNING
 ) -> ValidationCondition:
@@ -251,19 +276,30 @@ static func scene_is_of_type(
 	variable_name: String = "Packed Scene",
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
-	push_warning(
-		"ValidationCondition.scene_is_of_type is deprecated. Please use [ValidationCondition.is_scene_of_type] instead. (scene_is_of_type will be removed in a future version. Note that the functionality hasn't changed, just the method name for consistency with other ValidationCondition helpers.)"
+	#gdlint: ignore=max-line-length
+	var msg: String = "[ValidationCondition.scene_is_of_type] is deprecated. Please use [ValidationCondition.is_scene_of_type] instead. (scene_is_of_type will be removed in a future version. Note that the functionality hasn't changed, though the new method has better support for inheritance checking and more flexible search strategies, so you may want to review the new method's parameters to ensure it meets your needs.)"
+	push_warning(msg)
+	return is_scene_of_type(
+		packed_scene,
+		expected_type,
+		variable_name,
+		InheritanceSearchStrategy.LAST_SCRIPT_ROOT,
+		severity_level
 	)
-	return is_scene_of_type(packed_scene, expected_type, variable_name, severity_level)
 
 
-## Creates a [ValidationCondition] that checks whether [param packed_scene] has a root node of [param expected_type].
-## [param variable_name] is the display name used in the error message, defaulting to "Packed Scene".
+## Creates a [ValidationCondition] that checks whether [param packed_scene] has a root node of
+## [param expected_type].
+## [param variable_name] is the display name used in the error message,
+## defaulting to "Packed Scene".
 ## Returns nested [ValidationCondition]s describing any type mismatch in detail.
 static func is_scene_of_type(
 	packed_scene: PackedScene,
 	expected_type: Variant,
 	variable_name: String = "Packed Scene",
+	inheritance_search_strategy: InheritanceSearchStrategy = (
+		InheritanceSearchStrategy.LAST_SCRIPT_ROOT
+	),
 	severity_level: Severity = Severity.ERROR
 ) -> ValidationCondition:
 	return ValidationCondition.new(
@@ -272,9 +308,13 @@ static func is_scene_of_type(
 			if packed_scene == null:
 				return [ValidationCondition.simple(false, "%s is null." % variable_name)]
 
+			var search_strategy_string: String = (
+				InheritanceSearchStrategy.keys()[inheritance_search_strategy]
+			)
+
 			# Get the class name, and convert the expected type to a StringName
 			var class_result: GodotDoctorClassNameQueryResult = _get_class_name_from_packed_scene(
-				packed_scene
+				packed_scene, inheritance_search_strategy
 			)
 			var expected_name: StringName = expected_type.get_global_name()
 
@@ -284,8 +324,8 @@ static func is_scene_of_type(
 					ValidationCondition.simple(
 						false,
 						(
-							"%s has no script attached. (Expecting: %s)"
-							% [variable_name, expected_name]
+							"%s has no script attached. (Expecting: %s, Search strategy: %s)"
+							% [variable_name, expected_name, search_strategy_string]
 						),
 						severity_level
 					)
@@ -299,8 +339,9 @@ static func is_scene_of_type(
 						. simple(
 							false,
 							(
-								"%s has a script attached, but it bears no 'class_name'. (Expecting: %s)"
-								% [variable_name, expected_name]
+								#gdlint: ignore=max-line-length
+								"%s has a script attached, but it bears no 'class_name'. (Expecting: %s, Search strategy: %s)"
+								% [variable_name, expected_name, search_strategy_string]
 							),
 							severity_level
 						)
@@ -312,13 +353,16 @@ static func is_scene_of_type(
 			var found_name: StringName = class_result.found_class_name
 			if found_name != expected_name and not _inherits_from(found_name, expected_name):
 				return [
-					ValidationCondition.simple(
-						false,
-						(
-							"%s script type (%s) is a mismatch. (Expecting: %s)"
-							% [variable_name, found_name, expected_name]
-						),
-						severity_level
+					(
+						ValidationCondition
+						. simple(
+							false,
+							(
+								"%s script type (%s) is a mismatch. (Expecting: %s, Search strategy: %s)"
+								% [variable_name, found_name, expected_name, search_strategy_string]
+							),
+							severity_level
+						)
 					)
 				]
 			return true,
@@ -328,26 +372,76 @@ static func is_scene_of_type(
 
 
 ## Extracts the class name from [param packed_scene]'s root node's script.
-## Returns a [GodotDoctorClassNameQueryResult] indicating whether a script and class name were found.
+## Returns a [GodotDoctorClassNameQueryResult] indicating whether a script
+## and class name were found.
 static func _get_class_name_from_packed_scene(
-	packed_scene: PackedScene
+	packed_scene: PackedScene, inheritance_search_strategy: InheritanceSearchStrategy
 ) -> GodotDoctorClassNameQueryResult:
 	var state: SceneState = packed_scene.get_state()
+	if state == null:
+		push_error("PackedScene has no state. Cannot determine root node type.")
+		GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
+		return GodotDoctorClassNameQueryResult.new(false)
 
-	# Walk up the tree in case this PackedScene inherits from another PackedScene
-	while state.get_base_scene_state() != null:
-		state = state.get_base_scene_state()
+	var target_state: SceneState = _get_target_scene_state(state, inheritance_search_strategy)
+	var script: Script = _get_root_script(target_state)
+	if script == null:
+		return GodotDoctorClassNameQueryResult.new(false)
+	return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
 
-	# Look for the script property in the root node (always index 0)
+
+## Returns the Script attached to [param state]'s root node, or null if none is found.
+static func _get_root_script(state: SceneState) -> Script:
 	for i in state.get_node_property_count(0):
 		if state.get_node_property_name(0, i) == &"script":
-			var script: Script = state.get_node_property_value(0, i)
-			return GodotDoctorClassNameQueryResult.new(true, script.get_global_name())
-	return GodotDoctorClassNameQueryResult.new(false)
+			return state.get_node_property_value(0, i)
+	return null
+
+
+static func _get_target_scene_state(
+	state: SceneState, strategy: InheritanceSearchStrategy
+) -> SceneState:
+	if strategy == InheritanceSearchStrategy.DIRECT:
+		return state
+
+	var ancestry: Array[SceneState] = _collect_scene_ancestry(state)
+
+	match strategy:
+		InheritanceSearchStrategy.TOPMOST_ROOT:
+			return ancestry.back()
+		InheritanceSearchStrategy.FIRST_SCRIPT_ROOT:
+			return _find_scripted_state(ancestry, false)
+		InheritanceSearchStrategy.LAST_SCRIPT_ROOT:
+			return _find_scripted_state(ancestry, true)
+
+	push_error("Unhandled InheritanceSearchStrategy: %s" % strategy)
+	GodotDoctorPlugin.instance.quit_with_fail_early_if_headless()
+	return state
+
+
+## Returns all SceneStates from [param state] up to the topmost base scene, in order.
+static func _collect_scene_ancestry(state: SceneState) -> Array[SceneState]:
+	var ancestry: Array[SceneState] = []
+	while state != null:
+		ancestry.append(state)
+		state = state.get_base_scene_state()
+	return ancestry
+
+
+## Returns the first or last state in [param ancestry] that has a root script,
+## falling back to the topmost ancestor if none have scripts.
+static func _find_scripted_state(ancestry: Array[SceneState], use_last: bool) -> SceneState:
+	var scripted: Array[SceneState] = ancestry.filter(
+		func(s: SceneState) -> bool: return _get_root_script(s) != null
+	)
+	if scripted.is_empty():
+		return ancestry.back()
+	return scripted.back() if use_last else scripted.front()
 
 
 ## Returns [code]true[/code] if [param child_class_name] inherits from [param parent_class_name],
-## either through ClassDB (for built-in classes) or the global class list (for user-defined classes).
+## either through ClassDB (for built-in classes) or the global class list
+## (for user-defined classes).
 static func _inherits_from(child_class_name: StringName, parent_class_name: StringName) -> bool:
 	# If found in ClassDB, it's an internal class.
 	if ClassDB.class_exists(child_class_name):
@@ -368,11 +462,14 @@ static func _inherits_from(child_class_name: StringName, parent_class_name: Stri
 #region Default Validation Generation
 
 
-## Generates default validation conditions for [param validation_target] by inspecting its exported properties.
+## Generates default validation conditions for [param validation_target]
+## by inspecting its exported properties.
 ## Creates validation conditions for [Object] properties (checks if they are valid instances), and
 ## [String] properties (checks if they are non-empty after stripping whitespace).
-## [b]NOTE: This is automatically used when the [member GodotDoctorSettings.use_default_validations] setting is enabled,
-## you should probably not call this directly, unless you have a very good reason for doing so.[/b]
+## [b] NOTE: This is automatically used when the
+##     [member GodotDoctorSettings.use_default_validations] setting is enabled,
+##     you should probably not call this directly, unless you have a very good reason for doing so.
+## [/b]
 static func get_default_validation_conditions(
 	validation_target: Object
 ) -> Array[ValidationCondition]:
@@ -388,7 +485,8 @@ static func get_default_validation_conditions(
 		var prop_name: String = export_prop["name"]
 		var prop_value: Variant = validation_target.get(prop_name)
 		var prop_type: Variant.Type = export_prop["type"]
-		# This is where we can add more cases to support additional property types in the future, if need be.
+		# This is where we can add more cases to support
+		# additional property types in the future, if need be.
 		match prop_type:
 			TYPE_OBJECT:
 				validation_conditions.append(
@@ -418,7 +516,8 @@ static func _get_export_props(object: Object) -> Array[Dictionary]:
 
 	var export_props: Array[Dictionary] = []
 
-	# Iterate through the script's properties and filter for those that are exported and visible in the editor.
+	# Iterate through the script's properties and filter for those
+	# that are exported and visible in the editor.
 	for prop in script.get_script_property_list():
 		if not (prop.usage & PROPERTY_USAGE_SCRIPT_VARIABLE):
 			continue

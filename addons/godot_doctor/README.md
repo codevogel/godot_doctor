@@ -127,6 +127,41 @@ ValidationCondition.is_scene_of_type(scene_of_foo_type, Foo)
 ValidationCondition.IsSceneOfType<Foo>(PackedSceneOfFooType)
 ```
 
+<!-- markdownlint-disable-next-line MD033 MD013 -->
+<details>
+
+<!-- markdownlint-disable-next-line MD033 MD013 -->
+<summary>
+For verifying the type of an inherited `PackedScene`, you can use any of the
+following search strategies provided by the `ValidationCondition` class:
+</summary>
+
+```gdscript
+enum InheritanceSearchStrategy {
+ ## Only consider the root node of the PackedScene referenced,
+ ## regardless of whether it has a script or not.
+ ## i.e. the root node of the directly referenced scene,
+ ## even if it has a scene as a parent scene.
+ DIRECT,
+ ## Only consider the very topmost root node of the PackedScene's inheritance chain,
+ ## regardless of whether it has a script or not.
+ ## i.e. the root node of the base scene that has no further parents.
+ TOPMOST_ROOT,
+ ## Only consider the first root node in the PackedScene's inheritance chain,
+ ## that has a script attached.
+ ## i.e. the root node of the first parent scene that has a script, starting
+ ## from the directly referenced scene and moving up the inheritance chain.
+ FIRST_SCRIPT_ROOT,
+ ## Only consider the last root node in the PackedScene's inheritance chain,
+ ## that has a script attached.
+ ## i.e. the root node of the last parent scene that has a script.
+ LAST_SCRIPT_ROOT
+}
+
+```
+
+</details>
+
 ### Automatic Scene Validation
 
 Validations run automatically when you save scenes, providing immediate feedback

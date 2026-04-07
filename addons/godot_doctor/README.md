@@ -101,6 +101,19 @@ Or how about this:
 
 Our gameplay code stays much more clean and focused!
 
+<!-- markdownlint-disable-next-line MD033 MD013 -->
+<details>
+<!-- markdownlint-disable-next-line MD033 MD013 -->
+<summary>
+More examples
+</summary>
+
+![C# Wrapper example](/github_assets/png/csharp_wrapper_example.png)
+
+![C# Wrapper resource example](/github_assets/png/csharp_wrapper_resource_example.png)
+
+</details>
+
 ### Verify type of PackedScene
 
 Godot has a problem with `PackedScene` type safety.

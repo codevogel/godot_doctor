@@ -94,7 +94,11 @@ func add_node_validation_message(
 		current_path += node_name + "/"
 	var relative_path = current_path.trim_suffix("/")
 
-	warning_instance.origin_node = scene_root_for_validations.get_node(relative_path)
+	warning_instance.origin_node = (
+		scene_root_for_validations
+		if relative_path.is_empty()
+		else scene_root_for_validations.get_node(relative_path)
+	)
 	warning_instance.origin_node_root = scene_root_for_validations
 	warning_instance.label.text = validation_message.message
 	_error_holder.add_child(warning_instance)

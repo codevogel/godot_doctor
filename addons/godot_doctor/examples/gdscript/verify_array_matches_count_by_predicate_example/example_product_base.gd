@@ -1,4 +1,6 @@
 @abstract class_name ExampleProductBase
-extends Node
+extends RefCounted
 
-enum Type { A, B }
+enum Type { NONE, A, B }
+
+var type: Type = Type.NONE

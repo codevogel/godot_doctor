@@ -11,6 +11,7 @@ Factories = [NodePath("Factories/ExampleFactoryForTypeA"), NodePath("Factories/E
 
 [node name="ExampleFactoryForTypeA" type="Node" parent="Factories" unique_id=1907466397]
 script = ExtResource("2_h3f9k")
+TypeToSpawn = 1
 
 [node name="ExampleFactoryForTypeA2" type="Node" parent="Factories" unique_id=109680805]
 script = ExtResource("2_h3f9k")

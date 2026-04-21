@@ -11,6 +11,7 @@ factories = [NodePath("Factories/ExampleFactoryForTypeA"), NodePath("Factories/E
 
 [node name="ExampleFactoryForTypeA" type="Node" parent="Factories" unique_id=688322283]
 script = ExtResource("2_l3xsl")
+type_to_spawn = 1
 metadata/_custom_type_script = "uid://cxknf2emdd34j"
 
 [node name="ExampleFactoryForTypeA2" type="Node" parent="Factories" unique_id=375753390]

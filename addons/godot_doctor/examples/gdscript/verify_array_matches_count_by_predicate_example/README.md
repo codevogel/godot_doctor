@@ -35,8 +35,8 @@ them at design time.
 ## This Example
 
 The scene `verify_array_matches_count_by_predicate_example.tscn` contains an
-`ExampleSpawnFromFactory` node with the script
-`example_spawn_from_factory.gd` attached.
+`ExampleSpawnFromFactory` node with the script `example_spawn_from_factory.gd`
+attached.
 
 That script defines two validations:
 

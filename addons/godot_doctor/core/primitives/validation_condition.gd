@@ -385,6 +385,45 @@ static func is_scene_of_type(
 	)
 
 
+## Creates a [ValidationCondition] that checks whether exactly [param expected_count]
+## items are contained in the [param array] that match [param predicate].
+## [param predicate] should be a [Callable] that takes a single argument
+## (an item from the [param array]) and returns a [code]bool[/code] indicating whether
+## the item matches the condition.
+## This is useful for validating that an array contains a specific number of items matching
+## certain criteria.
+## An example predicate for an [code]Array[/code] that contains [Node]s could be:
+## [code]func(value: Node): return value.name.begins_with("Enemy")[/code].
+static func array_matches_count_by_predicate(
+	array: Array,
+	expected_count: int,
+	predicate: Callable,
+	variable_name: String = "Array",
+	predicate_description: String = "",
+	severity_level: Severity = Severity.WARNING
+) -> ValidationCondition:
+	var get_actual_count: Callable = func() -> int:
+		return array.reduce(
+			func(acc: int, value: Variant) -> int:
+				return acc + 1 if value != null and predicate.call(value) else acc,
+			0
+		)
+
+	return ValidationCondition.new(
+		func() -> bool: return get_actual_count.call() == expected_count,
+		(
+			"%s has %d items matching the predicate, expected %d.%s"
+			% [
+				variable_name,
+				get_actual_count.call(),
+				expected_count,
+				(" (Predicate: %s)" % predicate_description) if predicate_description else "",
+			]
+		),
+		severity_level
+	)
+
+
 ## Extracts the class name from [param packed_scene]'s root node's script.
 ## Returns a [GodotDoctorClassNameQueryResult] indicating whether a script
 ## and class name were found.

@@ -21,6 +21,13 @@ used, and how to reproduce/resolve the errors.
 **Core Concept:** **General Validation Use Cases** A collection of various
 validation scenarios in a 'real-world' context.
 
+### [verify_array_matches_count_by_predicate_example](./gdscript/verify_array_matches_count_by_predicate_example/README.md)
+
+**Core Concept:** **Array Count Validation with Predicates** Shows how to
+validate that an exported array property contains a specific number of elements
+that match a given condition (predicate), such as ensuring an array of nodes has
+at least 3 elements that are of a certain type or have specific properties.
+
 ### [verify_default_validations_example](./gdscript/verify_default_validations_example/README.md)
 
 **Core Concept:** **No-Code Default Validations** Demonstrates Godot Doctor's

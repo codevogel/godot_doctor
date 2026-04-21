@@ -1,0 +1,25 @@
+[gd_scene format=3 uid="uid://bptwqcubq2ypw"]
+
+[ext_resource type="Script" uid="uid://b7aujsl7wknw2" path="res://addons/godot_doctor/examples/gdscript/verify_array_matches_count_by_predicate_example/example_spawn_from_factory.gd" id="1_gjcie"]
+[ext_resource type="Script" uid="uid://cxknf2emdd34j" path="res://addons/godot_doctor/examples/gdscript/verify_array_matches_count_by_predicate_example/example_factory.gd" id="2_l3xsl"]
+
+[node name="ExampleSpawnFromFactory" type="Node" unique_id=1224695581 node_paths=PackedStringArray("factories")]
+script = ExtResource("1_gjcie")
+factories = [NodePath("Factories/ExampleFactoryForTypeA"), NodePath("Factories/ExampleFactoryForTypeA2"), NodePath("Factories/ExampleFactoryForTypeB")]
+
+[node name="Factories" type="Node" parent="." unique_id=1618796967]
+
+[node name="ExampleFactoryForTypeA" type="Node" parent="Factories" unique_id=688322283]
+script = ExtResource("2_l3xsl")
+type_to_spawn = 1
+metadata/_custom_type_script = "uid://cxknf2emdd34j"
+
+[node name="ExampleFactoryForTypeA2" type="Node" parent="Factories" unique_id=375753390]
+script = ExtResource("2_l3xsl")
+type_to_spawn = 1
+metadata/_custom_type_script = "uid://cxknf2emdd34j"
+
+[node name="ExampleFactoryForTypeB" type="Node" parent="Factories" unique_id=266512101]
+script = ExtResource("2_l3xsl")
+type_to_spawn = 1
+metadata/_custom_type_script = "uid://cxknf2emdd34j"

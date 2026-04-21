@@ -1,0 +1,22 @@
+[gd_scene format=3 uid="uid://bx2nnhm4e6gju"]
+
+[ext_resource type="Script" uid="uid://b2w704qav6k1c" path="res://addons/godot_doctor/examples/csharp/verify_array_matches_count_by_predicate_example/ExampleSpawnFromFactory.cs" id="1_i5n4g"]
+[ext_resource type="Script" uid="uid://d0l5gar2u8m6n" path="res://addons/godot_doctor/examples/csharp/verify_array_matches_count_by_predicate_example/ExampleFactory.cs" id="2_h3f9k"]
+
+[node name="VerifyArrayMatchesCountByPredicateExampleCs" type="Node" unique_id=1035634273 node_paths=PackedStringArray("Factories")]
+script = ExtResource("1_i5n4g")
+Factories = [NodePath("Factories/ExampleFactoryForTypeA"), NodePath("Factories/ExampleFactoryForTypeA2"), NodePath("Factories/ExampleFactoryForTypeB")]
+
+[node name="Factories" type="Node" parent="." unique_id=1229861716]
+
+[node name="ExampleFactoryForTypeA" type="Node" parent="Factories" unique_id=1907466397]
+script = ExtResource("2_h3f9k")
+TypeToSpawn = 1
+
+[node name="ExampleFactoryForTypeA2" type="Node" parent="Factories" unique_id=109680805]
+script = ExtResource("2_h3f9k")
+TypeToSpawn = 1
+
+[node name="ExampleFactoryForTypeB" type="Node" parent="Factories" unique_id=588807592]
+script = ExtResource("2_h3f9k")
+TypeToSpawn = 1

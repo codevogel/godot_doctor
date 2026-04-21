@@ -378,6 +378,44 @@ public partial class ValidationCondition : GodotObject
 			(int)severity
 		);
 	}
+
+	/// <summary>
+	/// Creates a <see cref="ValidationCondition"/> that checks whether exactly <paramref name="expectedCount"/>
+	/// items are contained in the <paramref name="array"/> that match <paramref name="predicate"/>.
+	/// <paramref name="predicate"/> should take a single argument
+	/// (an item from the <paramref name="array"/>) and return a <see cref="bool"/> indicating whether
+	/// the item matches the condition.
+	/// This is useful for validating that an array contains a specific number of items matching
+	/// certain criteria.
+	/// An example predicate for an array that contains <see cref="Node"/> instances could be:
+	/// <c>value =&gt; value is Node node &amp;&amp; node.Name.ToString().BeginsWith(&quot;Enemy&quot;)</c>.
+	/// </summary>
+	/// <param name="array">The array to validate.</param>
+	/// <param name="expectedCount">The expected number of matching items.</param>
+	/// <param name="predicate">Predicate evaluated for each item in <paramref name="array"/>.</param>
+	/// <param name="predicateDescription">Optional human-readable description of <paramref name="predicate"/>.</param>
+	/// <param name="severity">
+	/// The severity level reported when validation fails.
+	/// Defaults to <see cref="Severity.Warning"/>.
+	/// </param>
+	/// <param name="variableName">The name of the variable that is being validated. Automatically inferred from the variable name in C#, but can be overridden.</param>
+	public static ValidationCondition ArrayMatchesCountByPredicate<[MustBeVariant] T>(
+		Godot.Collections.Array<T> array,
+		int expectedCount,
+		Func<T, bool> predicate,
+		string predicateDescription = "",
+		Severity severity = Severity.Warning,
+		[CallerArgumentExpression(nameof(array))] string variableName = "Array"
+	) =>
+		FromGdStatic(
+			"array_matches_count_by_predicate",
+			array,
+			expectedCount,
+			Callable.From(predicate),
+			variableName,
+			predicateDescription,
+			(int)severity
+		);
 }
 
 public static class ValidationConditionExtensions

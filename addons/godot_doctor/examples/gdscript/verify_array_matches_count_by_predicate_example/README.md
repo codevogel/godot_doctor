@@ -63,7 +63,11 @@ In the provided scene data:
 
 1. `num_products_for_type_a` is `2`
 2. `num_products_for_type_b` is `1`
-3. The actual factory setup yields `1` factory for type `A` and `2` for type `B`
+3. The actual factory setup yields `3` factories for type `A`, and `0` for type
+   `B`, as the inspector value for the `type_to_spawn` for
+   `ExampleFactoryForTypeB` is incorrectly set to `B`.
 
 So both validations fail, demonstrating how predicate-based count checks produce
 clear, targeted errors.
+
+Setting the `type_to_spawn` for `ExampleFactoryForTypeB` to `B` fixes the issue.

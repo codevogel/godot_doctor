@@ -7,7 +7,7 @@ public partial class ExampleFactory : Node
 	[Export]
 	public ExampleProductBase.Type TypeToSpawn { get; set; }
 
-	public ExampleProductBase SpawnProduct(ExampleProductBase.Type type)
+	public static ExampleProductBase SpawnProduct(ExampleProductBase.Type type)
 	{
 		ExampleProductBase spawnedProduct = null;
 		switch (type)

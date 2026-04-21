@@ -200,13 +200,38 @@ func _make_instance_from_potential_placeholder_node(original_node: Node) -> Obje
 
 ## Copies all editor-visible properties from [param from_node] to [param to_node].
 ## Used to transfer state from an editor node to a temporary validation instance.
+## Recursively converts placeholder node instances in properties to proper instances.
 func _copy_properties(from_node: Node, to_node: Node) -> void:
 	GodotDoctorNotifier.print_debug(
 		"Copying properties from %s to placeholder instance" % [from_node.name], self
 	)
 	for prop in from_node.get_property_list():
 		if prop.usage & PROPERTY_USAGE_EDITOR:
-			to_node.set(prop.name, from_node.get(prop.name))
+			var prop_name: StringName = prop.name
+			var value: Variant = from_node.get(prop_name)
+			var converted_value: Variant = _convert_placeholder_references(value)
+			to_node.set(prop_name, converted_value)
+
+
+## Recursively converts placeholder node references to proper instances.
+## Handles individual nodes, arrays, and other types transparently.
+func _convert_placeholder_references(value: Variant) -> Variant:
+	match typeof(value):
+		TYPE_OBJECT:
+			# If it's a Node, check if it's a placeholder and convert if necessary
+			if value is Node:
+				var node_value: Node = value
+				return _make_instance_from_potential_placeholder_node(node_value)
+			return value
+		TYPE_ARRAY:
+			# Recursively process array elements
+			var converted_array: Array = []
+			for item in value:
+				converted_array.append(_convert_placeholder_references(item))
+			return converted_array
+		_:
+			# For all other types, return as-is
+			return value
 
 
 #endregion

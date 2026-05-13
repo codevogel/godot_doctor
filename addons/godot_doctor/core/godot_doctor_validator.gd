@@ -38,11 +38,6 @@ func validate_resource(resource: Resource) -> void:
 		"Resource validation requested for resource: %s" % resource.resource_path, self
 	)
 
-	# Check if the resource's script is in the ignore list before validating
-	var script: Script = resource.get_script()
-	if script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list:
-		return
-
 	# Validate the resource and report results
 	var messages: Array[GodotDoctorValidationMessage] = _collect_resource_messages(resource)
 	validated_resource.emit(resource, messages)
@@ -63,13 +58,7 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	var validation_target: Object = _make_instance_from_potential_placeholder_node(node)
 
 	# Declare an array to hold all validation conditions that will be evaluated for this node.
-	var conditions: Array[ValidationCondition] = []
-
-	# If default validations are enabled, generate conditions based on exported properties.
-	if GodotDoctorPlugin.instance.settings.use_default_validations:
-		conditions.append_array(
-			ValidationCondition.get_default_validation_conditions(validation_target)
-		)
+	var conditions: Array[ValidationCondition] = _get_actual_default_conditions(node)
 
 	var validating_method_name: String = _get_validating_method_name(validation_target)
 
@@ -110,17 +99,22 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 
 	return messages
 
+func _get_actual_default_conditions(object: Object)->Array[ValidationCondition]:
+	var conditions: Array[ValidationCondition]
+	# Check if the resource's script is in the ignore list before adding the default validation conditions
+	var script: Script = object.get_script()
+	var is_ignored:= script and GodotDoctorPlugin.instance.settings.default_validation_ignore_list.has(script)
+	# If default validations are enabled and required, generate conditions based on exported properties.
+	if not is_ignored and GodotDoctorPlugin.instance.settings.use_default_validations:
+		conditions.append_array(ValidationCondition.get_default_validation_conditions(object))
+	return conditions
 
 ## Collects all validation messages for [param resource] by evaluating its conditions.
 func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug(
 		"Collecting messages for resource: %s" % resource.resource_path, self
 	)
-	var conditions: Array[ValidationCondition] = []
-
-	# If default validations are enabled, generate conditions based on exported properties.
-	if GodotDoctorPlugin.instance.settings.use_default_validations:
-		conditions.append_array(ValidationCondition.get_default_validation_conditions(resource))
+	var conditions: Array[ValidationCondition] = _get_actual_default_conditions(resource)
 
 	var validating_method_name: String = _get_validating_method_name(resource)
 	# If the resource implements the validating method, call it and append its conditions.
@@ -157,10 +151,7 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 	var nodes_to_validate: Array = []
 
 	var script: Script = node.get_script()
-	if (
-		script != null
-		and not (script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list)
-	):
+	if script != null:
 		if (
 			GodotDoctorPlugin.instance.settings.use_default_validations
 			or not _get_validating_method_name(node).is_empty()

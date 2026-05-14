@@ -18,7 +18,7 @@ enum RunMode { NONE, EDITOR, CLI }
 #gdlint: disable=max-line-length
 ## The path of the settings resource used to configure the plugin.
 const VALIDATOR_SETTINGS_PATH: String = "res://addons/godot_doctor/settings/godot_doctor_settings.tres"
-const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
+const PLUGIN_WELCOME_MESSAGE: String = "Godot Doctor is ready! 👨🏻‍⚕️🩺\nThe plugin has succesfully been enabled. You'll now see the Godot Doctor dock in your editor.\nYou can change its default position in the settings resource (addons/godot_doctor/settings).\nYou can also disable this dialog there.\nBasic usage instructions are available in the README or on the GitHub repository.\nNOTE: If you happen to use the non-mono version of godot, and are getting C# related warning messages, you can safely delete the 'addons/godot_doctor/core/c_sharp' directory.\nPlease report any issues, bugs, or feature requests on GitHub.\nHappy developing!\n- CodeVogel 🐦"
 const PLUGIN_REPOSITORY_URL: String = "https://github.com/codevogel/godot_doctor"
 #gdlint: enable=max-line-length
 

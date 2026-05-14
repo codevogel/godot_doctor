@@ -53,9 +53,15 @@ func validate_resource(resource: Resource) -> void:
 func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	GodotDoctorNotifier.print_debug("Collecting messages for node: %s" % node.name, self)
 
+	# Tracks all Node instances created during placeholder conversion so they can
+	# be freed after validation. Passed through the conversion chain by reference.
+	var extra_to_free: Array[Node] = []
+
 	# The target is either the original node (for @tool scripts)
 	# or a temporary instance (for non-@tool scripts).
-	var validation_target: Object = _make_instance_from_potential_placeholder_node(node)
+	var validation_target: Object = _make_instance_from_potential_placeholder_node(
+		node, extra_to_free
+	)
 
 	# Declare an array to hold all validation conditions that will be evaluated for this node.
 	var conditions: Array[ValidationCondition] = []
@@ -114,6 +120,12 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	# Free the temporary instance if we created one for validation.
 	if validation_target != node and is_instance_valid(validation_target):
 		validation_target.free()
+
+	# Free any additional Node instances created during property conversion
+	# (e.g. placeholder nodes referenced in exported Array properties).
+	for instance: Node in extra_to_free:
+		if is_instance_valid(instance):
+			instance.free()
 
 	return messages
 
@@ -193,7 +205,11 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 ## Creates a temporary instance of [param original_node]'s script for validation purposes.
 ## For non-@tool scripts, creates a new instance and copies properties and children.
 ## For @tool scripts or nodes without a script, returns [param original_node] unchanged.
-func _make_instance_from_potential_placeholder_node(original_node: Node) -> Object:
+## [param extra_to_free] collects any Node instances created during property conversion
+## so the caller can free them after validation.
+func _make_instance_from_potential_placeholder_node(
+	original_node: Node, extra_to_free: Array[Node] = []
+) -> Object:
 	GodotDoctorNotifier.print_debug(
 		"Making instance from placeholder for node: %s" % original_node.name, self
 	)
@@ -209,14 +225,15 @@ func _make_instance_from_potential_placeholder_node(original_node: Node) -> Obje
 	for child in original_node.get_children():
 		new_instance.add_child(child.duplicate())
 
-	_copy_properties(original_node, new_instance)
+	_copy_properties(original_node, new_instance, extra_to_free)
 	return new_instance
 
 
 ## Copies all editor-visible properties from [param from_node] to [param to_node].
 ## Used to transfer state from an editor node to a temporary validation instance.
 ## Recursively converts placeholder node instances in properties to proper instances.
-func _copy_properties(from_node: Node, to_node: Node) -> void:
+## [param extra_to_free] collects any Node instances created during conversion.
+func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node] = []) -> void:
 	GodotDoctorNotifier.print_debug(
 		"Copying properties from %s to placeholder instance" % [from_node.name], self
 	)
@@ -224,26 +241,35 @@ func _copy_properties(from_node: Node, to_node: Node) -> void:
 		if prop.usage & PROPERTY_USAGE_EDITOR:
 			var prop_name: StringName = prop.name
 			var value: Variant = from_node.get(prop_name)
-			var converted_value: Variant = _convert_placeholder_references(value)
+			var converted_value: Variant = _convert_placeholder_references(value, extra_to_free)
 			to_node.set(prop_name, converted_value)
 
 
 ## Recursively converts placeholder node references to proper instances.
 ## Handles individual nodes, arrays, and other types transparently.
-func _convert_placeholder_references(value: Variant) -> Variant:
+## [param extra_to_free] collects any Node instances created here so the
+## caller can free them after validation.
+func _convert_placeholder_references(
+	value: Variant, extra_to_free: Array[Node] = []
+) -> Variant:
 	match typeof(value):
 		TYPE_OBJECT:
-			# If it's a Node, check if it's a placeholder and convert if necessary
 			if value is Node:
 				var node_value: Node = value
-				return _make_instance_from_potential_placeholder_node(node_value)
+				var converted: Object = _make_instance_from_potential_placeholder_node(
+					node_value, extra_to_free
+				)
+				# If a new instance was created, track it for cleanup.
+				if converted != node_value and converted is Node:
+					extra_to_free.append(converted as Node)
+				return converted
 			return value
 		TYPE_ARRAY:
 			# Recursively process array elements while preserving typed-array metadata.
 			var source_array: Array = value
 			var converted_array: Array = source_array.duplicate()
 			for i in source_array.size():
-				converted_array[i] = _convert_placeholder_references(source_array[i])
+				converted_array[i] = _convert_placeholder_references(source_array[i], extra_to_free)
 			return converted_array
 		_:
 			# For all other types, return as-is

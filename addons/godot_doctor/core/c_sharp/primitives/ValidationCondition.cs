@@ -13,7 +13,7 @@ namespace GodotDoctor.Core.Primitives;
 /// or an array of nested <see cref="ValidationCondition"/> instances.
 /// Used by <see cref="GodotDoctorValidator"/> to define validation rules.
 /// </summary>
-public partial class ValidationCondition : GodotObject
+public class ValidationCondition
 {
 	/// <summary>
 	/// The severity level of a validation condition. Used to indicate how critical a validation failure is.
@@ -92,15 +92,6 @@ public partial class ValidationCondition : GodotObject
 	/// from GDScript static factory methods, which return GodotObjects that we wrap in this class.
 	/// </summary>
 	private ValidationCondition(GodotObject inner) => Inner = inner;
-
-	/// <summary>
-	/// Parameterless constructor required by Godot's C# scripting runtime.
-	/// Should not be used directly.
-	/// </summary>
-	[Obsolete(
-		"This constructor is only for Godot's C# scripting runtime and should not be used directly."
-	)]
-	public ValidationCondition() { }
 
 	/// <summary>
 	/// Initializes a <see cref="ValidationCondition"/> with a callable, error message, and severity.

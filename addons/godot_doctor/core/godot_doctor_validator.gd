@@ -249,9 +249,7 @@ func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node]
 ## Handles individual nodes, arrays, and other types transparently.
 ## [param extra_to_free] collects any Node instances created here so the
 ## caller can free them after validation.
-func _convert_placeholder_references(
-	value: Variant, extra_to_free: Array[Node] = []
-) -> Variant:
+func _convert_placeholder_references(value: Variant, extra_to_free: Array[Node] = []) -> Variant:
 	match typeof(value):
 		TYPE_OBJECT:
 			if value is Node:

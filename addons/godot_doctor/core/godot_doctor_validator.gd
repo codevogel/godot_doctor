@@ -38,11 +38,6 @@ func validate_resource(resource: Resource) -> void:
 		"Resource validation requested for resource: %s" % resource.resource_path, self
 	)
 
-	# Check if the resource's script is in the ignore list before validating
-	var script: Script = resource.get_script()
-	if script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list:
-		return
-
 	# Validate the resource and report results
 	var messages: Array[GodotDoctorValidationMessage] = _collect_resource_messages(resource)
 	validated_resource.emit(resource, messages)
@@ -65,8 +60,20 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	# Declare an array to hold all validation conditions that will be evaluated for this node.
 	var conditions: Array[ValidationCondition] = []
 
+	var script: Script = node.get_script()
+	if script == null:
+		# This shouldn't happen since we only collect nodes with scripts
+		# in _find_nodes_to_validate_in_tree
+		GodotDoctorNotifier.print_debug(
+			"No script found on node %s, skipping message collection." % node.name, self
+		)
+		return []
+
 	# If default validations are enabled, generate conditions based on exported properties.
-	if GodotDoctorPlugin.instance.settings.use_default_validations:
+	if (
+		GodotDoctorPlugin.instance.settings.use_default_validations
+		and script not in GodotDoctorPlugin.instance.settings.default_validation_ignore_list
+	):
 		conditions.append_array(
 			ValidationCondition.get_default_validation_conditions(validation_target)
 		)
@@ -118,8 +125,19 @@ func _collect_resource_messages(resource: Resource) -> Array[GodotDoctorValidati
 	)
 	var conditions: Array[ValidationCondition] = []
 
+	var script: Script = resource.get_script()
+	if script == null:
+		GodotDoctorNotifier.print_debug(
+			"No script found on resource %s, skipping message collection." % resource.resource_path,
+			self
+		)
+		return []
+
 	# If default validations are enabled, generate conditions based on exported properties.
-	if GodotDoctorPlugin.instance.settings.use_default_validations:
+	if (
+		GodotDoctorPlugin.instance.settings.use_default_validations
+		and script not in GodotDoctorPlugin.instance.settings.default_validation_ignore_list
+	):
 		conditions.append_array(ValidationCondition.get_default_validation_conditions(resource))
 
 	var validating_method_name: String = _get_validating_method_name(resource)
@@ -157,14 +175,11 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 	var nodes_to_validate: Array = []
 
 	var script: Script = node.get_script()
-	if (
-		script != null
-		and not (script in GodotDoctorPlugin.instance.settings.default_validation_ignore_list)
-	):
+	if script != null:
 		if (
 			GodotDoctorPlugin.instance.settings.use_default_validations
 			or not _get_validating_method_name(node).is_empty()
-		):  # ← replaces the has_method check
+		):
 			nodes_to_validate.append(node)
 
 	for child in node.get_children():

@@ -13,7 +13,7 @@ const GITHUB_API_LATEST_RELEASE_URL: String = "https://api.github.com/repos/code
 ## The URL for the latest release page, used in the update message if a new version is available.
 const PLUGIN_RELEASE_PAGE_URL: String = "https://github.com/codevogel/godot_doctor/releases/latest"
 ## A hint to the user that they can disable the update check if they don't want to see the message again.
-const SILENCE_HINT = "(You can disable this check in the plugin settings if you don't want to see this message again.)"
+const SILENCE_HINT = "(Note that the asset library version may lag behind the GitHub releases. You can disable this check in the plugin settings if you don't want to see this message again.)"
 #gdlint: enable=max-line-length
 
 ## The HTTPRequest node used to make the API request.

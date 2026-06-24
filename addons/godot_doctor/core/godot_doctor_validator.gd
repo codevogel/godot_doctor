@@ -242,7 +242,11 @@ func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node]
 			var prop_name: StringName = prop.name
 			var value: Variant = from_node.get(prop_name)
 			var converted_value: Variant = _convert_placeholder_references(value, extra_to_free)
-			to_node.set(prop_name, converted_value)
+
+			if from_node is Control and prop_name == "size":
+				to_node.set_deferred(prop_name, converted_value)
+			else:
+				to_node.set(prop_name, converted_value)
 
 
 ## Recursively converts placeholder node references to proper instances.

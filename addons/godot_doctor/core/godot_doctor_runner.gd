@@ -40,6 +40,9 @@ signal run_complete
 ## The validator responsible for running validations and collecting results for this runner.
 var _validator: GodotDoctorValidator
 
+## Whether a validation run is queued for this frame.
+var _run_queued: bool = false
+
 
 ## Initializes the runner with [param validator].
 ## Exits with failure if [param validator] is [code]null[/code].
@@ -51,9 +54,20 @@ func _init(validator: GodotDoctorValidator) -> void:
 	_validator = validator
 
 
+## Queues a validation run for the end of the current frame.
+## Does nothing if a run is already queued.
+func queue_run() -> void:
+	if _run_queued:
+		return
+
+	_run_queued = true
+	run.call_deferred()
+
+
 ## Kicks off the validation run for this runner.
 func run() -> void:
 	_run()
+	_run_queued = false
 	run_complete.emit()
 
 

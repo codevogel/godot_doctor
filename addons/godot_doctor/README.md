@@ -177,9 +177,9 @@ enum InheritanceSearchStrategy {
 
 ### Automatic Scene Validation
 
-Validations run automatically when you save scenes, providing immediate feedback
-during development. Errors are displayed in a dedicated dock, and you can click
-on them to navigate directly to the problematic nodes.
+Validations run automatically when you open and save scenes, providing immediate
+feedback during development. Errors are displayed in a dedicated dock, and you
+can click on them to navigate directly to the problematic nodes.
 
 ![Godot Doctor Example Gif](/github_assets/gif/doctor_example.gif)
 

@@ -238,6 +238,9 @@ func _disconnect_all_tracked_signals() -> void:
 func _connect_signals():
 	GodotDoctorNotifier.print_debug("Connecting signals...", self)
 	_connect_and_track(scene_saved, _on_scene_saved)
+	_connect_and_track(scene_changed, _on_scene_changed)
+	var inspector: EditorInspector = EditorInterface.get_inspector()
+	_connect_and_track(inspector.edited_object_changed, _on_edited_object_changed)
 	_connect_runner_signals()
 	_connect_validator_signals()
 
@@ -401,6 +404,24 @@ func _on_scene_saved(file_path: String) -> void:
 	GodotDoctorNotifier.print_debug("Scene saved: %s" % file_path, self)
 	if settings.validate_on_save:
 		_active_runner.run()
+
+
+## Called when the user switches to another scene.
+## Triggers validation if [member GodotDoctorSettings.validate_on_open] is enabled.
+func _on_scene_changed(node: Node) -> void:
+	GodotDoctorNotifier.print_debug("Scene changed: %s" % node, self)
+	if settings.validate_on_open:
+		# It's possible the edited object also changed, so we must queue to prevent running twice
+		_active_runner.queue_run()
+
+
+## Called when the edited object in the inspector is changed by the user.
+## Triggers validation if [member GodotDoctorSettings.validate_on_open] is enabled.
+func _on_edited_object_changed() -> void:
+	GodotDoctorNotifier.print_debug("Edited object changed", self)
+	if settings.validate_on_open:
+		# It's possible the scene also changed, so we must queue to prevent running twice
+		_active_runner.queue_run()
 
 
 ## Called when the runner signals that the entire validation run is complete.

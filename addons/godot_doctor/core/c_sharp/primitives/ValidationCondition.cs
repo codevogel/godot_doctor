@@ -416,7 +416,7 @@ public static class ValidationConditionExtensions
 	/// to a Godot array of their underlying <see cref="GodotObject"/> representations.
 	/// This is used to return validation conditions from C# to GDScript in a format that GDScript can work with.
 	/// </summary>
-	public static Godot.Collections.Array ToGodotArray(this ValidationCondition[] conditions)
+	public static Godot.Collections.Array ToGodotArray(this IReadOnlyCollection<ValidationCondition> conditions)
 	{
 		var godotArray = new Godot.Collections.Array();
 		foreach (var condition in conditions)

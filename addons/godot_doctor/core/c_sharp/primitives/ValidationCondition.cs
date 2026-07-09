@@ -421,6 +421,7 @@ public static class ValidationConditionExtensions
 		this IEnumerable<ValidationCondition> conditions
 	)
 	{
+		ArgumentNullException.ThrowIfNull(conditions);
 		var godotArray = new Godot.Collections.Array();
 		foreach (var condition in conditions)
 		{

@@ -10,9 +10,17 @@ extends Resource
 ## Whether to automatically check for plugin updates on plugin startup.
 @export var check_for_updates_on_startup: bool = true
 
-## Whether to automatically run validations when saving a script.
-## If this is set to [code]false[/code], users will need to manually trigger validations.
+## Whether to automatically run validations when saving a scene or resource.
+## [br]
+## If this is set to [code]false[/code], users will need to manually trigger validations after
+## making changes.
 @export var validate_on_save: bool = true
+
+## Whether to automatically run validations when opening a scene or resource.
+## [br]
+## If this is set to [code]false[/code], users will need to manually trigger validations or rely
+## on [member validate_on_save].
+@export var validate_on_open: bool = true
 
 @export_group("Notification settings")
 ## Whether to show the welcome dialog when enabling the plugin.

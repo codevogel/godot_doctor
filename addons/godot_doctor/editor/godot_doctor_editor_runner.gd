@@ -33,6 +33,12 @@ func _run_for_edited_scene_root() -> void:
 		)
 		return
 
+	if current_edited_scene_root.scene_file_path.is_empty():
+		GodotDoctorNotifier.print_debug(
+			"Currently edited scene has not been saved to a file. Skipping scene validation.", self
+		)
+		return
+
 	started_run_for_edited_scene_root.emit(current_edited_scene_root)
 
 	started_scene_collection.emit()

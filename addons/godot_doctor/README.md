@@ -88,8 +88,8 @@ Unlike
 [`_get_configuration_warnings()`](https://docs.godotengine.org/en/4.5/classes/class_node.html#class-node-private-method-get-configuration-warnings),
 Godot Doctor works without requiring the
 [`@tool`](https://docs.godotengine.org/en/4.5/tutorials/plugins/running_code_in_the_editor.html#what-is-tool)
-annotation on your scripts. This means that you no longer have to worry about
-your gameplay code being muddied by editor-specific logic.
+annotation on your (non-resource) scripts. This means that you no longer have to
+worry about your gameplay code being muddied by editor-specific logic.
 
 See the difference for yourself:
 

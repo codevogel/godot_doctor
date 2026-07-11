@@ -80,6 +80,16 @@ func _run_for_edited_resource() -> void:
 		)
 		return
 
+	if edited_resource.resource_path.is_empty():
+		GodotDoctorNotifier.print_debug(
+			(
+				"Edited resource %s has not been saved to a file. Skipping resource validation."
+				% edited_resource
+			),
+			self
+		)
+		return
+
 	started_run_for_edited_resource.emit()
 
 	started_run_for_resource.emit(edited_resource)

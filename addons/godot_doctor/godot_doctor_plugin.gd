@@ -40,14 +40,17 @@ var settings: GodotDoctorSettings:
 	get:
 		# This may be used before @onready
 		# so we lazy load it here if needed.
-		if not settings:
-			settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
-		return settings
+		if not _settings:
+			_settings = load(VALIDATOR_SETTINGS_PATH) as GodotDoctorSettings
+		return _settings
 
 ## The current mode in which the plugin is running, determined at runtime based on the environment.
 var mode: RunMode:
 	get:
 		return _run_mode
+
+## Backing field for the settings property
+var _settings: GodotDoctorSettings
 
 ## The update checker responsible for checking for plugin updates on startup and notifying the user.
 var _update_checker: GodotDoctorUpdateChecker

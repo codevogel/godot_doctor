@@ -9,6 +9,14 @@ signal validated_node(node: Node, messages: Array[GodotDoctorValidationMessage])
 ## Emitted when [param resource] has been validated with the resulting [param messages].
 signal validated_resource(resource: Resource, messages: Array[GodotDoctorValidationMessage])
 
+## Traversal State Keys used to track recursion (caused by cyclic references)
+enum TraversalStateKey {
+	ACTIVE_NODE_IDS,
+	WARNED_NODE_IDS,
+	VALIDATION_ROOT_NAME,
+	CYLIC_WARNING_MESSAGES,
+}
+
 ## The name of the method that nodes and resources should implement to supply validation conditions.
 const VALIDATING_METHOD_NAME_GDSCRIPT: String = "_get_validation_conditions"
 const VALIDATING_METHOD_NAME_CSHARP: String = "GetValidationConditions"
@@ -56,11 +64,19 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	# Tracks all Node instances created during placeholder conversion so they can
 	# be freed after validation. Passed through the conversion chain by reference.
 	var extra_to_free: Array[Node] = []
+	# Tracks recursion state while converting exported node references so
+	# cyclic dependencies do not cause stack overflows.
+	var traversal_state: Dictionary[int, Variant] = {
+		TraversalStateKey.ACTIVE_NODE_IDS: {},
+		TraversalStateKey.WARNED_NODE_IDS: {},
+		TraversalStateKey.VALIDATION_ROOT_NAME: node.name,
+		TraversalStateKey.CYLIC_WARNING_MESSAGES: [],
+	}
 
 	# The target is either the original node (for @tool scripts)
 	# or a temporary instance (for non-@tool scripts).
 	var validation_target: Object = _make_instance_from_potential_placeholder_node(
-		node, extra_to_free
+		node, extra_to_free, traversal_state
 	)
 
 	# Declare an array to hold all validation conditions that will be evaluated for this node.
@@ -116,6 +132,13 @@ func _collect_node_messages(node: Node) -> Array[GodotDoctorValidationMessage]:
 	var messages: Array[GodotDoctorValidationMessage] = (
 		GodotDoctorValidationResult.new(conditions).messages
 	)
+	# Collect any cyclic warning messages that were generated
+	# and append them to the final messages array.
+	var cyclic_warning_messages: Array[GodotDoctorValidationMessage] = []
+	cyclic_warning_messages.assign(
+		traversal_state.get(TraversalStateKey.CYLIC_WARNING_MESSAGES, [])
+	)
+	messages.append_array(cyclic_warning_messages)
 
 	# Free the temporary instance if we created one for validation.
 	if validation_target != node and is_instance_valid(validation_target):
@@ -208,7 +231,9 @@ func _find_nodes_to_validate_in_tree(node: Node, recursing: bool = false) -> Arr
 ## [param extra_to_free] collects any Node instances created during property conversion
 ## so the caller can free them after validation.
 func _make_instance_from_potential_placeholder_node(
-	original_node: Node, extra_to_free: Array[Node] = []
+	original_node: Node,
+	extra_to_free: Array[Node] = [],
+	traversal_state: Dictionary[int, Variant] = {}
 ) -> Object:
 	GodotDoctorNotifier.print_debug(
 		"Making instance from placeholder for node: %s" % original_node.name, self
@@ -219,13 +244,31 @@ func _make_instance_from_potential_placeholder_node(
 	if not (script and not is_tool_script):
 		return original_node
 
+	# Grab the active node IDs from the traversal state to detect cyclic references.
+	var active_node_ids: Dictionary = traversal_state.get(TraversalStateKey.ACTIVE_NODE_IDS, {})
+	var node_id: int = original_node.get_instance_id()
+	# If this node is already in the active set, we have a cyclic reference.
+	if active_node_ids.has(node_id):
+		_warn_about_cyclic_node_reference(original_node, traversal_state)
+		# We don't make a new instance here, as we would end up in an infinite loop,
+		# as we would enter a reference cycle.
+		# Instead, we return the original node, which will be used in the property copy.
+		return original_node
+
+	# Mark this node as active
+	active_node_ids[node_id] = true
+	traversal_state[TraversalStateKey.ACTIVE_NODE_IDS] = active_node_ids
+
+	# Create the new instance.
 	var new_instance: Node = script.new()
 	new_instance.name = original_node.name
 
 	for child in original_node.get_children():
 		new_instance.add_child(child.duplicate())
 
-	_copy_properties(original_node, new_instance, extra_to_free)
+	# Copy the properties over.
+	_copy_properties(original_node, new_instance, extra_to_free, traversal_state)
+	active_node_ids.erase(node_id)
 	return new_instance
 
 
@@ -233,7 +276,12 @@ func _make_instance_from_potential_placeholder_node(
 ## Used to transfer state from an editor node to a temporary validation instance.
 ## Recursively converts placeholder node instances in properties to proper instances.
 ## [param extra_to_free] collects any Node instances created during conversion.
-func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node] = []) -> void:
+func _copy_properties(
+	from_node: Node,
+	to_node: Node,
+	extra_to_free: Array[Node] = [],
+	traversal_state: Dictionary[int, Variant] = {}
+) -> void:
 	GodotDoctorNotifier.print_debug(
 		"Copying properties from %s to placeholder instance" % [from_node.name], self
 	)
@@ -241,7 +289,9 @@ func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node]
 		if prop.usage & PROPERTY_USAGE_EDITOR:
 			var prop_name: StringName = prop.name
 			var value: Variant = from_node.get(prop_name)
-			var converted_value: Variant = _convert_placeholder_references(value, extra_to_free)
+			var converted_value: Variant = _convert_placeholder_references(
+				value, extra_to_free, traversal_state
+			)
 
 			if from_node is Control and prop_name == "size":
 				to_node.set_deferred(prop_name, converted_value)
@@ -253,13 +303,15 @@ func _copy_properties(from_node: Node, to_node: Node, extra_to_free: Array[Node]
 ## Handles individual nodes, arrays, and other types transparently.
 ## [param extra_to_free] collects any Node instances created here so the
 ## caller can free them after validation.
-func _convert_placeholder_references(value: Variant, extra_to_free: Array[Node] = []) -> Variant:
+func _convert_placeholder_references(
+	value: Variant, extra_to_free: Array[Node] = [], traversal_state: Dictionary[int, Variant] = {}
+) -> Variant:
 	match typeof(value):
 		TYPE_OBJECT:
 			if value is Node:
 				var node_value: Node = value
 				var converted: Object = _make_instance_from_potential_placeholder_node(
-					node_value, extra_to_free
+					node_value, extra_to_free, traversal_state
 				)
 				# If a new instance was created, track it for cleanup.
 				if converted != node_value and converted is Node:
@@ -271,11 +323,45 @@ func _convert_placeholder_references(value: Variant, extra_to_free: Array[Node] 
 			var source_array: Array = value
 			var converted_array: Array = source_array.duplicate()
 			for i in source_array.size():
-				converted_array[i] = _convert_placeholder_references(source_array[i], extra_to_free)
+				converted_array[i] = _convert_placeholder_references(
+					source_array[i], extra_to_free, traversal_state
+				)
 			return converted_array
 		_:
 			# For all other types, return as-is
 			return value
+
+
+func _warn_about_cyclic_node_reference(
+	node: Node, traversal_state: Dictionary[int, Variant]
+) -> void:
+	var warned_node_ids: Dictionary = traversal_state.get(TraversalStateKey.WARNED_NODE_IDS, {})
+	# Get the unique instance ID of this node.
+	var node_id: int = node.get_instance_id()
+	if warned_node_ids.has(node_id):
+		# Ignore if we already warned this node
+		return
+
+	var validation_root_name: String = traversal_state.get(
+		TraversalStateKey.VALIDATION_ROOT_NAME, "<unknown>"
+	)
+	var warning_message: String = (
+		(
+			"Cyclic exported node reference detected at '%s' while validating '%s'. "
+			+ "Skipping recursive placeholder conversion to prevent stack overflow."
+		)
+		% [node.name, validation_root_name]
+	)
+	GodotDoctorNotifier.print_debug(warning_message, self)
+
+	warned_node_ids[node_id] = true
+	traversal_state[TraversalStateKey.WARNED_NODE_IDS] = warned_node_ids
+	var runtime_messages: Array[GodotDoctorValidationMessage] = []
+	runtime_messages.assign(traversal_state.get(TraversalStateKey.CYLIC_WARNING_MESSAGES, []))
+	runtime_messages.append(
+		GodotDoctorValidationMessage.new(warning_message, ValidationCondition.Severity.WARNING)
+	)
+	traversal_state[TraversalStateKey.CYLIC_WARNING_MESSAGES] = runtime_messages
 
 
 #endregion

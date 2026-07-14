@@ -413,7 +413,7 @@ func _on_scene_saved(file_path: String) -> void:
 ## Triggers validation if [member GodotDoctorSettings.validate_on_open] is enabled.
 func _on_scene_changed(node: Node) -> void:
 	GodotDoctorNotifier.print_debug("Scene changed: %s" % node, self)
-	if settings.validate_on_open:
+	if DisplayServer.get_name() != "headless" and settings.validate_on_open:
 		# It's possible the edited object also changed, so we must queue to prevent running twice
 		_active_runner.queue_run()
 
@@ -422,7 +422,7 @@ func _on_scene_changed(node: Node) -> void:
 ## Triggers validation if [member GodotDoctorSettings.validate_on_open] is enabled.
 func _on_edited_object_changed() -> void:
 	GodotDoctorNotifier.print_debug("Edited object changed", self)
-	if settings.validate_on_open:
+	if DisplayServer.get_name() != "headless" and settings.validate_on_open:
 		# It's possible the scene also changed, so we must queue to prevent running twice
 		_active_runner.queue_run()
 

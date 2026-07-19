@@ -13,7 +13,9 @@ const GITHUB_API_LATEST_RELEASE_URL: String = "https://api.github.com/repos/code
 ## The URL for the latest release page, used in the update message if a new version is available.
 const PLUGIN_RELEASE_PAGE_URL: String = "https://github.com/codevogel/godot_doctor/releases/latest"
 ## A hint to the user that they can disable the update check if they don't want to see the message again.
-const SILENCE_HINT = "(Note that the asset library version may lag behind the GitHub releases. You can disable this check in the plugin settings if you don't want to see this message again.)"
+const SILENCE_HINT = "(You can disable this update check in the Godot Doctor settings resource.)"
+## A hint to the user that the Asset Store and Asset Library may lag behind the latest release on GitHub.
+const LAG_BEHIND_HINT = "Note: The Asset Store/Library may not yet have the latest version of Godot Doctor, as releases there can lag behind GitHub."
 #gdlint: enable=max-line-length
 
 ## The HTTPRequest node used to make the API request.
@@ -72,8 +74,8 @@ func _on_request_completed(
 	if _is_newer(latest, current):
 		print(
 			(
-				"[GODOT DOCTOR]: Update available! Current: %s → Latest: %s\nGet it at: %s\n%s"
-				% [current, latest, PLUGIN_RELEASE_PAGE_URL, SILENCE_HINT]
+				"[GODOT DOCTOR]: Update available! Current: %s → Latest: %s\nGet it at: %s\n%s\n%s"
+				% [current, latest, PLUGIN_RELEASE_PAGE_URL, LAG_BEHIND_HINT, SILENCE_HINT]
 			)
 		)
 		GodotDoctorNotifier.push_toast(

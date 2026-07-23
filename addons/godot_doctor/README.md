@@ -519,12 +519,15 @@ To run Godot Doctor on the CLI:
 3. run Godot Doctor on the CLI, use the following command:
 
    ```bash
-   godot --headless --editor --quit-after 30 -- --run-godot-doctor
+   godot --headless --editor --quit-after 100 -- --run-godot-doctor
    ```
 
-   > ℹ️ The `--quit-after 30` flag is used to ensure that Godot exits after 30
-   > seconds, just in case there the plugin doesn't initialize properly. You can
-   > adjust this timer as needed.
+   > ℹ️ The `--quit-after 100` flag is used as a failsafe to ensure that Godot
+   > exits after 100 iterations (aka 'frames'), just in case that the plugin
+   > doesn't initialize properly (which may be caused by various reasons, such
+   > as other plugins failing to initialize). You can adjust this number as
+   > needed. If your project takes longer than 100 iterations to initialize and
+   > validate, you may want to increase this number.
 
 The output is presented in a tree structure, making it easy to identify which
 scenes and nodes have validation issues:
@@ -597,15 +600,15 @@ jobs:
       - name: Import project
         # This quits as soon as the project is imported, which is sufficient
         # for preparing the project for analysis
-        # We use `--quit-after 30` as a failsafe so the runner doesn't hang
+        # We use `--quit-after 100` as a failsafe so the runner doesn't hang
         # indefinitely if something goes wrong during importing
         # You may want to adjust this timeout if you find that your project
-        # takes longer than 30 seconds to import.
+        # takes longer than 100 iterations to import.
         run: godot --headless --editor --quit --quit-after 30
       - name: "Run Godot Doctor CLI"
         # Now we run Godot Doctor again, this time running Godot Doctor through the CLI.
-        # Again, we use `--quit-after 30` as a failsafe to prevent hanging indefinitely.
-        run: godot --headless --editor --quit-after 30 -- --run-godot-doctor
+        # Again, we use `--quit-after 100` as a failsafe to prevent hanging indefinitely.
+        run: godot --headless --editor --quit-after 100 -- --run-godot-doctor
       # Optional: When using the `enable_xml_report` setting, you can upload
       # the generated XML report as an artifact for later analysis
       - name: "Upload Godot Doctor Report"

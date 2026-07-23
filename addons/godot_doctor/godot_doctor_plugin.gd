@@ -69,6 +69,16 @@ var _active_reporter: GodotDoctorValidationReporter
 ## Only created when the editor signals readiness or a fallback timer fires.
 var _cli_thread: Thread
 
+## Tracks whether the plugin is currently exiting the scene tree.
+## Used to avoid blocking teardown joins that can deadlock in CLI mode.
+var _is_exiting_tree: bool = false
+
+## Denotes whether validation has ran.
+## If this is false when exiting the scene tree, the exit code will always report a failure.
+## This is to prevent false positives when we quit early,
+## for example by hitting the `--quit-after` flag.
+var _has_ran_validation: bool = false
+
 ## Internal backing field for the current mode in which the plugin is running.
 var _run_mode: RunMode = RunMode.NONE
 
@@ -82,6 +92,7 @@ var _signal_connections: Array = []
 ## Initializes the plugin by connecting signals and adding the dock to the editor,
 ## or running in CLI mode when headless.
 func _enter_tree():
+	_is_exiting_tree = false
 	# Set the instance before any GodotDoctorNotifier calls,
 	# as it needs the instance to function properly.
 	_instance = self
@@ -146,6 +157,7 @@ func _initialize_for_editor_mode():
 ## Initialization specific to [enum RunMode.CLI].
 func _initialize_for_cli_mode():
 	_run_mode = RunMode.CLI
+	_has_ran_validation = false
 	GodotDoctorNotifier.print_debug("Running in headless, initializing CLI mode...", self)
 	GodotDoctorNotifier.print_debug("Creating CLI Runner", self)
 	_active_runner = GodotDoctorCLIRunner.new(_validator)
@@ -175,6 +187,7 @@ func _disable_plugin() -> void:
 ## Called when the plugin exits the scene scene_tree.
 ## Cleans up the plugin by disconnecting signals and removing the dock.
 func _exit_tree():
+	_is_exiting_tree = true
 	GodotDoctorNotifier.print_debug("Exiting scene_tree...", self)
 	# If we're in CLI mode and the thread was never started (neither _set_window_layout
 	# nor the fallback timer fired), run validation synchronously on the main thread.
@@ -185,8 +198,13 @@ func _exit_tree():
 		GodotDoctorNotifier.print_debug(
 			"CLI thread was never started. Running validation synchronously...", self
 		)
+		_has_ran_validation = false
 		_active_runner.run()
 	_teardown()
+
+	if _run_mode == RunMode.CLI and not _has_ran_validation:
+		push_error("Exiting without completing validation. Reporting failure.")
+		quit_with_code(1)
 
 	# Clear the singleton instance as the very last action,
 	# because debug prints rely on it.
@@ -207,7 +225,16 @@ func _teardown() -> void:
 			)
 			editor_reporter.teardown()
 	if _cli_thread != null:
-		_cli_thread.wait_to_finish()
+		# In CLI mode, teardown can run while the worker thread is still validating.
+		# Blocking the main thread here can deadlock when validation work requires
+		# main-thread cooperation (e.g. scene instantiation), so skip the join
+		# during _exit_tree and let process shutdown terminate the worker.
+		if _is_exiting_tree and _run_mode == RunMode.CLI and _cli_thread.is_alive():
+			push_warning(
+				"Skipping wait_to_finish for CLI thread during _exit_tree to avoid deadlock."
+			)
+		else:
+			_cli_thread.wait_to_finish()
 		_cli_thread = null
 	# Free the update checker if it exists to clean up any pending HTTP requests and timers.
 	if _update_checker != null:
@@ -429,6 +456,7 @@ func _on_edited_object_changed() -> void:
 
 ## Called when the runner signals that the entire validation run is complete.
 func _on_run_complete() -> void:
+	_has_ran_validation = true
 	GodotDoctorNotifier.print_debug("Validation run complete.", self)
 
 	match _run_mode:
